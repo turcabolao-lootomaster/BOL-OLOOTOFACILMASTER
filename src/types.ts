@@ -10,6 +10,8 @@ export interface User {
   uid: string;
   name: string;
   email: string;
+  whatsapp?: string;
+  accessCode?: string;
   role: UserRole;
   totalPoints: number;
   createdAt: any;

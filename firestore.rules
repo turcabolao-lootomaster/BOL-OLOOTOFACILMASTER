@@ -81,9 +81,11 @@ service cloud.firestore {
 
     // Validator Functions
     function isValidUser(data) {
-      return data.keys().hasAll(['name', 'email', 'role']) &&
+      return data.keys().hasAll(['name', 'role']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.email is string && data.email.matches('^.+@.+\\..+$') &&
+             (!('email' in data) || data.email is string) &&
+             (!('whatsapp' in data) || data.whatsapp is string) &&
+             (!('accessCode' in data) || data.accessCode is string) &&
              data.role in ['master', 'admin', 'vendedor', 'cliente'] &&
              (data.totalPoints == null || data.totalPoints is int);
     }
@@ -110,19 +112,25 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      // Allow reading for ranking, but PII (email) should ideally be separate.
-      // For now, we allow authenticated read to support the ranking query.
       allow read: if isAuthenticated();
       
-      allow create: if isOwner(userId) && 
+      allow create: if isAuthenticated() && 
+                      (isOwner(userId) || userId.startsWith('wa_') || userId.startsWith('code_')) &&
                       isValidUser(request.resource.data) && 
                       (request.resource.data.role == 'cliente' || isAdmin());
                       
       allow update: if isAuthenticated() && 
-                      isValidUser(request.resource.data) && 
                       (
                         (isOwner(userId) && request.resource.data.role == resource.data.role && request.resource.data.totalPoints == resource.data.totalPoints) || 
-                        isAdmin()
+                        isAdmin() ||
+                        (
+                          // Allow updating UID if WhatsApp or Code matches (Custom Login)
+                          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uid']) &&
+                          (
+                            (resource.data.whatsapp != null && request.resource.data.whatsapp == resource.data.whatsapp) ||
+                            (resource.data.accessCode != null && request.resource.data.name == resource.data.name && request.resource.data.accessCode == resource.data.accessCode)
+                          )
+                        )
                       );
                       
       allow delete: if isMaster();

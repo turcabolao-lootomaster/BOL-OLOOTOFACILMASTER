@@ -7,6 +7,8 @@
       "properties": {
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
+        "whatsapp": { "type": "string" },
+        "accessCode": { "type": "string" },
         "role": { "type": "string", "enum": ["master", "admin", "vendedor", "cliente"] },
         "totalPoints": { "type": "integer" },
         "createdAt": { "type": "string", "format": "date-time" }
