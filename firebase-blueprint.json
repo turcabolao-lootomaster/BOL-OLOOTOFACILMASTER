@@ -1,0 +1,105 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and ranking points",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["master", "admin", "vendedor", "cliente"] },
+        "totalPoints": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "Bet": {
+      "title": "Bet",
+      "description": "A bet made by a user in a contest",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "contestId": { "type": "string" },
+        "contestNumber": { "type": "integer" },
+        "numbers": { "type": "array", "items": { "type": "integer" }, "minItems": 10, "maxItems": 10 },
+        "status": { "type": "string", "enum": ["pendente", "validado", "rejeitado"] },
+        "sellerCode": { "type": "string" },
+        "hits": { "type": "array", "items": { "type": "integer" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "contestId", "numbers", "status"]
+    },
+    "Contest": {
+      "title": "Contest",
+      "description": "A Lotofácil contest with 3 draws",
+      "type": "object",
+      "properties": {
+        "number": { "type": "integer" },
+        "status": { "type": "string", "enum": ["aberto", "encerrado"] },
+        "draws": { 
+          "type": "array", 
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "number": { "type": "integer" },
+              "status": { "type": "string", "enum": ["pendente", "concluido"] },
+              "results": { "type": "array", "items": { "type": "integer" } }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["number", "status", "draws"]
+    },
+    "Seller": {
+      "title": "Seller",
+      "description": "Seller profile and sales stats",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "code": { "type": "string" },
+        "commissionPct": { "type": "number" },
+        "totalSales": { "type": "integer" },
+        "totalCommission": { "type": "number" }
+      },
+      "required": ["userId", "code", "commissionPct"]
+    },
+    "Commission": {
+      "title": "Commission",
+      "description": "Commission record for a bet",
+      "type": "object",
+      "properties": {
+        "sellerId": { "type": "string" },
+        "betId": { "type": "string" },
+        "amount": { "type": "number" },
+        "paid": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sellerId", "betId", "amount", "paid"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/contests/{contestId}": {
+      "schema": "Contest",
+      "description": "Contests management"
+    },
+    "/bets/{betId}": {
+      "schema": "Bet",
+      "description": "User bets"
+    },
+    "/sellers/{sellerId}": {
+      "schema": "Seller",
+      "description": "Seller profiles"
+    },
+    "/commissions/{commissionId}": {
+      "schema": "Commission",
+      "description": "Commission records"
+    }
+  }
+}

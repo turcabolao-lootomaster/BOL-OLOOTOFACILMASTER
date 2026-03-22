@@ -1,0 +1,152 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (Auth UID)
+    // Fields:
+    //   - name: string (required)
+    //   - email: string (required, email format)
+    //   - role: string (required, enum: master, admin, vendedor, cliente)
+    //   - totalPoints: number (optional, default 0)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: contests
+    // Document ID: contestId
+    // Fields:
+    //   - number: number (required)
+    //   - status: string (required, enum: aberto, encerrado)
+    //   - draws: list of objects (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: bets
+    // Document ID: betId
+    // Fields:
+    //   - userId: string (required)
+    //   - userName: string (required)
+    //   - contestId: string (required)
+    //   - contestNumber: number (optional)
+    //   - numbers: list (required, size 10)
+    //   - status: string (required, enum: pendente, validado, rejeitado)
+    //   - sellerCode: string (optional)
+    //   - hits: list (optional)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isRecent(time) {
+      return time > request.time - duration.value(5, 'm') &&
+             time < request.time + duration.value(5, 'm');
+    }
+
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'turcabolao@gmail.com' ||
+        hasRole('admin') || 
+        hasRole('master')
+      );
+    }
+    
+    function isMaster() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'turcabolao@gmail.com' ||
+        hasRole('master')
+      );
+    }
+
+    // Validator Functions
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email', 'role']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && data.email.matches('^.+@.+\\..+$') &&
+             data.role in ['master', 'admin', 'vendedor', 'cliente'] &&
+             (data.totalPoints == null || data.totalPoints is int);
+    }
+
+    function isValidBet(data) {
+      return data.keys().hasAll(['userId', 'userName', 'contestId', 'numbers', 'status']) &&
+             data.userId is string &&
+             data.userName is string &&
+             data.contestId is string &&
+             data.numbers is list && data.numbers.size() == 10 &&
+             data.status in ['pendente', 'validado', 'rejeitado'] &&
+             (!('sellerCode' in data) || data.sellerCode is string);
+    }
+
+    function isValidContest(data) {
+      return data.keys().hasAll(['number', 'status', 'draws']) &&
+             data.number is int &&
+             data.status in ['aberto', 'encerrado'] &&
+             data.draws is list;
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      // Allow reading for ranking, but PII (email) should ideally be separate.
+      // For now, we allow authenticated read to support the ranking query.
+      allow read: if isAuthenticated();
+      
+      allow create: if isOwner(userId) && 
+                      isValidUser(request.resource.data) && 
+                      (request.resource.data.role == 'cliente' || isAdmin());
+                      
+      allow update: if isAuthenticated() && 
+                      isValidUser(request.resource.data) && 
+                      (
+                        (isOwner(userId) && request.resource.data.role == resource.data.role && request.resource.data.totalPoints == resource.data.totalPoints) || 
+                        isAdmin()
+                      );
+                      
+      allow delete: if isMaster();
+    }
+
+    match /contests/{contestId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && isValidContest(request.resource.data);
+      allow update: if isAdmin() && isValidContest(request.resource.data);
+      allow delete: if isMaster();
+    }
+
+    match /bets/{betId} {
+      // Allow reading for participants view, but only for validated bets or own bets.
+      allow read: if isAuthenticated() && (resource.data.status == 'validado' || isOwner(resource.data.userId) || isAdmin());
+      
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == request.auth.uid && 
+                      request.resource.data.status == 'pendente' &&
+                      isValidBet(request.resource.data);
+                      
+      allow update: if isAdmin() && isValidBet(request.resource.data);
+      
+      allow delete: if isAdmin();
+    }
+  }
+}

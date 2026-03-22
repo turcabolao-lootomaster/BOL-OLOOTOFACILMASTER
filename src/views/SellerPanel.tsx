@@ -1,0 +1,227 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { firebaseService } from '../services/firebaseService';
+import { 
+  Store, 
+  Copy, 
+  TrendingUp, 
+  CheckCircle2, 
+  Clock, 
+  DollarSign, 
+  ArrowUpRight,
+  ExternalLink,
+  AlertCircle
+} from 'lucide-react';
+import { motion } from 'motion/react';
+import { cn } from '../utils';
+import { SELLER_COMMISSION_PCT } from '../utils';
+import { Seller, Bet } from '../types';
+
+const SellerPanel: React.FC = () => {
+  const { user } = useAuth();
+  const [seller, setSeller] = useState<Seller | null>(null);
+  const [recentSales, setRecentSales] = useState<Bet[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user?.uid) return;
+      try {
+        const sellerData = await firebaseService.getSellerByUserId(user.uid);
+        if (sellerData) {
+          setSeller(sellerData);
+          const sales = await firebaseService.getSellerRecentSales(sellerData.code);
+          setRecentSales(sales);
+        }
+      } catch (error) {
+        console.error('Error fetching seller data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [user]);
+
+  const copyLink = () => {
+    if (!seller) return;
+    const link = `${window.location.origin}/ref/${seller.code}`;
+    navigator.clipboard.writeText(link);
+    alert('Link copiado para a área de transferência!');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-neon-green/20 border-t-neon-green rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!seller) {
+    return (
+      <div className="p-10 flex flex-col items-center justify-center text-center space-y-4">
+        <AlertCircle className="text-white/20" size={48} />
+        <h2 className="text-2xl font-display text-white uppercase tracking-widest">Acesso Restrito</h2>
+        <p className="text-white/40 max-w-md">Você não está cadastrado como vendedor. Entre em contato com um administrador.</p>
+      </div>
+    );
+  }
+
+  const validatedSalesCount = recentSales.filter(s => s.status === 'validado').length;
+  const pendingSalesCount = recentSales.filter(s => s.status === 'pendente').length;
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-10 space-y-6 sm:space-y-10">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 sm:gap-6">
+        <div>
+          <h1 className="text-2xl sm:text-4xl font-display tracking-widest text-white">PAINEL DO <span className="text-neon-green uppercase">VENDEDOR</span></h1>
+          <p className="text-xs sm:text-sm text-white/50 mt-1 sm:mt-2">Gerencie suas vendas e acompanhe suas comissões em tempo real.</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="glass-card px-4 sm:px-6 py-2 sm:py-3 flex items-center gap-3 border-neon-green/20">
+            <TrendingUp className="text-neon-green" size={18} />
+            <span className="text-[10px] sm:text-sm font-bold text-white uppercase tracking-widest">Comissão: {seller.commissionPct}%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Seller Link Card */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card p-5 sm:p-8 bg-gradient-to-br from-neon-green/10 to-transparent border-neon-green/20"
+      >
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 sm:gap-8">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-neon-green rounded-lg sm:rounded-xl flex items-center justify-center shrink-0">
+                <ExternalLink className="text-black" size={16} />
+              </div>
+              <h2 className="text-lg sm:text-2xl font-display tracking-widest text-white uppercase">SEU LINK DE VENDAS</h2>
+            </div>
+            <p className="text-white/60 text-xs sm:text-sm max-w-md leading-relaxed">
+              Compartilhe este link com seus clientes. Todas as apostas feitas através dele serão vinculadas à sua conta automaticamente.
+            </p>
+          </div>
+          <div className="flex-1 max-w-md w-full">
+            <div className="flex items-center gap-2 p-1.5 sm:p-2 bg-black/40 rounded-xl sm:rounded-2xl border border-white/10">
+              <div className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 font-mono text-[10px] sm:text-xs text-white/40 truncate">
+                {window.location.origin}/ref/{seller.code}
+              </div>
+              <button 
+                onClick={copyLink}
+                className="btn-primary py-1.5 sm:py-2 px-4 sm:px-6 flex items-center gap-2 text-[10px] sm:text-xs shrink-0"
+              >
+                <Copy size={12} />
+                COPIAR
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        {[
+          { label: 'Vendas Totais', value: seller.totalSales || 0, icon: Store, color: 'text-accent-blue', bg: 'bg-accent-blue/10' },
+          { label: 'Validadas', value: validatedSalesCount, icon: CheckCircle2, color: 'text-neon-green', bg: 'bg-neon-green/10' },
+          { label: 'Comissão Total', value: `R$ ${(seller.totalCommission || 0).toFixed(2)}`, icon: DollarSign, color: 'text-accent-purple', bg: 'bg-accent-purple/10' },
+          { label: 'A Receber', value: `R$ ${((seller.totalCommission || 0)).toFixed(2)}`, icon: ArrowUpRight, color: 'text-accent-orange', bg: 'bg-accent-orange/10' },
+        ].map((stat, idx) => (
+          <motion.div 
+            key={stat.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.1 }}
+            className="glass-card p-4 sm:p-6 flex flex-col sm:flex-row items-center sm:items-center gap-3 sm:gap-6 text-center sm:text-left"
+          >
+            <div className={`w-10 h-10 sm:w-14 sm:h-14 ${stat.bg} rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0`}>
+              <stat.icon className={stat.color} size={20} />
+            </div>
+            <div className="min-w-0 w-full">
+              <p className="text-[8px] sm:text-[10px] uppercase tracking-widest text-white/40 mb-0.5 sm:mb-1 truncate">{stat.label}</p>
+              <h3 className="text-base sm:text-2xl font-bold text-white truncate">{stat.value}</h3>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Recent Sales Table */}
+      <div className="glass-card p-5 sm:p-8 space-y-6 sm:space-y-8">
+        <h2 className="text-lg sm:text-2xl font-display tracking-widest text-white uppercase">VENDAS <span className="text-white/20">RECENTES</span></h2>
+        
+        <div className="overflow-x-auto -mx-5 sm:mx-0">
+          <table className="w-full text-left border-collapse min-w-[600px] sm:min-w-0">
+            <thead>
+              <tr className="bg-white/5 border-b border-white/10">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-white/40 font-bold">Data</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-white/40 font-bold">Cliente</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-white/40 font-bold">Status</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-white/40 font-bold text-center">Valor</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-white/40 font-bold text-center">Comissão</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentSales.map((sale, idx) => (
+                <motion.tr 
+                  key={sale.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="border-b border-white/5 hover:bg-white/5 transition-all"
+                >
+                  <td className="px-4 sm:px-6 py-4 sm:py-5 text-[10px] sm:text-xs text-white/40 uppercase tracking-widest">
+                    {sale.createdAt instanceof Date ? sale.createdAt.toLocaleDateString() : 'Recent'}
+                  </td>
+                  <td className="px-4 sm:px-6 py-4 sm:py-5">
+                    <p className="text-xs sm:text-sm font-bold text-white truncate max-w-[120px] sm:max-w-none">{sale.userName}</p>
+                    <p className="text-[8px] sm:text-[10px] text-white/20 uppercase tracking-widest mt-0.5 sm:mt-1">ID: {sale.id.substring(0, 8)}</p>
+                  </td>
+                  <td className="px-4 sm:px-6 py-4 sm:py-5">
+                    <div className="flex items-center gap-2">
+                      {sale.status === 'validado' ? (
+                        <CheckCircle2 className="text-neon-green" size={12} />
+                      ) : sale.status === 'pendente' ? (
+                        <Clock className="text-accent-orange" size={12} />
+                      ) : (
+                        <DollarSign className="text-accent-red" size={12} />
+                      )}
+                      <span className={cn(
+                        "text-[8px] sm:text-[10px] font-bold uppercase tracking-widest",
+                        sale.status === 'validado' ? "text-neon-green" : 
+                        sale.status === 'pendente' ? "text-accent-orange" : "text-accent-red"
+                      )}>
+                        {sale.status === 'validado' ? 'Validada' : sale.status === 'pendente' ? 'Pendente' : 'Rejeitada'}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 sm:px-6 py-4 sm:py-5 text-center text-[10px] sm:text-sm font-medium text-white/60">R$ 10.00</td>
+                  <td className="px-4 sm:px-6 py-4 sm:py-5 text-center">
+                    <span className={cn(
+                      "text-[10px] sm:text-sm font-bold",
+                      sale.status === 'validado' ? "text-neon-green" : "text-white/20"
+                    )}>
+                      R$ {(10 * (seller.commissionPct / 100)).toFixed(2)}
+                    </span>
+                  </td>
+                </motion.tr>
+              ))}
+              {recentSales.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-white/20 italic text-sm">Nenhuma venda registrada.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SellerPanel;
