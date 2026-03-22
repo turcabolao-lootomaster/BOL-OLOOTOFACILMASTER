@@ -10,6 +10,7 @@ import {
   getDocs, 
   addDoc, 
   updateDoc, 
+  setDoc,
   deleteDoc, 
   query, 
   where, 
@@ -20,7 +21,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { User, Bet, Contest, Draw, UserRanking, Commission, ContestStatus, Seller } from '../types';
+import { User, Bet, Contest, Draw, UserRanking, Commission, ContestStatus, Seller, Settings } from '../types';
 
 enum OperationType {
   CREATE = 'create',
@@ -616,6 +617,74 @@ export const firebaseService = {
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
+  async getSettings(): Promise<Settings | null> {
+    const path = 'settings/global';
+    try {
+      const docRef = doc(db, 'settings', 'global');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return docSnap.data() as Settings;
+      }
+      return null;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, path);
+      return null;
+    }
+  },
+
+  async updateSettings(settings: Partial<Settings>): Promise<void> {
+    const path = 'settings/global';
+    try {
+      const docRef = doc(db, 'settings', 'global');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        await updateDoc(docRef, {
+          ...settings,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await setDoc(docRef, {
+          ...settings,
+          updatedAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  },
+
+  async getSellerByCode(code: string): Promise<Seller | null> {
+    const path = 'sellers';
+    try {
+      const q = query(collection(db, 'sellers'), where('code', '==', code.toUpperCase()));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        return { id: doc.id, ...doc.data() } as Seller;
+      }
+      return null;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, path);
+      return null;
+    }
+  },
+
+  async getSellerWhatsApp(sellerId: string): Promise<string | null> {
+    const path = `users/${sellerId}`;
+    try {
+      const docRef = doc(db, 'users', sellerId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const userData = docSnap.data() as User;
+        return userData.whatsapp || null;
+      }
+      return null;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, path);
+      return null;
     }
   }
 };

@@ -77,3 +77,8 @@ export interface Commission {
   paid: boolean;
   createdAt: any;
 }
+
+export interface Settings {
+  whatsappNumber: string;
+  updatedAt: any;
+}

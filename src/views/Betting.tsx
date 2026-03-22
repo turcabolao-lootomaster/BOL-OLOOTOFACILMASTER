@@ -23,13 +23,33 @@ const Betting: React.FC = () => {
   const [lastBetName, setLastBetName] = useState('');
   const [surpresinhaCount, setSurpresinhaCount] = useState(1);
   const [activeContest, setActiveContest] = React.useState<Contest | null>(null);
+  const [whatsappNumber, setWhatsappNumber] = useState('5511999999999');
+  const [sellerWhatsApp, setSellerWhatsApp] = useState<string | null>(null);
 
   React.useEffect(() => {
-    const fetchActive = async () => {
-      const contest = await firebaseService.getActiveContest();
+    const fetchData = async () => {
+      // Check for seller ref in URL
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (ref) {
+        setSellerCode(ref.toUpperCase());
+        const seller = await firebaseService.getSellerByCode(ref);
+        if (seller) {
+          const ws = await firebaseService.getSellerWhatsApp(seller.userId);
+          if (ws) setSellerWhatsApp(ws);
+        }
+      }
+
+      const [contest, settings] = await Promise.all([
+        firebaseService.getActiveContest(),
+        firebaseService.getSettings()
+      ]);
       setActiveContest(contest);
+      if (settings?.whatsappNumber) {
+        setWhatsappNumber(settings.whatsappNumber);
+      }
     };
-    fetchActive();
+    fetchData();
   }, []);
 
   const toggleNumber = (num: number) => {
@@ -86,6 +106,19 @@ const Betting: React.FC = () => {
         throw new Error('As apostas para este concurso estão bloqueadas ou o concurso já foi finalizado.');
       }
 
+      // If sellerCode is present, try to get their WhatsApp for validation
+      if (sellerCode) {
+        const seller = await firebaseService.getSellerByCode(sellerCode);
+        if (seller) {
+          const ws = await firebaseService.getSellerWhatsApp(seller.userId);
+          setSellerWhatsApp(ws);
+        } else {
+          setSellerWhatsApp(null);
+        }
+      } else {
+        setSellerWhatsApp(null);
+      }
+
       // Submit all pending bets
       for (const numbers of pendingBets) {
         const id = await firebaseService.createBet({
@@ -117,7 +150,8 @@ const Betting: React.FC = () => {
 
   const handleWhatsAppValidation = () => {
     const message = encodeURIComponent(`Olá! Gostaria de validar minhas apostas.\nIDs: ${lastBetIds.join(', ')}\nNome: ${lastBetName || user?.name}`);
-    window.open(`https://wa.me/5511999999999?text=${message}`, '_blank'); // Replace with actual admin number or seller number
+    const targetNumber = sellerWhatsApp || whatsappNumber;
+    window.open(`https://wa.me/${targetNumber}?text=${message}`, '_blank');
   };
 
   return (

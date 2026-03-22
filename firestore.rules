@@ -156,5 +156,24 @@ service cloud.firestore {
       
       allow delete: if isAdmin();
     }
+
+    match /sellers/{sellerId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isMaster();
+    }
+
+    match /commissions/{commissionId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.sellerId == request.auth.uid);
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isMaster();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

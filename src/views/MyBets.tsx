@@ -6,27 +6,49 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { firebaseService } from '../services/firebaseService';
-import { History, CheckCircle2, Clock, XCircle, ChevronRight, RefreshCcw } from 'lucide-react';
+import { History, CheckCircle2, Clock, XCircle, ChevronRight, RefreshCcw, MessageCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../utils';
-import { Bet } from '../types';
+import { Bet, Settings } from '../types';
 
 const MyBets: React.FC = () => {
   const { user } = useAuth();
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [whatsappNumber, setWhatsappNumber] = useState('5511999999999');
 
   useEffect(() => {
-    const fetchBets = async () => {
+    const fetchData = async () => {
       if (user) {
-        const userBets = await firebaseService.getUserBets(user.id);
+        const [userBets, settings] = await Promise.all([
+          firebaseService.getUserBets(user.id),
+          firebaseService.getSettings()
+        ]);
         setBets(userBets);
+        if (settings?.whatsappNumber) {
+          setWhatsappNumber(settings.whatsappNumber);
+        }
       }
       setLoading(false);
     };
 
-    fetchBets();
+    fetchData();
   }, [user]);
+
+  const handleWhatsAppValidation = async (bet: Bet) => {
+    let targetNumber = whatsappNumber;
+    
+    if (bet.sellerCode) {
+      const seller = await firebaseService.getSellerByCode(bet.sellerCode);
+      if (seller) {
+        const ws = await firebaseService.getSellerWhatsApp(seller.userId);
+        if (ws) targetNumber = ws;
+      }
+    }
+
+    const message = encodeURIComponent(`Olá! Gostaria de validar minha aposta.\nID: ${bet.id}\nConcurso: #${bet.contestNumber}\nNome: ${bet.betName || user?.name}`);
+    window.open(`https://wa.me/${targetNumber}?text=${message}`, '_blank');
+  };
 
   const handleToggleRepeat = async (betId: string, currentRepeat: boolean) => {
     try {
@@ -115,6 +137,15 @@ const MyBets: React.FC = () => {
                   <span className="uppercase tracking-widest" style={{ color: '#060000', fontSize: '12px', fontWeight: 'bold', lineHeight: '17px' }}>
                     {getStatusLabel(bet.status)}
                   </span>
+                  {bet.status === 'pendente' && (
+                    <button 
+                      onClick={() => handleWhatsAppValidation(bet)}
+                      className="ml-2 flex items-center gap-1 px-2 py-1 bg-[#25D366] text-white text-[8px] font-bold rounded-lg hover:bg-[#128C7E] transition-all"
+                    >
+                      <MessageCircle size={10} />
+                      VALIDAR
+                    </button>
+                  )}
                 </div>
                 <span className="text-[8px] sm:text-[10px] uppercase tracking-widest" style={{ color: '#030000', fontWeight: 'bold' }}>
                   {bet.createdAt instanceof Date ? bet.createdAt.toLocaleDateString() : 'Recent'}

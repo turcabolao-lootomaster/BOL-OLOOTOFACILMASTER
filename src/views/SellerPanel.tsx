@@ -49,7 +49,7 @@ const SellerPanel: React.FC = () => {
 
   const copyLink = () => {
     if (!seller) return;
-    const link = `${window.location.origin}/ref/${seller.code}`;
+    const link = `${window.location.origin}/?ref=${seller.code}`;
     navigator.clipboard.writeText(link);
     alert('Link copiado para a área de transferência!');
   };
@@ -111,7 +111,7 @@ const SellerPanel: React.FC = () => {
           <div className="flex-1 max-w-md w-full">
             <div className="flex items-center gap-2 p-1.5 sm:p-2 bg-black/40 rounded-xl sm:rounded-2xl border border-white/10">
               <div className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 font-mono text-[10px] sm:text-xs text-white/40 truncate">
-                {window.location.origin}/ref/{seller.code}
+                {window.location.origin}/?ref={seller.code}
               </div>
               <button 
                 onClick={copyLink}

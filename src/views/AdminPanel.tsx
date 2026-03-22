@@ -43,6 +43,7 @@ const AdminPanel: React.FC = () => {
     { id: 'concursos', label: 'Concursos', icon: Settings },
     { id: 'vendedores', label: 'Vendedores', icon: Users },
     { id: 'relatorios', label: 'Relatórios', icon: BarChart3 },
+    { id: 'config', label: 'Config', icon: Save },
   ];
 
   if (user?.role !== 'admin' && user?.role !== 'master') {
@@ -93,6 +94,7 @@ const AdminPanel: React.FC = () => {
           {activeTab === 'concursos' && <ContestsTab />}
           {activeTab === 'vendedores' && <SellersTab />}
           {activeTab === 'relatorios' && <ReportsTab />}
+          {activeTab === 'config' && <ConfigTab />}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -914,13 +916,18 @@ const SellersTab = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [sellersData, usersData] = await Promise.all([
-      firebaseService.getAllSellers(),
-      firebaseService.getAllUsers()
-    ]);
-    setSellers(sellersData);
-    setUsers(usersData);
-    setLoading(false);
+    try {
+      const [sellersData, usersData] = await Promise.all([
+        firebaseService.getAllSellers(),
+        firebaseService.getAllUsers()
+      ]);
+      setSellers(sellersData);
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Error fetching data for sellers tab:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAddSeller = async (e: React.FormEvent) => {
@@ -967,8 +974,8 @@ const SellersTab = () => {
               required
             >
               <option value="">Selecionar Usuário</option>
-              {users.filter(u => u.role === 'cliente').map(u => (
-                <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+              {users.filter(u => u.role === 'cliente' || !u.role).map(u => (
+                <option key={u.id} value={u.id}>{u.name} {u.email ? `(${u.email})` : u.whatsapp ? `(${u.whatsapp})` : ''}</option>
               ))}
             </select>
             <input 
@@ -1060,5 +1067,89 @@ const ReportsTab = () => (
     </div>
   </div>
 );
+
+const ConfigTab: React.FC = () => {
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const settings = await firebaseService.getSettings();
+      if (settings) {
+        setWhatsappNumber(settings.whatsappNumber || '');
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await firebaseService.updateSettings({ whatsappNumber });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Erro ao salvar configurações.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8 max-w-2xl">
+      <div>
+        <h2 className="text-xl font-display tracking-widest text-white uppercase">CONFIGURAÇÕES DO <span className="text-neon-green">SISTEMA</span></h2>
+        <p className="text-sm text-white/40 mt-1">Ajuste parâmetros globais do aplicativo.</p>
+      </div>
+
+      <form onSubmit={handleSave} className="space-y-6">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-white/40 mb-2 ml-1">Número do WhatsApp para Validação</label>
+            <div className="relative">
+              <input 
+                type="text" 
+                value={whatsappNumber}
+                onChange={(e) => setWhatsappNumber(e.target.value)}
+                placeholder="Ex: 5511999999999"
+                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-neon-green/50 transition-all text-sm text-white"
+              />
+              <p className="text-[10px] text-white/30 mt-2 ml-1">Insira apenas números com DDD (ex: 5511999999999). Este número será usado no botão de validação de apostas.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button 
+            type="submit"
+            disabled={loading}
+            className="btn-primary px-8 h-12 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,255,0,0.2)] disabled:opacity-30"
+          >
+            {loading ? 'SALVANDO...' : (
+              <>
+                <Save size={16} />
+                SALVAR CONFIGURAÇÕES
+              </>
+            )}
+          </button>
+          
+          {success && (
+            <motion.div 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-2 text-neon-green text-sm font-bold"
+            >
+              <Check size={16} />
+              SALVO COM SUCESSO!
+            </motion.div>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+};
 
 export default AdminPanel;

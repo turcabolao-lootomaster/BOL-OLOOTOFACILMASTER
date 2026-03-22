@@ -80,6 +80,15 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["sellerId", "betId", "amount", "paid"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Global application settings",
+      "type": "object",
+      "properties": {
+        "whatsappNumber": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "firestore": {
@@ -102,6 +111,10 @@
     "/commissions/{commissionId}": {
       "schema": "Commission",
       "description": "Commission records"
+    },
+    "/settings/{settingId}": {
+      "schema": "Settings",
+      "description": "Global settings"
     }
   }
 }

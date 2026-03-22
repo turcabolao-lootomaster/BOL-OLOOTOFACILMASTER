@@ -22,6 +22,13 @@ const AppContent: React.FC = () => {
   const [currentView, setView] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('ref')) {
+      setView('bet');
+    }
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
