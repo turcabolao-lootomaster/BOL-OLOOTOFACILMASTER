@@ -42,6 +42,15 @@ export interface Contest {
   draws: Draw[];
   createdAt: any;
   totalCollected?: number;
+  prizes?: {
+    draw1: string;
+    draw2: string;
+    draw3: string;
+    rapidinha1: string;
+    rapidinha2: string;
+    rankeada: string;
+  };
+  publicLink?: string;
 }
 
 export type BetStatus = 'pendente' | 'validado' | 'rejeitado';
@@ -67,6 +76,7 @@ export interface UserRanking {
   userName: string;
   points: number;
   position: number;
+  sellerCode?: string;
 }
 
 export interface Commission {

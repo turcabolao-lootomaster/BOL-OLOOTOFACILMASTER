@@ -5,15 +5,17 @@
   --font-display: "Bebas Neue", sans-serif;
   --font-sans: "Barlow", ui-sans-serif, system-ui, sans-serif;
   
-  --color-neon-green: #00FF00;
-  --color-dark-bg: #050505;
-  --color-card-bg: #151619;
+  --color-lotofacil-purple: #6B21A8;
+  --color-lotofacil-pink: #D10098;
+  --color-lotofacil-yellow: #D97706;
+  --color-dark-bg: #F8FAFC;
+  --color-card-bg: #FFFFFF;
   --color-accent-orange: #F27D26;
-  --color-accent-purple: #A855F7;
-  --color-accent-blue: #3B82F6;
-  --color-accent-red: #EF4444;
-  --color-gold: #FFD700;
-  --color-silver: #C0C0C0;
+  --color-accent-purple: #7E22CE;
+  --color-accent-blue: #1D4ED8;
+  --color-accent-red: #DC2626;
+  --color-gold: #D97706;
+  --color-silver: #94A3B8;
 
   @keyframes spin-slow {
     from { transform: rotate(0deg); }
@@ -24,31 +26,43 @@
 
 @layer base {
   body {
-    @apply bg-dark-bg text-white font-sans;
+    @apply bg-dark-bg text-slate-900 font-sans;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display tracking-wider;
+    @apply font-display tracking-wider text-slate-900;
   }
 }
 
 .glass-card {
-  @apply bg-card-bg/80 backdrop-blur-md border border-white/10 rounded-2xl;
+  @apply bg-white shadow-sm border border-slate-200 rounded-xl sm:rounded-2xl;
 }
 
 .neon-border {
-  @apply border border-neon-green/30 shadow-[0_0_15px_rgba(0,255,0,0.1)];
+  @apply border border-lotofacil-purple/20 shadow-sm;
 }
 
 .neon-text {
-  @apply text-neon-green drop-shadow-[0_0_8px_rgba(0,255,0,0.5)];
+  @apply text-lotofacil-purple;
 }
 
 .btn-primary {
-  @apply bg-neon-green text-black font-bold py-2 px-6 rounded-full hover:bg-neon-green/90 transition-all active:scale-95;
+  @apply bg-lotofacil-purple text-white font-bold py-2 px-6 rounded-full hover:bg-lotofacil-purple/90 transition-all active:scale-95 shadow-md;
 }
 
 .btn-secondary {
-  @apply bg-white/10 text-white font-medium py-2 px-6 rounded-full hover:bg-white/20 transition-all active:scale-95;
+  @apply bg-slate-100 text-slate-600 font-medium py-2 px-6 rounded-full hover:bg-slate-200 transition-all active:scale-95;
+}
+
+.compact-grid {
+  @apply grid grid-cols-2 gap-2 sm:gap-4;
+}
+
+.mobile-p {
+  @apply p-3 sm:p-6 lg:p-10;
+}
+
+.mobile-gap {
+  @apply gap-3 sm:gap-6 lg:gap-10;
 }
 

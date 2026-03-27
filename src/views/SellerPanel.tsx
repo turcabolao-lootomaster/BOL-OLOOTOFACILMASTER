@@ -57,7 +57,7 @@ const SellerPanel: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-neon-green/20 border-t-neon-green rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-lotofacil-purple/20 border-t-lotofacil-purple rounded-full animate-spin" />
       </div>
     );
   }
@@ -65,9 +65,9 @@ const SellerPanel: React.FC = () => {
   if (!seller) {
     return (
       <div className="p-10 flex flex-col items-center justify-center text-center space-y-4">
-        <AlertCircle className="text-white/20" size={48} />
-        <h2 className="text-2xl font-display text-white uppercase tracking-widest">Acesso Restrito</h2>
-        <p className="text-white/40 max-w-md">Você não está cadastrado como vendedor. Entre em contato com um administrador.</p>
+        <AlertCircle className="text-slate-200" size={48} />
+        <h2 className="text-2xl font-display text-slate-900 uppercase tracking-widest">Acesso Restrito</h2>
+        <p className="text-slate-400 max-w-md">Você não está cadastrado como vendedor. Entre em contato com um administrador.</p>
       </div>
     );
   }
@@ -79,13 +79,13 @@ const SellerPanel: React.FC = () => {
     <div className="p-4 sm:p-6 lg:p-10 space-y-6 sm:space-y-10">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 sm:gap-6">
         <div>
-          <h1 className="text-2xl sm:text-4xl font-display tracking-widest text-white">PAINEL DO <span className="text-neon-green uppercase">VENDEDOR</span></h1>
-          <p className="text-xs sm:text-sm text-white/50 mt-1 sm:mt-2">Gerencie suas vendas e acompanhe suas comissões em tempo real.</p>
+          <h1 className="text-2xl sm:text-4xl font-display tracking-widest text-slate-900">PAINEL DO <span className="text-lotofacil-purple uppercase">VENDEDOR</span></h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 sm:mt-2">Gerencie suas vendas e acompanhe suas comissões em tempo real.</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="glass-card px-4 sm:px-6 py-2 sm:py-3 flex items-center gap-3 border-neon-green/20">
-            <TrendingUp className="text-neon-green" size={18} />
-            <span className="text-[10px] sm:text-sm font-bold text-white uppercase tracking-widest">Comissão: {seller.commissionPct}%</span>
+          <div className="glass-card px-4 sm:px-6 py-2 sm:py-3 flex items-center gap-3 border-lotofacil-purple/20">
+            <TrendingUp className="text-lotofacil-purple" size={18} />
+            <span className="text-[10px] sm:text-sm font-bold text-slate-900 uppercase tracking-widest">Comissão: {seller.commissionPct}%</span>
           </div>
         </div>
       </div>
@@ -94,23 +94,23 @@ const SellerPanel: React.FC = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-card p-5 sm:p-8 bg-gradient-to-br from-neon-green/10 to-transparent border-neon-green/20"
+        className="glass-card p-5 sm:p-8 bg-gradient-to-br from-lotofacil-purple/5 to-transparent border-lotofacil-purple/20"
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 sm:gap-8">
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-neon-green rounded-lg sm:rounded-xl flex items-center justify-center shrink-0">
-                <ExternalLink className="text-black" size={16} />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-lotofacil-purple rounded-lg sm:rounded-xl flex items-center justify-center shrink-0">
+                <ExternalLink className="text-white" size={16} />
               </div>
-              <h2 className="text-lg sm:text-2xl font-display tracking-widest text-white uppercase">SEU LINK DE VENDAS</h2>
+              <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">SEU LINK DE VENDAS</h2>
             </div>
-            <p className="text-white/60 text-xs sm:text-sm max-w-md leading-relaxed">
+            <p className="text-slate-600 text-xs sm:text-sm max-w-md leading-relaxed">
               Compartilhe este link com seus clientes. Todas as apostas feitas através dele serão vinculadas à sua conta automaticamente.
             </p>
           </div>
           <div className="flex-1 max-w-md w-full">
-            <div className="flex items-center gap-2 p-1.5 sm:p-2 bg-black/40 rounded-xl sm:rounded-2xl border border-white/10">
-              <div className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 font-mono text-[10px] sm:text-xs text-white/40 truncate">
+            <div className="flex items-center gap-2 p-1.5 sm:p-2 bg-slate-100 rounded-xl sm:rounded-2xl border border-slate-200">
+              <div className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 font-mono text-[10px] sm:text-xs text-slate-400 truncate">
                 {window.location.origin}/?ref={seller.code}
               </div>
               <button 
@@ -128,10 +128,10 @@ const SellerPanel: React.FC = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {[
-          { label: 'Vendas Totais', value: seller.totalSales || 0, icon: Store, color: 'text-accent-blue', bg: 'bg-accent-blue/10' },
-          { label: 'Validadas', value: validatedSalesCount, icon: CheckCircle2, color: 'text-neon-green', bg: 'bg-neon-green/10' },
-          { label: 'Comissão Total', value: `R$ ${(seller.totalCommission || 0).toFixed(2)}`, icon: DollarSign, color: 'text-accent-purple', bg: 'bg-accent-purple/10' },
-          { label: 'A Receber', value: `R$ ${((seller.totalCommission || 0)).toFixed(2)}`, icon: ArrowUpRight, color: 'text-accent-orange', bg: 'bg-accent-orange/10' },
+          { label: 'Vendas Totais', value: seller.totalSales || 0, icon: Store, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Validadas', value: validatedSalesCount, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'Comissão Total', value: `R$ ${(seller.totalCommission || 0).toFixed(2)}`, icon: DollarSign, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'A Receber', value: `R$ ${((seller.totalCommission || 0)).toFixed(2)}`, icon: ArrowUpRight, color: 'text-orange-600', bg: 'bg-orange-50' },
         ].map((stat, idx) => (
           <motion.div 
             key={stat.label}
@@ -140,12 +140,12 @@ const SellerPanel: React.FC = () => {
             transition={{ delay: idx * 0.1 }}
             className="glass-card p-4 sm:p-6 flex flex-col sm:flex-row items-center sm:items-center gap-3 sm:gap-6 text-center sm:text-left"
           >
-            <div className={`w-10 h-10 sm:w-14 sm:h-14 ${stat.bg} rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0`}>
+            <div className={`w-10 h-10 sm:w-14 sm:h-14 ${stat.bg} rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-inner`}>
               <stat.icon className={stat.color} size={20} />
             </div>
             <div className="min-w-0 w-full">
-              <p className="text-[8px] sm:text-[10px] uppercase tracking-widest text-white/40 mb-0.5 sm:mb-1 truncate">{stat.label}</p>
-              <h3 className="text-base sm:text-2xl font-bold text-white truncate">{stat.value}</h3>
+              <p className="text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 mb-0.5 sm:mb-1 truncate">{stat.label}</p>
+              <h3 className="text-base sm:text-2xl font-bold text-slate-900 truncate">{stat.value}</h3>
             </div>
           </motion.div>
         ))}
@@ -153,58 +153,72 @@ const SellerPanel: React.FC = () => {
 
       {/* Recent Sales Table */}
       <div className="glass-card p-5 sm:p-8 space-y-6 sm:space-y-8">
-        <h2 className="text-lg sm:text-2xl font-display tracking-widest text-white uppercase">VENDAS <span className="text-white/20">RECENTES</span></h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">VENDAS <span className="text-slate-200">RECENTES</span></h2>
+          <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+            {recentSales.length} {recentSales.length === 1 ? 'Aposta' : 'Apostas'}
+          </span>
+        </div>
         
         <div className="overflow-x-auto -mx-5 sm:mx-0">
           <table className="w-full text-left border-collapse min-w-[600px] sm:min-w-0">
             <thead>
-              <tr className="bg-white/5 border-b border-white/10">
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-white/40 font-bold">Data</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-white/40 font-bold">Cliente</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-white/40 font-bold">Status</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-white/40 font-bold text-center">Valor</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-white/40 font-bold text-center">Comissão</th>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold">Data</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold">Cliente</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold">Status</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold text-center">Valor</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold text-center">Comissão</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {recentSales.map((sale, idx) => (
                 <motion.tr 
                   key={sale.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className="border-b border-white/5 hover:bg-white/5 transition-all"
+                  className="hover:bg-slate-50 transition-all"
                 >
-                  <td className="px-4 sm:px-6 py-4 sm:py-5 text-[10px] sm:text-xs text-white/40 uppercase tracking-widest">
+                  <td className="px-4 sm:px-6 py-4 sm:py-5 text-[10px] sm:text-xs text-slate-400 uppercase tracking-widest">
                     {sale.createdAt instanceof Date ? sale.createdAt.toLocaleDateString() : 'Recent'}
                   </td>
                   <td className="px-4 sm:px-6 py-4 sm:py-5">
-                    <p className="text-xs sm:text-sm font-bold text-white truncate max-w-[120px] sm:max-w-none">{sale.userName}</p>
-                    <p className="text-[8px] sm:text-[10px] text-white/20 uppercase tracking-widest mt-0.5 sm:mt-1">ID: {sale.id.substring(0, 8)}</p>
+                    <p className="text-xs sm:text-sm font-bold text-slate-900 truncate max-w-[120px] sm:max-w-none">{sale.betName || sale.userName}</p>
+                    <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
+                      <p className="text-[8px] sm:text-[10px] text-slate-300 uppercase tracking-widest">ID: {sale.id.substring(0, 4).toUpperCase()}</p>
+                      <span className="text-slate-100">•</span>
+                      <p className="text-[8px] sm:text-[10px] text-slate-300 uppercase tracking-widest">Conc: #{sale.contestNumber}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {sale.numbers.map(n => (
+                        <span key={n} className="text-[8px] font-mono text-lotofacil-purple/60">{n.toString().padStart(2, '0')}</span>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-4 sm:px-6 py-4 sm:py-5">
                     <div className="flex items-center gap-2">
                       {sale.status === 'validado' ? (
-                        <CheckCircle2 className="text-neon-green" size={12} />
+                        <CheckCircle2 className="text-emerald-600" size={12} />
                       ) : sale.status === 'pendente' ? (
-                        <Clock className="text-accent-orange" size={12} />
+                        <Clock className="text-orange-600" size={12} />
                       ) : (
-                        <DollarSign className="text-accent-red" size={12} />
+                        <DollarSign className="text-red-600" size={12} />
                       )}
                       <span className={cn(
                         "text-[8px] sm:text-[10px] font-bold uppercase tracking-widest",
-                        sale.status === 'validado' ? "text-neon-green" : 
-                        sale.status === 'pendente' ? "text-accent-orange" : "text-accent-red"
+                        sale.status === 'validado' ? "text-emerald-600" : 
+                        sale.status === 'pendente' ? "text-orange-600" : "text-red-600"
                       )}>
                         {sale.status === 'validado' ? 'Validada' : sale.status === 'pendente' ? 'Pendente' : 'Rejeitada'}
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 sm:px-6 py-4 sm:py-5 text-center text-[10px] sm:text-sm font-medium text-white/60">R$ 10.00</td>
+                  <td className="px-4 sm:px-6 py-4 sm:py-5 text-center text-[10px] sm:text-sm font-medium text-slate-600">R$ 10.00</td>
                   <td className="px-4 sm:px-6 py-4 sm:py-5 text-center">
                     <span className={cn(
                       "text-[10px] sm:text-sm font-bold",
-                      sale.status === 'validado' ? "text-neon-green" : "text-white/20"
+                      sale.status === 'validado' ? "text-emerald-600" : "text-slate-300"
                     )}>
                       R$ {(10 * (seller.commissionPct / 100)).toFixed(2)}
                     </span>
@@ -213,7 +227,7 @@ const SellerPanel: React.FC = () => {
               ))}
               {recentSales.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-white/20 italic text-sm">Nenhuma venda registrada.</td>
+                  <td colSpan={5} className="px-6 py-10 text-center text-slate-300 italic text-sm">Nenhuma venda registrada.</td>
                 </tr>
               )}
             </tbody>

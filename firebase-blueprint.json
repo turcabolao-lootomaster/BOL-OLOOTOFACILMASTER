@@ -51,6 +51,18 @@
             }
           }
         },
+        "prizes": {
+          "type": "object",
+          "properties": {
+            "draw1": { "type": "string" },
+            "draw2": { "type": "string" },
+            "draw3": { "type": "string" },
+            "rapidinha1": { "type": "string" },
+            "rapidinha2": { "type": "string" },
+            "rankeada": { "type": "string" }
+          }
+        },
+        "publicLink": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["number", "status", "draws"]
@@ -89,6 +101,20 @@
         "whatsappNumber": { "type": "string" },
         "updatedAt": { "type": "string", "format": "date-time" }
       }
+    },
+    "Ranking": {
+      "title": "Ranking",
+      "description": "Global ranking for a participant (betName + sellerCode)",
+      "type": "object",
+      "properties": {
+        "betName": { "type": "string" },
+        "sellerCode": { "type": "string" },
+        "ownerId": { "type": "string", "description": "UID of the user who owns this name" },
+        "totalPoints": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["betName", "totalPoints"]
     }
   },
   "firestore": {
@@ -115,6 +141,10 @@
     "/settings/{settingId}": {
       "schema": "Settings",
       "description": "Global settings"
+    },
+    "/rankings/{rankingId}": {
+      "schema": "Ranking",
+      "description": "Global ranking records"
     }
   }
 }

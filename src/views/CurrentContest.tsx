@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { firebaseService } from '../services/firebaseService';
-import { Trophy, Calendar, CheckCircle2, Clock, AlertCircle, Eye, X, Search } from 'lucide-react';
+import { Trophy, Calendar, CheckCircle2, Clock, AlertCircle, Eye, X, Search, ExternalLink, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../utils';
 import { Contest, Bet } from '../types';
@@ -21,15 +21,13 @@ const CurrentContest: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (!user) return;
-
-    const fetchContest = async () => {
-      const active = await firebaseService.getActiveContest();
+    const unsubscribe = firebaseService.subscribeToActiveContest((active) => {
       setContest(active);
       setLoading(false);
-    };
-    fetchContest();
-  }, [user]);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleViewBets = async (drawNumber: number, results: number[]) => {
     if (!contest) return;
@@ -55,125 +53,146 @@ const CurrentContest: React.FC = () => {
     return hitsB - hitsA;
   });
 
+  const handleShare = () => {
+    const url = `${window.location.origin}/?view=current-contest`;
+    navigator.clipboard.writeText(url);
+    alert('Link público copiado para a área de transferência!');
+  };
+
   if (loading) {
     return (
-      <div className="p-10 text-center text-white/40">Carregando concurso...</div>
+      <div className="p-10 text-center text-slate-300">Carregando concurso...</div>
     );
   }
 
   if (!contest) {
     return (
-      <div className="p-10 text-center text-white/40">Nenhum concurso ativo no momento.</div>
+      <div className="p-10 text-center text-slate-300">Nenhum concurso ativo no momento.</div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-10 space-y-6 sm:space-y-10">
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 sm:gap-6">
+    <div className="mobile-p lg:p-10 space-y-4 sm:space-y-10">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-4xl font-display tracking-widest text-white uppercase">SORTEIOS DO <span className="text-neon-green">CONCURSO #{contest.number}</span></h1>
-          <p className="text-xs sm:text-sm text-white/50 mt-1 sm:mt-2">Acompanhe os resultados oficiais dos 3 sorteios deste concurso.</p>
+          <h1 className="text-xl sm:text-4xl font-display tracking-widest text-slate-900 uppercase">SORTEIOS DO <span className="text-lotofacil-purple">CONCURSO #{contest.number}</span></h1>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1">
+            <p className="text-[10px] sm:text-sm text-slate-400">Acompanhe os resultados oficiais dos 3 sorteios deste concurso.</p>
+            {contest.publicLink && (
+              <a 
+                href={contest.publicLink} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-[9px] sm:text-xs font-bold text-blue-600 hover:text-blue-700 transition-all uppercase tracking-widest bg-blue-50 px-2 py-1 rounded-lg border border-blue-100"
+              >
+                <ExternalLink size={12} />
+                Link do Sorteio
+              </a>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleShare}
+            className="p-2 bg-white hover:bg-slate-50 rounded-xl text-lotofacil-purple transition-all border border-slate-200 shadow-sm"
+            title="Copiar Link Público"
+          >
+            <Share2 size={16} />
+          </button>
           {contest.status === 'encerrado' && (
-            <div className="glass-card px-4 sm:px-6 py-2 sm:py-3 flex items-center gap-3 border-accent-red/20 bg-accent-red/10">
-              <AlertCircle className="text-accent-red" size={18} />
-              <span className="text-[10px] sm:text-sm font-bold text-accent-red uppercase tracking-widest animate-pulse">
-                CONCURSO ENCERRADO
+            <div className="bg-white border border-red-200 rounded-xl px-3 py-1.5 flex items-center gap-2 bg-red-50 shadow-sm">
+              <AlertCircle className="text-red-600" size={14} />
+              <span className="text-[9px] sm:text-xs font-bold text-red-600 uppercase tracking-widest animate-pulse">
+                ENCERRADO
               </span>
             </div>
           )}
-          <div className="glass-card px-4 sm:px-6 py-2 sm:py-3 flex items-center gap-3 border-neon-green/20">
-            <Calendar className="text-neon-green" size={18} />
-            <span className="text-[10px] sm:text-sm font-bold text-white uppercase tracking-widest">
-              Ativo desde {new Date(contest.createdAt as any).toLocaleDateString()}
+          <div className="bg-white border border-lotofacil-purple/20 rounded-xl px-3 py-1.5 flex items-center gap-2 bg-lotofacil-purple/5 shadow-sm">
+            <Calendar className="text-lotofacil-purple" size={14} />
+            <span className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">
+              {new Date(contest.createdAt as any).toLocaleDateString()}
             </span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:gap-8">
+      <div className="grid grid-cols-1 gap-4 sm:gap-8">
         {contest.draws.map((draw, idx) => (
           <motion.div 
             key={draw.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
-            className="glass-card p-5 sm:p-8 space-y-6 sm:space-y-8 relative overflow-hidden"
+            className="bg-white border border-slate-200 p-4 sm:p-8 rounded-2xl sm:rounded-[2rem] space-y-4 sm:space-y-8 relative overflow-hidden shadow-sm"
           >
             {/* Background Number */}
-            <div className="absolute -top-4 -right-4 text-[80px] sm:text-[120px] font-display text-white/5 pointer-events-none">
+            <div className="absolute -top-2 -right-2 text-[60px] sm:text-[120px] font-display text-slate-900/[0.03] pointer-events-none">
               {draw.number}
             </div>
 
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 relative z-10">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
               <div className="flex items-center gap-3 sm:gap-4">
                 <div className={cn(
-                  "w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0",
-                  draw.status === 'concluido' ? "bg-neon-green/10 text-neon-green" : "bg-accent-orange/10 text-accent-orange"
+                  "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0",
+                  draw.status === 'concluido' ? "bg-lotofacil-yellow/10 text-lotofacil-yellow" : "bg-orange-100 text-orange-600"
                 )}>
                   <Trophy size={20} />
                 </div>
                 <div>
                     <div className="flex items-center gap-3">
-                      <h2 className="text-lg sm:text-2xl font-display tracking-widest text-white uppercase">SORTEIO #{draw.number}</h2>
+                      <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">SORTEIO #{draw.number}</h2>
                       {draw.status === 'concluido' && (
                         <button 
                           onClick={() => handleViewBets(draw.number, draw.results)}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(37,99,235,0.3)]"
+                          className="px-3 py-1.5 bg-lotofacil-purple hover:bg-lotofacil-purple/80 text-white rounded-lg transition-all flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest shadow-[0_4px_10px_rgba(107,33,168,0.3)]"
                         >
-                          <Eye size={14} />
-                          Visualizar Lista
+                          <Eye size={12} />
+                          Ver Lista
                         </button>
                       )}
                     </div>
-                  <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
+                  <div className="flex items-center gap-2 mt-0.5">
                     {draw.status === 'concluido' ? (
-                      <CheckCircle2 className="text-neon-green" size={12} />
+                      <CheckCircle2 className="text-lotofacil-yellow" size={12} />
                     ) : (
-                      <Clock className="text-accent-orange" size={12} />
+                      <Clock className="text-orange-600" size={12} />
                     )}
                     <span className={cn(
-                      "text-[8px] sm:text-[10px] font-bold uppercase tracking-widest",
-                      draw.status === 'concluido' ? "text-neon-green" : "text-accent-orange"
+                      "text-[9px] sm:text-[10px] font-bold uppercase tracking-widest",
+                      draw.status === 'concluido' ? "text-lotofacil-yellow" : "text-orange-600"
                     )}>
                       {draw.status === 'concluido' ? `Realizado` : `Aguardando sorteio`}
                     </span>
                   </div>
-                  {draw.status === 'concluido' && (
-                    <p className="text-[8px] sm:text-[10px] text-accent-blue font-bold uppercase tracking-widest mt-1">
-                      Prêmio 10 Pontos: R$ 500,00
-                    </p>
-                  )}
                 </div>
               </div>
 
               {draw.status === 'concluido' && (
-                <div className="flex items-center gap-2 bg-white/5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border border-white/10 w-fit">
-                  <AlertCircle className="text-white/40" size={14} />
-                  <span className="text-[10px] sm:text-xs text-white/60">15 números sorteados</span>
+                <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 w-fit">
+                  <AlertCircle className="text-slate-300" size={12} />
+                  <span className="text-[9px] sm:text-xs text-slate-400">15 números sorteados</span>
                 </div>
               )}
             </div>
 
             {draw.status === 'concluido' ? (
-              <div className="flex flex-wrap gap-2 sm:gap-3 relative z-10">
+              <div className="flex flex-wrap gap-1.5 sm:gap-3 relative z-10">
                 {draw.results.sort((a, b) => a - b).map(num => (
                   <motion.div
                     key={num}
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="w-8 h-8 sm:w-10 sm:h-10 bg-neon-green rounded-full flex items-center justify-center text-black font-bold text-xs sm:text-sm shadow-[0_0_15px_rgba(0,255,0,0.3)]"
+                    className="w-7 h-7 sm:w-10 sm:h-10 bg-lotofacil-yellow rounded-full flex items-center justify-center text-black font-bold text-[10px] sm:text-sm shadow-[0_0_10px_rgba(255,215,0,0.3)]"
                   >
                     {num.toString().padStart(2, '0')}
                   </motion.div>
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-8 sm:py-12 bg-white/2 rounded-xl sm:rounded-2xl border border-dashed border-white/10 relative z-10">
-                <Clock className="text-white/10 mb-3 sm:mb-4" size={32} />
-                <p className="text-white/40 font-display tracking-widest text-lg sm:text-xl uppercase text-center">Aguardando Sorteio Oficial</p>
-                <p className="text-white/20 text-[8px] sm:text-[10px] mt-1 sm:mt-2 uppercase tracking-widest text-center">O resultado será inserido após a realização do sorteio</p>
+              <div className="flex flex-col items-center justify-center py-6 sm:py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200 relative z-10">
+                <Clock className="text-slate-200 mb-2 sm:mb-4" size={24} />
+                <p className="text-slate-300 font-display tracking-widest text-sm sm:text-xl uppercase text-center">Aguardando Sorteio</p>
+                <p className="text-slate-200 text-[8px] sm:text-[10px] mt-1 uppercase tracking-widest text-center">O resultado será inserido em breve</p>
               </div>
             )}
           </motion.div>
@@ -187,19 +206,19 @@ const CurrentContest: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md"
           >
             <motion.div 
-              initial={{ scale: 0.9, y: 20 }}
+              initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              className="bg-zinc-900 border border-white/10 rounded-[2rem] w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+              className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
             >
-              <div className="p-6 sm:p-8 border-b border-white/5 flex items-center justify-between">
+              <div className="p-5 sm:p-8 border-b border-slate-100 flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl sm:text-2xl font-display tracking-widest text-white uppercase">APOSTAS <span className="text-neon-green">SORTEIO #{selectedDrawForBets.number}</span></h3>
-                  <div className="flex flex-wrap gap-2 mt-4">
+                  <h3 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">APOSTAS <span className="text-lotofacil-purple">SORTEIO #{selectedDrawForBets.number}</span></h3>
+                  <div className="flex flex-wrap gap-1.5 mt-4">
                     {selectedDrawForBets.results.map(num => (
-                      <span key={num} className="w-8 h-8 rounded-full bg-neon-green text-black flex items-center justify-center text-xs font-bold">
+                      <span key={num} className="w-7 h-7 rounded-full bg-lotofacil-yellow text-black flex items-center justify-center text-[10px] font-bold">
                         {num.toString().padStart(2, '0')}
                       </span>
                     ))}
@@ -210,53 +229,53 @@ const CurrentContest: React.FC = () => {
                     setSelectedDrawForBets(null);
                     setSearchTerm('');
                   }}
-                  className="w-10 h-10 rounded-full bg-white/5 text-white/40 hover:text-white flex items-center justify-center transition-all"
+                  className="w-10 h-10 rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-all"
                 >
                   <X size={20} />
                 </button>
               </div>
 
-              <div className="px-6 sm:px-8 py-4 border-b border-white/5">
+              <div className="px-5 sm:px-8 py-4 border-b border-slate-100">
                 <div className="relative w-full">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
                   <input 
                     type="text" 
                     placeholder="Buscar participante..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-neon-green/50 transition-all text-sm w-full"
+                    className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs w-full text-slate-900"
                   />
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-4 no-scrollbar">
+              <div className="flex-1 overflow-y-auto p-5 sm:p-8 space-y-3 no-scrollbar">
                 {loadingBets ? (
-                  <p className="text-white/40 text-center py-10">Carregando apostas...</p>
+                  <p className="text-slate-300 text-center py-10 text-xs uppercase tracking-widest font-bold">Carregando...</p>
                 ) : filteredBets.length === 0 ? (
-                  <p className="text-white/40 text-center py-10">Nenhuma aposta encontrada.</p>
+                  <p className="text-slate-300 text-center py-10 text-xs uppercase tracking-widest font-bold">Nenhuma aposta encontrada.</p>
                 ) : (
-                  <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-1 gap-3">
                     {filteredBets.map((bet) => {
                       const hitsCount = bet.numbers.filter(n => selectedDrawForBets.results.includes(n)).length;
                       return (
-                        <div key={bet.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div>
-                            <p className="text-sm font-bold text-white">
+                        <div key={bet.id} className="bg-white border border-slate-100 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-slate-900 truncate">
                               {bet.betName || bet.userName}
                             </p>
-                            <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">ID: {bet.userId.slice(-6).toUpperCase()}</p>
+                            <p className="text-[9px] text-slate-400 uppercase tracking-widest mt-0.5 font-medium">ID: {bet.userId.slice(-6).toUpperCase()}</p>
                           </div>
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="flex flex-wrap gap-1">
                             {bet.numbers.map(num => {
                               const isHit = selectedDrawForBets.results.includes(num);
                               return (
                                 <span 
                                   key={num} 
                                   className={cn(
-                                    "w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold border transition-all",
+                                    "w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-bold border transition-all",
                                     isHit 
-                                      ? "bg-neon-green border-neon-green text-black shadow-[0_0_10px_rgba(0,255,0,0.3)]" 
-                                      : "bg-white/5 border-white/10 text-white/40"
+                                      ? "bg-lotofacil-yellow border-lotofacil-yellow text-black shadow-[0_0_10px_rgba(255,215,0,0.3)]" 
+                                      : "bg-slate-50 border-slate-200 text-slate-300"
                                   )}
                                 >
                                   {num.toString().padStart(2, '0')}
@@ -264,9 +283,9 @@ const CurrentContest: React.FC = () => {
                               );
                             })}
                           </div>
-                          <div className="text-right">
-                            <p className="text-neon-green font-bold text-lg">
-                              {hitsCount} <span className="text-[10px] uppercase font-normal">Acertos</span>
+                          <div className="text-right shrink-0">
+                            <p className="text-lotofacil-yellow font-bold text-lg leading-none">
+                              {hitsCount} <span className="text-[9px] uppercase font-normal text-slate-400">Acertos</span>
                             </p>
                           </div>
                         </div>

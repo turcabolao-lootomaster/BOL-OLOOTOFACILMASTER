@@ -35,54 +35,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let unsubscribeUser: (() => void) | undefined;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'No user');
       if (firebaseUser) {
-        // First, check if there's a user document with this UID directly
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
+        try {
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          console.log('User doc exists:', userDoc.exists());
 
-        if (userDoc.exists()) {
-          // Direct match found
-          unsubscribeUser = onSnapshot(userDocRef, (doc) => {
-            if (doc.exists()) {
-              const data = doc.data() as User;
-              setUser({ id: doc.id, ...data });
-            }
-            setLoading(false);
-          });
-        } else {
-          // No direct match, search by UID field (for WhatsApp/Code users who migrated)
-          const q = query(collection(db, 'users'), where('uid', '==', firebaseUser.uid));
-          const snapshot = await getDocs(q);
-
-          if (!snapshot.empty) {
-            const docId = snapshot.docs[0].id;
-            unsubscribeUser = onSnapshot(doc(db, 'users', docId), (doc) => {
+          if (userDoc.exists()) {
+            unsubscribeUser = onSnapshot(userDocRef, (doc) => {
               if (doc.exists()) {
                 const data = doc.data() as User;
                 setUser({ id: doc.id, ...data });
               }
               setLoading(false);
             });
-          } else if (firebaseUser.providerData.length > 0) {
-            // It's a Google user and no doc exists, create it
-            const isMaster = firebaseUser.email === 'turcabolao@gmail.com';
-            const newUser: User = {
-              id: firebaseUser.uid,
-              uid: firebaseUser.uid,
-              name: firebaseUser.displayName || 'Usuário',
-              email: firebaseUser.email || '',
-              role: isMaster ? 'master' : 'cliente',
-              totalPoints: 0,
-              createdAt: Timestamp.now()
-            };
-            await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
-            setUser(newUser);
-            setLoading(false);
           } else {
-            // Anonymous user but no data linked yet
-            setUser(null);
-            setLoading(false);
+            const q = query(collection(db, 'users'), where('uid', '==', firebaseUser.uid));
+            const snapshot = await getDocs(q);
+
+            if (!snapshot.empty) {
+              const docId = snapshot.docs[0].id;
+              unsubscribeUser = onSnapshot(doc(db, 'users', docId), (doc) => {
+                if (doc.exists()) {
+                  const data = doc.data() as User;
+                  setUser({ id: doc.id, ...data });
+                }
+                setLoading(false);
+              });
+            } else if (firebaseUser.providerData.length > 0) {
+              const isMaster = firebaseUser.email === 'turcabolao@gmail.com';
+              const newUser: User = {
+                id: firebaseUser.uid,
+                uid: firebaseUser.uid,
+                name: firebaseUser.displayName || 'Usuário',
+                email: firebaseUser.email || '',
+                role: isMaster ? 'master' : 'cliente',
+                totalPoints: 0,
+                createdAt: Timestamp.now()
+              };
+              await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
+              setUser(newUser);
+              setLoading(false);
+            } else {
+              setUser(null);
+              setLoading(false);
+            }
           }
+        } catch (error) {
+          console.error('Error in AuthProvider:', error);
+          setLoading(false);
         }
       } else {
         setUser(null);

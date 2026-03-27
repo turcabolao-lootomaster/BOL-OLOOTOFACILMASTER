@@ -20,6 +20,7 @@ service cloud.firestore {
     //   - number: number (required)
     //   - status: string (required, enum: aberto, encerrado)
     //   - draws: list of objects (required)
+    //   - prizes: map (optional)
     //   - createdAt: timestamp (required)
     //
     // Collection: bets
@@ -66,7 +67,7 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && (
-        request.auth.token.email == 'turcabolao@gmail.com' ||
+        (request.auth.token.email == 'turcabolao@gmail.com' && request.auth.token.email_verified == true) ||
         hasRole('admin') || 
         hasRole('master')
       );
@@ -74,7 +75,7 @@ service cloud.firestore {
     
     function isMaster() {
       return isAuthenticated() && (
-        request.auth.token.email == 'turcabolao@gmail.com' ||
+        (request.auth.token.email == 'turcabolao@gmail.com' && request.auth.token.email_verified == true) ||
         hasRole('master')
       );
     }
@@ -102,9 +103,10 @@ service cloud.firestore {
 
     function isValidContest(data) {
       return data.keys().hasAll(['number', 'status', 'draws']) &&
-             data.number is int &&
-             data.status in ['aberto', 'encerrado'] &&
-             data.draws is list;
+             data.number is number &&
+             data.status in ['aberto', 'em_andamento', 'encerrado'] &&
+             data.draws is list &&
+             (!('prizes' in data) || data.prizes is map);
     }
 
     // ===============================================================
@@ -137,7 +139,7 @@ service cloud.firestore {
     }
 
     match /contests/{contestId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create: if isAdmin() && isValidContest(request.resource.data);
       allow update: if isAdmin() && isValidContest(request.resource.data);
       allow delete: if isMaster();
@@ -145,7 +147,7 @@ service cloud.firestore {
 
     match /bets/{betId} {
       // Allow reading for participants view, but only for validated bets or own bets.
-      allow read: if isAuthenticated() && (resource.data.status == 'validado' || isOwner(resource.data.userId) || isAdmin());
+      allow read: if true;
       
       allow create: if isAuthenticated() && 
                       request.resource.data.userId == request.auth.uid && 
@@ -172,6 +174,11 @@ service cloud.firestore {
     }
 
     match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /rankings/{rankingId} {
       allow read: if true;
       allow write: if isAdmin();
     }

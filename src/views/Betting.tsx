@@ -17,6 +17,10 @@ const Betting: React.FC = () => {
   const [pendingBets, setPendingBets] = useState<number[][]>([]);
   const [sellerCode, setSellerCode] = useState('');
   const [betName, setBetName] = useState('');
+
+  const handleBetNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBetName(e.target.value.toUpperCase());
+  };
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [lastBetIds, setLastBetIds] = useState<string[]>([]);
@@ -93,10 +97,22 @@ const Betting: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pendingBets.length === 0) return;
+    if (!betName.trim()) {
+      alert('Por favor, preencha o Nome na Aposta.');
+      return;
+    }
     
     setIsSubmitting(true);
     const ids: string[] = [];
     try {
+      // 1. Check name availability
+      if (sellerCode) {
+        const availability = await firebaseService.checkBetNameAvailability(betName, sellerCode, user?.uid || '');
+        if (!availability.available) {
+          throw new Error(availability.message);
+        }
+      }
+
       const activeContest = await firebaseService.getActiveContest();
       if (!activeContest) {
         throw new Error('Nenhum concurso aberto no momento.');
@@ -149,49 +165,79 @@ const Betting: React.FC = () => {
   };
 
   const handleWhatsAppValidation = () => {
-    const message = encodeURIComponent(`Olá! Gostaria de validar minhas apostas.\nIDs: ${lastBetIds.join(', ')}\nNome: ${lastBetName || user?.name}`);
+    const truncatedIds = lastBetIds.map(id => id.substring(0, 4).toUpperCase());
+    const count = truncatedIds.length;
+    const totalValue = count * 10;
+    const sellerText = sellerCode ? ' pelo seu link de vendedor' : '';
+    
+    const message = encodeURIComponent(
+      `Olá! Fiz ${count} ${count === 1 ? 'aposta' : 'apostas'}${sellerText} e gostaria de solicitar a validação ${count === 1 ? 'dela' : 'delas'}. 🎯\n` +
+      truncatedIds.join('\n') +
+      `\n\nTotal de apostas: ${count}` +
+      `\nValor total: R$ ${totalValue.toFixed(2).replace('.', ',')}` +
+      `\n\nPoderia, por favor, confirmar o recebimento e a validação? Obrigado!`
+    );
+    
     const targetNumber = sellerWhatsApp || whatsappNumber;
     window.open(`https://wa.me/${targetNumber}?text=${message}`, '_blank');
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-10 max-w-6xl mx-auto space-y-6 sm:space-y-10">
+    <div className="mobile-p lg:p-10 max-w-6xl mx-auto space-y-4 sm:space-y-10">
       {activeContest && activeContest.status !== 'aberto' && (
-        <div className="bg-accent-orange/20 border border-accent-orange/30 p-4 rounded-2xl flex items-center gap-3">
-          <AlertCircle className="text-accent-orange" size={20} />
-          <p className="text-sm text-accent-orange font-medium">
+        <div className="bg-lotofacil-yellow/10 border border-lotofacil-yellow/20 p-3 rounded-xl flex items-center gap-3">
+          <AlertCircle className="text-lotofacil-yellow shrink-0" size={18} />
+          <p className="text-[10px] sm:text-sm text-lotofacil-yellow font-medium">
             As apostas para o concurso #{activeContest.number} estão bloqueadas ou o concurso já foi finalizado.
           </p>
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 sm:gap-6" style={{ width: '700px' }}>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-4xl font-display tracking-widest text-white">FAZER <span className="text-neon-green uppercase">APOSTA</span></h1>
-          <p className="text-xs sm:text-sm text-white/50 mt-1 sm:mt-2">Selecione exatamente 10 números entre 01 e 25.</p>
+          <h1 className="text-xl sm:text-4xl font-display tracking-widest text-slate-900">FAZER <span className="text-lotofacil-purple uppercase">APOSTA</span></h1>
+          <p className="text-[10px] sm:text-sm text-slate-600 mt-1">Selecione exatamente 10 números entre 01 e 25.</p>
         </div>
-        <div className="glass-card px-4 sm:px-6 py-2 sm:py-3 flex items-center gap-3 bg-neon-green/5 border-neon-green/20" style={{ width: '236.422px', height: '46px' }}>
-          <Ticket style={{ color: '#11e706' }} size={16} className="sm:w-5 sm:h-5" />
-          <span className="text-[10px] sm:text-sm font-bold uppercase tracking-widest text-white">Valor: R$ 10,00</span>
+        <div className="glass-card px-4 py-2 flex items-center gap-3 bg-lotofacil-purple/5 border-lotofacil-purple/20 self-start sm:self-auto">
+          <Ticket className="text-lotofacil-purple" size={16} />
+          <span className="text-[10px] sm:text-sm font-bold uppercase tracking-widest text-slate-900">Valor: R$ 10,00</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10" style={{ width: '500px' }}>
+      {/* Bet Name Input - Moved here for prominence */}
+      <div className="max-w-[500px] mx-auto lg:mx-0 space-y-2">
+        <label className="block text-[10px] sm:text-xs uppercase tracking-widest text-lotofacil-purple font-black ml-1">
+          NOME NA APOSTA (NICK)
+        </label>
+        <div className="relative">
+          <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-lotofacil-purple/40" size={18} />
+          <input 
+            type="text" 
+            value={betName}
+            onChange={handleBetNameChange}
+            placeholder="EX: JOÃO SILVA (AMIGO 1)"
+            required
+            className="w-full bg-white border-2 border-lotofacil-purple/20 rounded-2xl py-3 sm:py-4 pl-12 pr-4 focus:outline-none focus:border-lotofacil-purple focus:ring-4 focus:ring-lotofacil-purple/10 transition-all text-sm sm:text-base font-bold text-slate-900 placeholder:text-slate-300 uppercase shadow-sm"
+          />
+        </div>
+        <p className="text-[9px] text-slate-500 ml-1 italic">* Use nomes diferentes para amigos aparecerem separadamente no ranking.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
         {/* Number Grid */}
-        <div className="lg:col-span-2 space-y-6 sm:space-y-8" style={{ height: '600px', width: '400px' }}>
-          <div className="grid grid-cols-5 gap-2 sm:gap-4 w-full max-w-[538px] mx-auto lg:mx-0" style={{ width: '300px', height: '280px' }}>
+        <div className="lg:col-span-2 space-y-4 sm:space-y-8">
+          <div className="grid grid-cols-5 gap-1.5 sm:gap-4 w-full max-w-[500px] mx-auto lg:mx-0">
             {Array.from({ length: 25 }, (_, i) => i + 1).map(num => (
               <motion.button
                 key={num}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => toggleNumber(num)}
-                style={{ width: '55px', height: '45px', fontWeight: 'bold', fontSize: '24px', lineHeight: '34px' }}
                 className={cn(
-                  "aspect-square rounded-xl sm:rounded-2xl transition-all flex items-center justify-center border-2",
+                  "aspect-square rounded-lg sm:rounded-2xl transition-all flex items-center justify-center border-2 text-base sm:text-2xl font-bold",
                   selectedNumbers.includes(num)
-                    ? "bg-neon-green border-neon-green text-black shadow-[0_0_15px_rgba(0,255,0,0.4)]"
-                    : "bg-white border-white/10 text-black hover:border-white/30"
+                    ? "bg-lotofacil-purple border-lotofacil-purple text-white shadow-md"
+                    : "bg-slate-50 border-slate-200 text-blue-600 hover:border-blue-300"
                 )}
               >
                 {num.toString().padStart(2, '0')}
@@ -200,31 +246,30 @@ const Betting: React.FC = () => {
           </div>
 
           {/* Action Buttons below grid */}
-          <div className="flex items-center gap-2" style={{ width: '300px' }}>
+          <div className="flex items-center gap-2 max-w-[500px] mx-auto lg:mx-0">
             <button 
               onClick={registerBet}
               disabled={selectedNumbers.length !== 10}
-              style={{ height: '40px', borderColor: '#14b6ff', color: '#000000', fontStyle: 'normal', borderRadius: '160px' }}
-              className="flex-[1.2] btn-primary flex items-center justify-center gap-1 text-[9px] font-bold uppercase tracking-tighter disabled:opacity-30"
+              className="flex-[1.2] bg-emerald-600 text-white h-10 sm:h-12 flex items-center justify-center gap-1 text-[9px] sm:text-xs font-bold uppercase tracking-widest disabled:opacity-30 rounded-xl shadow-md hover:bg-emerald-700 transition-all"
             >
               <Plus size={14} />
               REGISTRAR APOSTA
             </button>
             
-            <div className="flex-[1.8] flex gap-1 items-center" style={{ height: '40px' }}>
-              <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl px-1.5 h-full" style={{ width: '55px' }}>
+            <div className="flex-[1.8] flex gap-1 items-center h-10 sm:h-12">
+              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-1.5 h-full">
                 <button 
                   onClick={() => setSurpresinhaCount(Math.max(1, surpresinhaCount - 1))} 
-                  className="text-white/40 hover:text-white"
+                  className="text-slate-400 hover:text-slate-900 p-1"
                 >
                   <Minus size={12} />
                 </button>
-                <span className="text-[10px] font-bold text-white w-3 text-center">{surpresinhaCount}</span>
-                <button onClick={() => setSurpresinhaCount(Math.min(10, surpresinhaCount + 1))} className="text-white/40 hover:text-white"><Plus size={12} /></button>
+                <span className="text-[10px] sm:text-xs font-bold text-slate-900 w-4 text-center">{surpresinhaCount}</span>
+                <button onClick={() => setSurpresinhaCount(Math.min(10, surpresinhaCount + 1))} className="text-slate-400 hover:text-slate-900 p-1"><Plus size={12} /></button>
               </div>
               <button 
                 onClick={handleAddSurpresinha}
-                className="flex-1 h-full bg-accent-purple/20 border border-accent-purple/30 rounded-xl text-accent-purple text-[9px] font-bold uppercase tracking-tighter hover:bg-accent-purple/30 transition-all flex items-center justify-center gap-1"
+                className="flex-1 h-full bg-orange-500 border border-orange-600 rounded-xl text-white text-[9px] sm:text-xs font-bold uppercase tracking-widest hover:bg-orange-600 transition-all flex items-center justify-center gap-1 shadow-md"
               >
                 <Sparkles size={12} />
                 SURPRESINHA
@@ -232,28 +277,28 @@ const Betting: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white/5 p-3 rounded-2xl border border-white/10 flex flex-col items-center justify-center gap-2 max-w-[538px] mx-auto lg:mx-0" style={{ width: '300px', height: '74px' }}>
-            <p className="text-[11px] text-white/60 leading-tight text-center px-2">
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col items-center justify-center gap-2 max-w-[500px] mx-auto lg:mx-0">
+            <p className="text-[9px] sm:text-[11px] text-slate-600 leading-tight text-center px-2">
               Cada aposta de 10 números é válida para os 3 sorteios do concurso atual. O valor é fixo por aposta registrada.
             </p>
           </div>
         </div>
 
         {/* Bet Summary Sidebar */}
-        <div className="space-y-6">
-          <div className="glass-card p-5 sm:p-8 space-y-6 lg:space-y-8 lg:sticky lg:top-10 w-full lg:w-[380px]" style={{ width: '456px', height: '700px' }}>
-            <h2 className="text-lg sm:text-2xl font-display tracking-widest text-white uppercase">RESUMO DO <span className="text-accent-purple">BOLÃO</span></h2>
+        <div className="space-y-4">
+          <div className="glass-card p-4 sm:p-8 space-y-4 sm:space-y-8 lg:sticky lg:top-10 w-full">
+            <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">RESUMO DO <span className="text-lotofacil-purple">BOLÃO</span></h2>
             
             {/* List of Registered Bets */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] sm:text-xs uppercase tracking-widest text-white/40">Apostas Registradas ({pendingBets.length})</p>
+                <p className="text-[10px] sm:text-xs uppercase tracking-widest text-slate-600">Apostas Registradas ({pendingBets.length})</p>
                 {pendingBets.length > 0 && (
                   <button onClick={() => setPendingBets([])} className="text-[8px] sm:text-[10px] text-accent-red uppercase tracking-widest hover:underline">Limpar Tudo</button>
                 )}
               </div>
               
-              <div className="space-y-3 max-h-[200px] sm:max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
+              <div className="space-y-2 max-h-[150px] sm:max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
                 <AnimatePresence initial={false}>
                   {pendingBets.map((bet, idx) => (
                     <motion.div
@@ -261,18 +306,18 @@ const Betting: React.FC = () => {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
-                      className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between group"
+                      className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between group"
                     >
                       <div className="flex flex-wrap gap-1">
                         {bet.map(num => (
-                          <span key={num} className="text-[10px] sm:text-xs font-bold text-neon-green">
+                          <span key={num} className="text-[10px] sm:text-xs font-bold text-lotofacil-purple">
                             {num.toString().padStart(2, '0')}
                           </span>
                         ))}
                       </div>
                       <button 
                         onClick={() => removePendingBet(idx)}
-                        className="text-white/20 hover:text-accent-red transition-colors"
+                        className="text-slate-300 hover:text-accent-red transition-colors p-1"
                       >
                         <X size={14} />
                       </button>
@@ -280,49 +325,38 @@ const Betting: React.FC = () => {
                   ))}
                 </AnimatePresence>
                 {pendingBets.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-8 sm:py-10 border border-dashed border-white/10 rounded-2xl">
-                    <AlertCircle className="text-white/10 mb-2" size={24} />
-                    <p className="text-[10px] sm:text-xs text-white/20 italic text-center px-4">Nenhuma aposta registrada ainda. Selecione 10 números ou use a Surpresinha.</p>
+                  <div className="flex flex-col items-center justify-center py-6 sm:py-10 border border-dashed border-slate-200 rounded-2xl">
+                    <AlertCircle className="text-slate-200 mb-2" size={20} />
+                    <p className="text-[9px] sm:text-xs text-slate-500 italic text-center px-4">Nenhuma aposta registrada ainda. Selecione 10 números ou use a Surpresinha.</p>
                   </div>
                 )}
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-[10px] sm:text-xs uppercase tracking-widest text-white/40 mb-2 ml-1">Nome na Aposta (Opcional)</label>
-                  <input 
-                    type="text" 
-                    value={betName}
-                    onChange={(e) => setBetName(e.target.value)}
-                    placeholder="Ex: João Silva"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 sm:py-3 px-4 focus:outline-none focus:border-neon-green/50 transition-all text-xs text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] sm:text-xs uppercase tracking-widest text-white/40 mb-2 ml-1">Código do Vendedor (Opcional)</label>
+                  <label className="block text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-600 mb-1.5 ml-1">Código do Vendedor (Opcional)</label>
                   <input 
                     type="text" 
                     value={sellerCode}
                     onChange={(e) => setSellerCode(e.target.value)}
                     placeholder="Ex: REF123"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 sm:py-3 px-4 focus:outline-none focus:border-neon-green/50 transition-all text-xs text-white"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 sm:py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs text-slate-900"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-white/10">
+              <div className="pt-4 border-t border-slate-200">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-[10px] sm:text-xs uppercase tracking-widest text-white/40">Total a Pagar</span>
-                  <span className="text-lg sm:text-xl font-bold text-neon-green">R$ {(pendingBets.length * 10).toFixed(2)}</span>
+                  <span className="text-[10px] sm:text-xs uppercase tracking-widest text-slate-600">Total a Pagar</span>
+                  <span className="text-lg sm:text-xl font-bold text-lotofacil-purple">R$ {(pendingBets.length * 10).toFixed(2)}</span>
                 </div>
 
                 <button 
                   type="submit"
-                  disabled={pendingBets.length === 0 || isSubmitting || (activeContest?.status !== 'aberto')}
-                  className="w-full btn-primary h-12 flex items-center justify-center shadow-[0_0_20px_rgba(0,255,0,0.2)] disabled:opacity-30 disabled:cursor-not-allowed text-xs sm:text-sm uppercase tracking-widest"
+                  disabled={pendingBets.length === 0 || isSubmitting || (activeContest?.status !== 'aberto') || !betName.trim()}
+                  className="w-full bg-lotofacil-purple text-white h-12 rounded-xl flex items-center justify-center shadow-md disabled:opacity-30 disabled:cursor-not-allowed text-xs sm:text-sm uppercase tracking-widest font-bold"
                 >
                   {isSubmitting ? 'PROCESSANDO...' : (activeContest?.status !== 'aberto' ? 'APOSTAS BLOQUEADAS' : 'FINALIZAR E ENVIAR')}
                 </button>
@@ -335,9 +369,9 @@ const Betting: React.FC = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 className="space-y-4"
               >
-                <div className="bg-neon-green/20 border border-neon-green/30 p-4 rounded-2xl flex items-center gap-3">
-                  <Check className="text-neon-green" size={20} />
-                  <p className="text-sm text-neon-green font-medium">Apostas enviadas com sucesso!</p>
+                <div className="bg-lotofacil-yellow/10 border border-lotofacil-yellow/20 p-4 rounded-2xl flex items-center gap-3">
+                  <Check className="text-lotofacil-yellow" size={20} />
+                  <p className="text-sm text-lotofacil-yellow font-medium">Apostas enviadas com sucesso!</p>
                 </div>
                 
                 <button 

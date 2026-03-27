@@ -14,6 +14,7 @@ import {
   Settings, 
   LogOut,
   Store,
+  BookOpen,
   Menu,
   X
 } from 'lucide-react';
@@ -28,7 +29,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOpen }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, loginWithGoogle } = useAuth();
 
   const menuItems = [
     { id: 'dashboard', label: 'Início', icon: LayoutDashboard, roles: ['master', 'admin', 'vendedor', 'cliente'] },
@@ -37,11 +38,17 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
     { id: 'participants', label: 'Classificação (Ao Vivo)', icon: Users, roles: ['master', 'admin', 'vendedor', 'cliente'] },
     { id: 'current-contest', label: 'Sorteios do Concurso', icon: Trophy, roles: ['master', 'admin', 'vendedor', 'cliente'] },
     { id: 'ranking', label: 'Ranking Geral', icon: BarChart3, roles: ['master', 'admin', 'vendedor', 'cliente'] },
+    { id: 'instructions', label: 'Instruções', icon: BookOpen, roles: ['master', 'admin', 'vendedor', 'cliente'] },
     { id: 'seller', label: 'Vendedor', icon: Store, roles: ['master', 'admin', 'vendedor'] },
     { id: 'admin', label: 'Admin', icon: Settings, roles: ['master', 'admin'] },
   ];
 
-  const filteredMenu = menuItems.filter(item => user && item.roles.includes(user.role));
+  const publicViews = ['participants', 'current-contest', 'ranking'];
+
+  const filteredMenu = menuItems.filter(item => {
+    if (!user) return publicViews.includes(item.id);
+    return item.roles.includes(user.role);
+  });
 
   return (
     <>
@@ -55,22 +62,22 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed top-0 left-0 h-full w-64 bg-card-bg border-r border-white/10 z-50 transition-transform duration-300 lg:translate-x-0",
+        "fixed top-0 left-0 h-full w-64 bg-white border-r border-slate-200 z-50 transition-transform duration-300 lg:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-neon-green rounded flex items-center justify-center">
-              <span className="text-black font-bold text-xl">B</span>
+            <div className="w-8 h-8 bg-lotofacil-purple rounded flex items-center justify-center shadow-md">
+              <span className="text-white font-bold text-xl">L</span>
             </div>
-            <h1 className="text-xl font-display tracking-wider">BOLÃO <span className="text-neon-green">LOTOFÁCIL</span></h1>
+            <h1 className="text-xl font-display tracking-wider text-slate-900">BOLÃO <span className="text-lotofacil-purple">LOTOFÁCIL</span></h1>
           </div>
-          <button className="lg:hidden" onClick={() => setIsOpen(false)}>
-            <X size={24} />
+          <button className="lg:hidden p-1.5 bg-slate-100 rounded-lg text-slate-400" onClick={() => setIsOpen(false)}>
+            <X size={20} />
           </button>
         </div>
 
-        <nav className="mt-6 px-4 space-y-2">
+        <nav className="mt-6 px-4 space-y-1">
           {filteredMenu.map(item => (
             <button
               key={item.id}
@@ -79,26 +86,39 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
                 setIsOpen(false);
               }}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
+                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm uppercase tracking-widest font-medium",
                 currentView === item.id 
-                  ? "bg-neon-green text-black font-bold" 
-                  : "text-white/60 hover:bg-white/5 hover:text-white"
+                  ? "bg-lotofacil-purple text-white font-bold shadow-md" 
+                  : "text-slate-400 hover:bg-slate-50 hover:text-slate-900"
               )}
             >
-              <item.icon size={20} />
+              <item.icon size={18} />
               <span>{item.label}</span>
             </button>
           ))}
         </nav>
 
         <div className="absolute bottom-8 left-0 w-full px-4">
-          <button 
-            onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-accent-red hover:bg-accent-red/10 transition-all"
-          >
-            <LogOut size={20} />
-            <span>Sair</span>
-          </button>
+          {user ? (
+            <button 
+              onClick={logout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-accent-red hover:bg-accent-red/10 transition-all"
+            >
+              <LogOut size={20} />
+              <span>Sair</span>
+            </button>
+          ) : (
+            <button 
+              onClick={() => {
+                setView('login');
+                setIsOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-lotofacil-purple hover:bg-lotofacil-purple/10 transition-all font-bold uppercase tracking-widest text-xs"
+            >
+              <LogOut size={20} className="rotate-180" />
+              <span>Entrar</span>
+            </button>
+          )}
         </div>
       </aside>
     </>
