@@ -98,7 +98,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
           ))}
         </nav>
 
-        <div className="absolute bottom-8 left-0 w-full px-4">
+        <div className="absolute bottom-8 left-0 w-full px-4 space-y-2">
+          {user && (
+            <div className="px-4 py-1">
+              <p className="text-[10px] text-slate-400 truncate uppercase tracking-widest">{user.email || user.whatsapp || 'Usuário'}</p>
+            </div>
+          )}
           {user ? (
             <button 
               onClick={logout}

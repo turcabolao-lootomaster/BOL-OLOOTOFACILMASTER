@@ -671,6 +671,15 @@ export const firebaseService = {
     }
   },
 
+  async updateUserProfile(userId: string, data: { name?: string, whatsapp?: string }): Promise<void> {
+    const path = `users/${userId}`;
+    try {
+      await updateDoc(doc(db, 'users', userId), data);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
   async updateContestPrizes(contestId: string, prizes: Contest['prizes']): Promise<void> {
     const path = `contests/${contestId}`;
     try {

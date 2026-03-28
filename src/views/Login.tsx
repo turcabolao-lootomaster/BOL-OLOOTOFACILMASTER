@@ -28,7 +28,14 @@ const Login: React.FC = () => {
     try {
       await signInWithGoogle();
     } catch (err: any) {
-      setError(err.message || 'Erro ao fazer login com Google');
+      console.error('Login error:', err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('A janela de login foi fechada antes de completar o acesso. Tente novamente.');
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('O navegador bloqueou a janela de login. Por favor, permita popups para este site.');
+      } else {
+        setError('Erro ao fazer login com Google. Verifique sua conexão ou tente outro método.');
+      }
     } finally {
       setLoading(false);
     }
@@ -158,6 +165,11 @@ const Login: React.FC = () => {
                     </>
                   )}
                 </button>
+                {error && activeTab === 'google' && (
+                  <p className="text-center text-[9px] text-slate-400 uppercase tracking-widest mt-2">
+                    Dica: Se tiver problemas com o Google, tente entrar via <span className="text-lotofacil-purple font-bold cursor-pointer" onClick={() => setActiveTab('whatsapp')}>WhatsApp</span> ou <span className="text-lotofacil-purple font-bold cursor-pointer" onClick={() => setActiveTab('code')}>Código</span>.
+                  </p>
+                )}
               </motion.div>
             )}
 

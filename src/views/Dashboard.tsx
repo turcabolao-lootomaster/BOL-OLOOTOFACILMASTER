@@ -27,6 +27,15 @@ const Dashboard: React.FC = () => {
   const [userBets, setUserBets] = useState<Bet[]>([]);
   const [ranking, setRanking] = useState<UserRanking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileData, setProfileData] = useState({ name: '', whatsapp: '' });
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setProfileData({ name: user.name || '', whatsapp: user.whatsapp || '' });
+    }
+  }, [user]);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -60,6 +69,20 @@ const Dashboard: React.FC = () => {
     };
   }, [user]);
 
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setSavingProfile(true);
+    try {
+      await firebaseService.updateUserProfile(user.uid, profileData);
+      setIsEditingProfile(false);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const userRank = ranking.find(r => r.userId === user?.uid);
   const totalBets = userBets.length;
   const validatedBets = userBets.filter(b => b.status === 'validado').length;
@@ -82,7 +105,9 @@ const Dashboard: React.FC = () => {
       {/* Welcome Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-3xl lg:text-4xl font-display tracking-widest text-slate-900">OLÁ, <span className="text-lotofacil-purple uppercase">{user?.name.split(' ')[0]}</span></h1>
+          <h1 className="text-xl sm:text-3xl lg:text-4xl font-display tracking-widest text-slate-900 uppercase">
+            OLÁ, <span className="text-lotofacil-purple">{user?.name}</span>, <span className="text-slate-500">{user?.whatsapp || user?.email}</span>
+          </h1>
           <p className="text-[10px] sm:text-sm text-slate-500 mt-0.5 sm:mt-2">Bem-vindo ao seu painel de controle do Bolão Lotofácil.</p>
         </div>
         <div className="flex items-center gap-4">
@@ -179,29 +204,87 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Recent Activity */}
-        <div className="glass-card p-4 sm:p-8 space-y-4">
-          <h2 className="text-base sm:text-2xl font-display tracking-widest text-slate-900">ATIVIDADE <span className="text-accent-purple">RECENTE</span></h2>
-          
-          <div className="space-y-3 sm:space-y-6">
-            {userBets.slice(0, 3).map((bet, idx) => (
-              <div key={bet.id} className="flex gap-3 sm:gap-4 items-center">
-                <div className={cn("shrink-0", bet.status === 'validado' ? "text-lotofacil-purple" : bet.status === 'pendente' ? "text-lotofacil-yellow" : "text-accent-red")}>
-                  {bet.status === 'validado' ? <CheckCircle2 size={16} /> : bet.status === 'pendente' ? <Clock size={16} /> : <ArrowUpRight size={16} />}
+        <div className="space-y-4">
+          {/* Profile Card */}
+          <div className="glass-card p-4 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm sm:text-lg font-display tracking-widest text-slate-900 uppercase">MEU <span className="text-lotofacil-purple">PERFIL</span></h2>
+              <button 
+                onClick={() => setIsEditingProfile(!isEditingProfile)}
+                className="text-[10px] uppercase tracking-widest font-bold text-lotofacil-purple hover:underline"
+              >
+                {isEditingProfile ? 'Cancelar' : 'Editar'}
+              </button>
+            </div>
+            
+            {isEditingProfile ? (
+              <form onSubmit={handleUpdateProfile} className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-[9px] uppercase tracking-widest text-slate-500 ml-1">Nome Completo</label>
+                  <input 
+                    type="text"
+                    value={profileData.name}
+                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-lotofacil-purple/50"
+                    required
+                  />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                    {bet.betName || `Aposta ${bet.status.charAt(0).toUpperCase() + bet.status.slice(1)}`}
-                  </p>
-                  <p className="text-[9px] sm:text-xs text-slate-600">Concurso #{bet.contestNumber || '...'}</p>
+                <div className="space-y-1">
+                  <label className="text-[9px] uppercase tracking-widest text-slate-500 ml-1">WhatsApp</label>
+                  <input 
+                    type="text"
+                    value={profileData.whatsapp}
+                    onChange={(e) => setProfileData({ ...profileData, whatsapp: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-lotofacil-purple/50"
+                    placeholder="Ex: 5511999999999"
+                  />
                 </div>
-                <p className="text-[8px] sm:text-[10px] text-slate-500 uppercase tracking-tighter whitespace-nowrap">
-                  {new Date(bet.createdAt as any).toLocaleDateString()}
-                </p>
+                <button 
+                  type="submit"
+                  disabled={savingProfile}
+                  className="w-full bg-lotofacil-purple text-white py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg disabled:opacity-50"
+                >
+                  {savingProfile ? 'Salvando...' : 'Salvar Perfil'}
+                </button>
+              </form>
+            ) : (
+              <div className="space-y-2">
+                <div>
+                  <p className="text-[8px] uppercase tracking-widest text-slate-400">Nome</p>
+                  <p className="text-xs font-bold text-slate-800">{user?.name}</p>
+                </div>
+                <div>
+                  <p className="text-[8px] uppercase tracking-widest text-slate-400">Contato</p>
+                  <p className="text-xs font-bold text-slate-800">{user?.whatsapp || user?.email || 'Não informado'}</p>
+                </div>
               </div>
-            ))}
-            {userBets.length === 0 && (
-              <p className="text-center text-slate-500 py-4 sm:py-10 text-[10px]">Nenhuma atividade recente.</p>
             )}
+          </div>
+
+          <div className="glass-card p-4 sm:p-8 space-y-4">
+            <h2 className="text-base sm:text-2xl font-display tracking-widest text-slate-900">ATIVIDADE <span className="text-accent-purple">RECENTE</span></h2>
+            
+            <div className="space-y-3 sm:space-y-6">
+              {userBets.slice(0, 3).map((bet, idx) => (
+                <div key={bet.id} className="flex gap-3 sm:gap-4 items-center">
+                  <div className={cn("shrink-0", bet.status === 'validado' ? "text-lotofacil-purple" : bet.status === 'pendente' ? "text-lotofacil-yellow" : "text-accent-red")}>
+                    {bet.status === 'validado' ? <CheckCircle2 size={16} /> : bet.status === 'pendente' ? <Clock size={16} /> : <ArrowUpRight size={16} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                      {bet.betName || `Aposta ${bet.status.charAt(0).toUpperCase() + bet.status.slice(1)}`}
+                    </p>
+                    <p className="text-[9px] sm:text-xs text-slate-600">Concurso #{bet.contestNumber || '...'}</p>
+                  </div>
+                  <p className="text-[8px] sm:text-[10px] text-slate-500 uppercase tracking-tighter whitespace-nowrap">
+                    {new Date(bet.createdAt as any).toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
+              {userBets.length === 0 && (
+                <p className="text-center text-slate-500 py-4 sm:py-10 text-[10px]">Nenhuma atividade recente.</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
