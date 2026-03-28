@@ -28,9 +28,11 @@ import {
   ArrowLeft,
   Play,
   Lock,
-  Unlock
+  Unlock,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import * as XLSX from 'xlsx';
 import { cn } from '../utils';
 import { Bet, Contest, ContestStatus, Seller, User as AppUser } from '../types';
 
@@ -207,6 +209,38 @@ const BetsTab = () => {
     );
   };
 
+  const handleDownloadExcel = () => {
+    if (filteredBets.length === 0) return;
+
+    // Prepare data for Excel
+    const excelData = filteredBets.map(bet => {
+      const row: any = {
+        'Nome': (bet.betName || bet.userName).toUpperCase(),
+      };
+      
+      // Add each number in its own column
+      bet.numbers.sort((a, b) => a - b).forEach((num, index) => {
+        row[`N${index + 1}`] = num;
+      });
+      
+      return row;
+    });
+
+    // Create worksheet
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    
+    // Create workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Apostas");
+    
+    // Generate filename with current date/status
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `apostas_${statusFilter}_${date}.xlsx`;
+    
+    // Download file
+    XLSX.writeFile(workbook, filename);
+  };
+
   const filteredBets = bets.filter(b => 
     b.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (b.betName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -244,6 +278,14 @@ const BetsTab = () => {
               className="bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-[10px] sm:text-xs w-full placeholder:text-slate-500"
             />
           </div>
+          <button 
+            onClick={handleDownloadExcel}
+            className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all shadow-md"
+            title="Baixar Excel"
+          >
+            <Download size={14} />
+            <span className="hidden sm:inline">Excel</span>
+          </button>
         </div>
       </div>
 
@@ -462,7 +504,9 @@ const DrawsTab = () => {
   const [contestBets, setContestBets] = useState<Bet[]>([]);
   const [loadingBets, setLoadingBets] = useState(false);
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+  const [showRecalculateConfirm, setShowRecalculateConfirm] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
 
   const fetchContest = async () => {
     const active = await firebaseService.getActiveContest();
@@ -537,6 +581,23 @@ const DrawsTab = () => {
     }
   };
 
+  const handleRecalculateRanking = async () => {
+    console.log('Recalculate ranking button clicked');
+    setShowRecalculateConfirm(false);
+    setIsRecalculating(true);
+    try {
+      console.log('Calling firebaseService.recalculateGeneralRanking()...');
+      await firebaseService.recalculateGeneralRanking();
+      console.log('Recalculate ranking success');
+      showSuccess('Ranking Geral recalculado com sucesso!');
+    } catch (error) {
+      console.error('Error recalculating ranking:', error);
+      alert('Erro ao recalcular ranking.');
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
   const handleViewBets = async (drawNumber: number, results: number[]) => {
     if (!contest) return;
     setSelectedDrawForBets({ number: drawNumber, results });
@@ -576,6 +637,14 @@ const DrawsTab = () => {
           )}
         </div>
         <div className="flex items-center gap-4 w-full sm:w-auto">
+          <button 
+            onClick={() => setShowRecalculateConfirm(true)}
+            disabled={isRecalculating}
+            className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+          >
+            <TrendingUp size={16} />
+            {isRecalculating ? 'RECALCULANDO...' : 'RECALCULAR RANKING'}
+          </button>
           {contest && contest.status !== 'encerrado' && (
             <button 
               onClick={() => setShowFinalizeConfirm(true)}
@@ -587,6 +656,44 @@ const DrawsTab = () => {
           )}
         </div>
       </div>
+
+      {/* Recalculate Ranking Confirmation Modal */}
+      <AnimatePresence>
+        {showRecalculateConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6"
+            >
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-600">
+                <TrendingUp size={32} />
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">RECALCULAR <span className="text-lotofacil-purple">RANKING</span></h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Deseja realmente recalcular todo o Ranking Geral? Isso irá reconstruir a pontuação de todos os participantes com base nos concursos encerrados.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowRecalculateConfirm(false)}
+                  className="flex-1 px-6 py-3 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-200 transition-all"
+                >
+                  CANCELAR
+                </button>
+                <button 
+                  onClick={handleRecalculateRanking}
+                  className="flex-1 px-6 py-3 bg-lotofacil-purple text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-lotofacil-purple/80 transition-all shadow-lg"
+                >
+                  RECALCULAR
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Finalize Confirmation Modal */}
       <AnimatePresence>
@@ -1681,7 +1788,7 @@ const ConfigTab: React.FC = () => {
         <p className="text-[10px] sm:text-sm text-slate-600 mt-1">Ajuste parâmetros globais do aplicativo.</p>
       </div>
 
-      <form onSubmit={handleSave} className="space-y-5">
+      <form onSubmit={handleSave} className="space-y-8">
         <div className="space-y-4">
           <div>
             <label className="block text-[9px] uppercase tracking-widest text-slate-600 mb-2 ml-1 font-bold">WhatsApp para Validação</label>

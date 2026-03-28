@@ -33,8 +33,10 @@ const Login: React.FC = () => {
         setError('A janela de login foi fechada antes de completar o acesso. Tente novamente.');
       } else if (err.code === 'auth/popup-blocked') {
         setError('O navegador bloqueou a janela de login. Por favor, permita popups para este site.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError('Este domínio (lotofacilpremiada.online) não está autorizado no Firebase. Adicione-o na lista de "Domínios Autorizados" no Console do Firebase > Authentication > Settings.');
       } else {
-        setError('Erro ao fazer login com Google. Verifique sua conexão ou tente outro método.');
+        setError(`Erro ao fazer login (${err.code || 'erro desconhecido'}). Verifique sua conexão ou tente outro método.`);
       }
     } finally {
       setLoading(false);

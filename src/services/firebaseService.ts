@@ -194,6 +194,10 @@ export const firebaseService = {
     const path = `contests/${contestId}`;
     try {
       await updateDoc(doc(db, 'contests', contestId), { status });
+      // When a contest is finalized, recalculate the general ranking to ensure accuracy
+      if (status === 'encerrado') {
+        await this.recalculateGeneralRanking();
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
     }
@@ -745,8 +749,6 @@ export const firebaseService = {
         const betsQuery = query(collection(db, 'bets'), where('contestId', '==', contestId));
         const betsSnap = await getDocs(betsQuery);
         
-        const userBestScores: { [userId: string]: number } = {};
-        
         for (const betDoc of betsSnap.docs) {
           const betData = betDoc.data() as Bet;
           const hits = [...(betData.hits || [0, 0, 0])];
@@ -755,67 +757,116 @@ export const firebaseService = {
           const drawHits = betData.numbers.filter(n => results.includes(n)).length;
           hits[drawNumber - 1] = drawHits;
           
-          const totalHits = hits.reduce((a, b) => a + b, 0);
-          
           await updateDoc(doc(db, 'bets', betDoc.id), { hits });
-
-          if (isLastDraw && betData.status === 'validado') {
-            if (!userBestScores[betData.userId] || totalHits > userBestScores[betData.userId]) {
-              userBestScores[betData.userId] = totalHits;
-            }
-          }
-        }
-
-        // If last draw, update rankings by betName + sellerCode
-        if (isLastDraw) {
-          const participantBestScores: { [key: string]: { betName: string, sellerCode: string, score: number, userId: string } } = {};
-          
-          for (const betDoc of betsSnap.docs) {
-            const betData = betDoc.data() as Bet;
-            if (betData.status !== 'validado') continue;
-            
-            const hits = [...(betData.hits || [0, 0, 0])];
-            const totalHits = hits.reduce((a, b) => a + b, 0);
-            const betName = (betData.betName || betData.userName).toUpperCase();
-            const sellerCode = (betData.sellerCode || '').toUpperCase();
-            const key = `${betName}_${sellerCode}`.replace(/[^a-zA-Z0-9_]/g, '');
-
-            if (!participantBestScores[key] || totalHits > participantBestScores[key].score) {
-              participantBestScores[key] = { betName, sellerCode, score: totalHits, userId: betData.userId };
-            }
-          }
-
-          for (const [key, data] of Object.entries(participantBestScores)) {
-            const rankingRef = doc(db, 'rankings', key);
-            const rankingSnap = await getDoc(rankingRef);
-            
-            if (rankingSnap.exists()) {
-              const currentPoints = rankingSnap.data().totalPoints || 0;
-              const ownerId = rankingSnap.data().ownerId;
-              
-              // Only update if it's the owner or if ownerId is not set yet
-              if (!ownerId || ownerId === data.userId) {
-                await updateDoc(rankingRef, { 
-                  totalPoints: currentPoints + data.score,
-                  ownerId: ownerId || data.userId,
-                  lastUpdated: serverTimestamp()
-                });
-              }
-            } else {
-              await setDoc(rankingRef, {
-                betName: data.betName,
-                sellerCode: data.sellerCode,
-                ownerId: data.userId,
-                totalPoints: data.score,
-                createdAt: serverTimestamp(),
-                lastUpdated: serverTimestamp()
-              });
-            }
-          }
         }
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
+  async recalculateGeneralRanking(): Promise<void> {
+    console.log('Starting recalculateGeneralRanking...');
+    try {
+      // 1. Get all contests and filter/sort in memory to avoid composite index requirement
+      const contestsSnap = await getDocs(collection(db, 'contests'));
+      console.log(`Found ${contestsSnap.size} total contests`);
+      const closedContests = contestsSnap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as Contest))
+        .filter(c => c.status === 'encerrado')
+        .sort((a, b) => a.number - b.number);
+      
+      console.log(`Found ${closedContests.length} closed contests`);
+      const participantTotals: { [key: string]: { betName: string, sellerCode: string, totalPoints: number, ownerId: string } } = {};
+
+      for (const contest of closedContests) {
+        const contestId = contest.id;
+        console.log(`Processing contest #${contest.number} (${contestId})`);
+        // Get all validated bets for this contest
+        const betsQuery = query(
+          collection(db, 'bets'), 
+          where('contestId', '==', contestId), 
+          where('status', '==', 'validado')
+        );
+        const betsSnap = await getDocs(betsQuery);
+        console.log(`Found ${betsSnap.size} validated bets for contest #${contest.number}`);
+        
+        // Group by participant (betName + sellerCode) and take the best score in this contest
+        const contestBestScores: { [key: string]: { betName: string, sellerCode: string, score: number, userId: string } } = {};
+        
+        for (const betDoc of betsSnap.docs) {
+          const betData = betDoc.data() as Bet;
+          const hits = betData.hits || [0, 0, 0];
+          const totalHits = hits.reduce((a, b) => a + b, 0);
+          const betName = (betData.betName || betData.userName).toUpperCase();
+          const sellerCode = (betData.sellerCode || '').toUpperCase();
+          const key = `${betName}_${sellerCode}`.replace(/[^a-zA-Z0-9_]/g, '');
+          
+          if (!key) continue;
+
+          if (!contestBestScores[key] || totalHits > contestBestScores[key].score) {
+            contestBestScores[key] = { betName, sellerCode, score: totalHits, userId: betData.userId };
+          }
+        }
+        
+        // Add the best score of this contest to the participant's total
+        for (const [key, data] of Object.entries(contestBestScores)) {
+          if (!participantTotals[key]) {
+            participantTotals[key] = { 
+              betName: data.betName, 
+              sellerCode: data.sellerCode, 
+              totalPoints: 0, 
+              ownerId: data.userId 
+            };
+          }
+          participantTotals[key].totalPoints += data.score;
+        }
+      }
+
+      console.log(`Recalculated totals for ${Object.keys(participantTotals).length} participants`);
+
+      // 2. Clear current rankings collection and write new ones in batches
+      const rankingsSnap = await getDocs(collection(db, 'rankings'));
+      const { writeBatch } = await import('firebase/firestore');
+      
+      // Delete old rankings in batches of 500
+      console.log(`Deleting ${rankingsSnap.size} old rankings...`);
+      let batch = writeBatch(db);
+      let count = 0;
+      for (const rankDoc of rankingsSnap.docs) {
+        batch.delete(doc(db, 'rankings', rankDoc.id));
+        count++;
+        if (count === 500) {
+          await batch.commit();
+          batch = writeBatch(db);
+          count = 0;
+        }
+      }
+      if (count > 0) await batch.commit();
+
+      // Write new rankings in batches of 500
+      console.log(`Writing ${Object.keys(participantTotals).length} new rankings...`);
+      batch = writeBatch(db);
+      count = 0;
+      for (const [key, data] of Object.entries(participantTotals)) {
+        if (!key) continue;
+        batch.set(doc(db, 'rankings', key), {
+          ...data,
+          createdAt: serverTimestamp(),
+          lastUpdated: serverTimestamp()
+        });
+        count++;
+        if (count === 500) {
+          await batch.commit();
+          batch = writeBatch(db);
+          count = 0;
+        }
+      }
+      if (count > 0) await batch.commit();
+      console.log('RecalculateGeneralRanking completed successfully!');
+    } catch (error) {
+      console.error('Error in recalculateGeneralRanking:', error);
+      handleFirestoreError(error, OperationType.UPDATE, 'rankings');
     }
   },
 

@@ -6,25 +6,34 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { firebaseService } from '../services/firebaseService';
-import { History, CheckCircle2, Clock, XCircle, ChevronRight, RefreshCcw, MessageCircle } from 'lucide-react';
-import { motion } from 'motion/react';
+import { History, CheckCircle2, Clock, XCircle, ChevronRight, RefreshCcw, MessageCircle, Trash2, Copy, CheckSquare, Square, AlertCircle, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../utils';
-import { Bet, Settings } from '../types';
+import { Bet, Settings, Contest } from '../types';
 
 const MyBets: React.FC = () => {
   const { user } = useAuth();
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const [whatsappNumber, setWhatsappNumber] = useState('5511999999999');
+  const [activeContest, setActiveContest] = useState<Contest | null>(null);
+  const [selectedBetIds, setSelectedBetIds] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showRepeatConfirm, setShowRepeatConfirm] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       if (user) {
-        const [userBets, settings] = await Promise.all([
+        const [userBets, settings, contest] = await Promise.all([
           firebaseService.getUserBets(user.id),
-          firebaseService.getSettings()
+          firebaseService.getSettings(),
+          firebaseService.getActiveContest()
         ]);
         setBets(userBets);
+        setActiveContest(contest);
         if (settings?.whatsappNumber) {
           setWhatsappNumber(settings.whatsappNumber);
         }
@@ -34,6 +43,126 @@ const MyBets: React.FC = () => {
 
     fetchData();
   }, [user]);
+
+  const showMessage = (text: string, type: 'success' | 'error') => {
+    setMessage({ text, type });
+    setTimeout(() => setMessage(null), 5000);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedBetIds.length === bets.length) {
+      setSelectedBetIds([]);
+    } else {
+      setSelectedBetIds(bets.map(b => b.id));
+    }
+  };
+
+  const toggleSelectBet = (id: string) => {
+    setSelectedBetIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkRepeat = async () => {
+    if (!activeContest || activeContest.status !== 'aberto') {
+      showMessage('Nenhum concurso aberto para novas apostas.', 'error');
+      setShowRepeatConfirm(false);
+      return;
+    }
+
+    if (selectedBetIds.length === 0) return;
+
+    setIsProcessing(true);
+    setShowRepeatConfirm(false);
+    try {
+      const selectedBets = bets.filter(b => selectedBetIds.includes(b.id));
+      let successCount = 0;
+
+      for (const bet of selectedBets) {
+        try {
+          await firebaseService.createBet({
+            userId: user?.id || '',
+            userName: user?.name || '',
+            contestId: activeContest.id,
+            contestNumber: activeContest.number,
+            numbers: [...bet.numbers],
+            betName: bet.betName || '',
+            sellerCode: bet.sellerCode || '',
+          });
+          successCount++;
+        } catch (err) {
+          console.error(`Error repeating bet ${bet.id}:`, err);
+        }
+      }
+
+      showMessage(`${successCount} apostas repetidas com sucesso no concurso #${activeContest.number}!`, 'success');
+      setSelectedBetIds([]);
+      
+      // Refresh bets list
+      if (user) {
+        const userBets = await firebaseService.getUserBets(user.id);
+        setBets(userBets);
+      }
+    } catch (error) {
+      console.error('Error in bulk repeat:', error);
+      showMessage('Erro ao repetir apostas.', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedBetIds.length === 0) return;
+    
+    setIsProcessing(true);
+    setShowDeleteConfirm(false);
+    try {
+      const selectedBets = bets.filter(b => selectedBetIds.includes(b.id));
+      const toDelete = selectedBets.filter(b => b.status === 'pendente');
+      let successCount = 0;
+
+      for (const bet of toDelete) {
+        try {
+          await firebaseService.deleteBet(bet.id);
+          successCount++;
+        } catch (err) {
+          console.error(`Error deleting bet ${bet.id}:`, err);
+        }
+      }
+
+      if (successCount < selectedBetIds.length) {
+        showMessage(`${successCount} apostas pendentes excluídas. Apostas já validadas não podem ser excluídas.`, 'success');
+      } else {
+        showMessage(`${successCount} apostas excluídas com sucesso!`, 'success');
+      }
+      
+      setSelectedBetIds([]);
+      
+      // Refresh bets list
+      if (user) {
+        const userBets = await firebaseService.getUserBets(user.id);
+        setBets(userBets);
+      }
+    } catch (error) {
+      console.error('Error in bulk delete:', error);
+      showMessage('Erro ao excluir apostas.', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDeleteSingle = async (betId: string) => {
+    if (!window.confirm('Deseja excluir esta aposta pendente?')) return;
+    
+    try {
+      await firebaseService.deleteBet(betId);
+      setBets(prev => prev.filter(b => b.id !== betId));
+      showMessage('Aposta excluída com sucesso!', 'success');
+    } catch (error) {
+      console.error('Error deleting bet:', error);
+      showMessage('Erro ao excluir aposta.', 'error');
+    }
+  };
 
   const handleWhatsAppValidation = async (bet: Bet) => {
     let targetNumber = whatsappNumber;
@@ -101,9 +230,36 @@ const MyBets: React.FC = () => {
           <h1 className="text-xl sm:text-4xl font-display tracking-widest text-slate-900">MINHAS <span className="text-lotofacil-purple uppercase">APOSTAS</span></h1>
           <p className="text-[10px] sm:text-sm text-slate-600 mt-1">Histórico completo de suas participações nos concursos.</p>
         </div>
+        
+        {!loading && bets.length > 0 && (
+          <button 
+            onClick={toggleSelectAll}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all text-[10px] font-bold uppercase tracking-widest"
+          >
+            {selectedBetIds.length === bets.length ? <CheckSquare size={14} className="text-lotofacil-purple" /> : <Square size={14} />}
+            <span>{selectedBetIds.length === bets.length ? 'Desmarcar Tudo' : 'Selecionar Tudo'}</span>
+          </button>
+        )}
       </div>
 
-      <div className="space-y-3">
+      <AnimatePresence>
+        {message && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={cn(
+              "p-3 rounded-xl flex items-center gap-3 text-xs font-bold border shadow-sm",
+              message.type === 'success' ? "bg-emerald-50 border-emerald-100 text-emerald-700" : "bg-red-50 border-red-100 text-red-700"
+            )}
+          >
+            {message.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+            {message.text}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="space-y-3 pb-24">
         {loading ? (
           <p className="text-slate-600 text-center py-10 text-xs sm:text-sm">Carregando apostas...</p>
         ) : bets.length === 0 ? (
@@ -114,8 +270,28 @@ const MyBets: React.FC = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: idx * 0.1 }}
-            className="p-3 sm:p-6 flex flex-col lg:flex-row lg:items-center gap-3 sm:gap-6 group transition-all rounded-xl sm:rounded-2xl border border-slate-200 bg-white hover:border-lotofacil-purple/30 shadow-sm"
+            className={cn(
+              "p-3 sm:p-6 flex flex-col lg:flex-row lg:items-center gap-3 sm:gap-6 group transition-all rounded-xl sm:rounded-2xl border bg-white shadow-sm relative",
+              selectedBetIds.includes(bet.id) ? "border-lotofacil-purple ring-1 ring-lotofacil-purple/20" : "border-slate-200 hover:border-lotofacil-purple/30"
+            )}
           >
+            {/* Selection Checkbox */}
+            <div 
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleSelectBet(bet.id);
+              }}
+              className="absolute top-3 right-3 sm:top-6 sm:right-6 lg:static lg:block cursor-pointer z-10 p-1"
+            >
+              {selectedBetIds.includes(bet.id) ? (
+                <div className="w-6 h-6 rounded-md bg-lotofacil-purple flex items-center justify-center shadow-sm">
+                  <CheckSquare size={18} className="text-white" />
+                </div>
+              ) : (
+                <div className="w-6 h-6 rounded-md border-2 border-slate-200 bg-white hover:border-lotofacil-purple/50 transition-colors" />
+              )}
+            </div>
+
             <div className="flex items-center gap-3 lg:w-48">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 bg-lotofacil-purple/10 text-lotofacil-purple">
                 <History size={20} />
@@ -175,7 +351,12 @@ const MyBets: React.FC = () => {
                       {bet.hits.map((hit, i) => (
                         <div key={i} className="text-center">
                           <p className="text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-500 mb-0.5">S{i+1}</p>
-                          <p className={cn("text-sm sm:text-lg font-bold", getHitColor(hit))}>{hit}</p>
+                          <div className="flex flex-col items-center">
+                            {hit === 10 && (
+                              <span className="text-[6px] font-black bg-lotofacil-purple text-white px-1 rounded-sm animate-pulse whitespace-nowrap mb-0.5">10 PONTOS</span>
+                            )}
+                            <p className={cn("text-sm sm:text-lg font-bold", getHitColor(hit))}>{hit}</p>
+                          </div>
                         </div>
                       ))}
                       <div className="text-center border-l border-slate-200 pl-4">
@@ -200,8 +381,23 @@ const MyBets: React.FC = () => {
               )}
               
               <div className="flex items-center gap-3 ml-auto lg:ml-0">
+                {bet.status === 'pendente' && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSingle(bet.id);
+                    }}
+                    className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                    title="Excluir aposta"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
                 <button 
-                  onClick={() => handleToggleRepeat(bet.id, !!bet.repeat)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleRepeat(bet.id, !!bet.repeat);
+                  }}
                   className={cn(
                     "flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all text-[9px] uppercase tracking-widest font-bold",
                     bet.repeat 
@@ -221,6 +417,125 @@ const MyBets: React.FC = () => {
           </motion.div>
         ))}
       </div>
+
+      {/* Bulk Actions Bar */}
+      <AnimatePresence>
+        {selectedBetIds.length > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-6 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-xl z-50"
+          >
+            <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-slate-800 flex items-center justify-between gap-4">
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400">Selecionadas</span>
+                <span className="text-lg font-display tracking-widest">{selectedBetIds.length.toString().padStart(2, '0')}</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={isProcessing}
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all text-xs font-bold uppercase tracking-widest disabled:opacity-50"
+                >
+                  <Trash2 size={16} />
+                  <span className="hidden sm:inline">Excluir</span>
+                </button>
+                
+                <button
+                  disabled={isProcessing || !activeContest || activeContest.status !== 'aberto'}
+                  onClick={() => setShowRepeatConfirm(true)}
+                  className="flex items-center gap-2 px-6 py-2 rounded-xl bg-lotofacil-purple text-white hover:bg-lotofacil-purple/90 transition-all text-xs font-bold uppercase tracking-widest shadow-lg shadow-lotofacil-purple/20 disabled:opacity-50"
+                >
+                  {isProcessing ? (
+                    <RefreshCcw size={16} className="animate-spin" />
+                  ) : (
+                    <Copy size={16} />
+                  )}
+                  <span>Repetir {activeContest ? `#${activeContest.number}` : ''}</span>
+                </button>
+              </div>
+              
+              <button 
+                onClick={() => setSelectedBetIds([])}
+                className="p-2 text-slate-400 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Confirmation Modals */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-slate-100"
+            >
+              <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mb-6 mx-auto">
+                <Trash2 size={32} />
+              </div>
+              <h3 className="text-xl font-display tracking-widest text-slate-900 text-center mb-2 uppercase">EXCLUIR APOSTAS</h3>
+              <p className="text-sm text-slate-600 text-center mb-8">
+                Deseja excluir as {selectedBetIds.length} apostas selecionadas? Apenas apostas <span className="font-bold text-orange-600">pendentes</span> serão removidas.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleBulkDelete}
+                  className="py-3 rounded-xl bg-red-500 text-white text-xs font-bold uppercase tracking-widest shadow-lg shadow-red-500/20 hover:bg-red-600 transition-all"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {showRepeatConfirm && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-slate-100"
+            >
+              <div className="w-16 h-16 bg-lotofacil-purple/10 rounded-2xl flex items-center justify-center text-lotofacil-purple mb-6 mx-auto">
+                <Copy size={32} />
+              </div>
+              <h3 className="text-xl font-display tracking-widest text-slate-900 text-center mb-2 uppercase">REPETIR APOSTAS</h3>
+              <p className="text-sm text-slate-600 text-center mb-8">
+                Deseja repetir as {selectedBetIds.length} apostas selecionadas para o <span className="font-bold text-lotofacil-purple">Concurso #{activeContest?.number}</span>?
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={() => setShowRepeatConfirm(false)}
+                  className="py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleBulkRepeat}
+                  className="py-3 rounded-xl bg-lotofacil-purple text-white text-xs font-bold uppercase tracking-widest shadow-lg shadow-lotofacil-purple/20 hover:bg-lotofacil-purple/90 transition-all"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

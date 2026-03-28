@@ -183,13 +183,18 @@ const Participants: React.FC = () => {
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center">
                           <div className={cn(
-                            "flex items-center justify-center w-8 h-8 rounded-lg font-display text-xs transition-transform group-hover:scale-110",
-                            rank === 1 ? "bg-lotofacil-yellow text-white shadow-md" : 
-                            rank === 2 ? "bg-slate-300 text-white shadow-md" : 
+                            "flex items-center justify-center w-8 h-8 rounded-lg font-display text-xs transition-transform group-hover:scale-110 relative",
+                            rank === 1 ? "bg-lotofacil-yellow text-white shadow-md ring-2 ring-lotofacil-yellow/50" : 
+                            rank === 2 ? "bg-slate-300 text-white shadow-md ring-2 ring-slate-300/50" : 
                             rank === 3 ? "bg-lotofacil-purple text-white shadow-md" : 
                             "bg-slate-100 text-slate-600 border border-slate-200"
                           )}>
                             {rank}
+                            {isWinner(rank) && (
+                              <div className="absolute -top-1 -right-1">
+                                <Trophy size={10} className="text-white fill-current drop-shadow-sm" />
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -208,9 +213,20 @@ const Participants: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
                             <p className="text-[8px] text-slate-500 uppercase tracking-widest font-medium">ID: {b.userId.slice(-6).toUpperCase()}</p>
+                            {rank <= 3 && contest?.status !== 'aberto' && (
+                              <span className={cn(
+                                "flex items-center gap-1 text-[7px] font-bold uppercase tracking-tighter px-1.5 py-0.5 rounded-full shadow-sm",
+                                rank === 1 ? "bg-lotofacil-yellow text-white" : 
+                                rank === 2 ? "bg-slate-300 text-slate-700" :
+                                "bg-lotofacil-purple text-white"
+                              )}>
+                                <Trophy size={8} className="fill-current" />
+                                {rank === 3 ? "FOI QUASE!" : `${rank}º LUGAR`}
+                              </span>
+                            )}
                             {isWinner(rank) && contest?.status !== 'aberto' && (
-                              <span className="flex items-center gap-1 text-[7px] font-bold text-lotofacil-yellow uppercase tracking-tighter">
-                                <div className="w-1 h-1 rounded-full bg-lotofacil-yellow animate-ping" />
+                              <span className="flex items-center gap-1 text-[7px] font-bold text-green-600 uppercase tracking-tighter bg-green-50 px-1.5 py-0.5 rounded-full border border-green-100 shadow-sm animate-pulse">
+                                <div className="w-1 h-1 rounded-full bg-green-500 animate-ping" />
                                 PREMIAÇÃO
                               </span>
                             )}
@@ -230,28 +246,43 @@ const Participants: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={cn(
-                          "text-xs font-bold font-mono",
-                          hits[0] >= 11 ? "text-lotofacil-yellow" : hits[0] >= 9 ? "text-lotofacil-purple" : "text-slate-500"
-                        )}>
-                          {hits[0].toString().padStart(2, '0')}
-                        </span>
+                        <div className="flex flex-col items-center gap-0.5">
+                          {hits[0] >= 10 && (
+                            <span className="text-[7px] font-black bg-lotofacil-yellow text-white px-1.5 py-0.5 rounded-sm animate-pulse whitespace-nowrap shadow-sm border border-lotofacil-yellow/50">10+ PONTOS</span>
+                          )}
+                          <span className={cn(
+                            "text-xs font-bold font-mono",
+                            hits[0] >= 11 ? "text-lotofacil-yellow" : hits[0] >= 10 ? "text-lotofacil-yellow" : hits[0] >= 9 ? "text-lotofacil-purple" : "text-slate-500"
+                          )}>
+                            {hits[0].toString().padStart(2, '0')}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={cn(
-                          "text-xs font-bold font-mono",
-                          hits[1] >= 11 ? "text-lotofacil-yellow" : hits[1] >= 9 ? "text-lotofacil-purple" : "text-slate-500"
-                        )}>
-                          {hits[1].toString().padStart(2, '0')}
-                        </span>
+                        <div className="flex flex-col items-center gap-0.5">
+                          {hits[1] >= 10 && (
+                            <span className="text-[7px] font-black bg-lotofacil-yellow text-white px-1.5 py-0.5 rounded-sm animate-pulse whitespace-nowrap shadow-sm border border-lotofacil-yellow/50">10+ PONTOS</span>
+                          )}
+                          <span className={cn(
+                            "text-xs font-bold font-mono",
+                            hits[1] >= 11 ? "text-lotofacil-yellow" : hits[1] >= 10 ? "text-lotofacil-yellow" : hits[1] >= 9 ? "text-lotofacil-purple" : "text-slate-500"
+                          )}>
+                            {hits[1].toString().padStart(2, '0')}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={cn(
-                          "text-xs font-bold font-mono",
-                          hits[2] >= 11 ? "text-lotofacil-yellow" : hits[2] >= 9 ? "text-lotofacil-purple" : "text-slate-500"
-                        )}>
-                          {hits[2].toString().padStart(2, '0')}
-                        </span>
+                        <div className="flex flex-col items-center gap-0.5">
+                          {hits[2] >= 10 && (
+                            <span className="text-[7px] font-black bg-lotofacil-yellow text-white px-1.5 py-0.5 rounded-sm animate-pulse whitespace-nowrap shadow-sm border border-lotofacil-yellow/50">10+ PONTOS</span>
+                          )}
+                          <span className={cn(
+                            "text-xs font-bold font-mono",
+                            hits[2] >= 11 ? "text-lotofacil-yellow" : hits[2] >= 10 ? "text-lotofacil-yellow" : hits[2] >= 9 ? "text-lotofacil-purple" : "text-slate-500"
+                          )}>
+                            {hits[2].toString().padStart(2, '0')}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className={cn(

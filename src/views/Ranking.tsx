@@ -146,6 +146,19 @@ const Ranking: React.FC = () => {
         </div>
       </div>
 
+      {activeTab === 'geral' && (
+        <div className="p-3 sm:p-4 bg-lotofacil-purple/5 border border-lotofacil-purple/20 rounded-2xl flex items-start gap-3 sm:gap-4">
+          <TrendingUp className="text-lotofacil-purple mt-0.5 shrink-0" size={18} />
+          <div className="flex flex-col">
+            <p className="text-[10px] sm:text-xs font-bold text-lotofacil-purple uppercase tracking-wider">Ranking Acumulado</p>
+            <p className="text-[9px] sm:text-xs text-slate-600 leading-relaxed max-w-2xl">
+              O Ranking Geral soma os pontos de todos os concursos realizados. 
+              Os pontos do concurso atual são adicionados automaticamente após a finalização do 3º sorteio.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Top 3 Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
         {loading ? (
