@@ -79,8 +79,8 @@ export const firebaseService = {
       
       bets.forEach(bet => {
         const totalHits = (bet.hits || [0, 0, 0]).reduce((acc, h) => acc + h, 0);
-        const displayName = (bet.betName || bet.userName).toUpperCase();
-        const sellerCode = (bet.sellerCode || '').toUpperCase();
+        const displayName = (bet.betName || bet.userName || 'Participante').trim().toUpperCase();
+        const sellerCode = (bet.sellerCode || '').trim().toUpperCase();
         const key = `${displayName}_${sellerCode}`;
 
         if (!participantHits[key]) {
@@ -798,11 +798,11 @@ export const firebaseService = {
           const betData = betDoc.data() as Bet;
           const hits = betData.hits || [0, 0, 0];
           const totalHits = hits.reduce((a, b) => a + b, 0);
-          const betName = (betData.betName || betData.userName).toUpperCase();
-          const sellerCode = (betData.sellerCode || '').toUpperCase();
-          const key = `${betName}_${sellerCode}`.replace(/[^a-zA-Z0-9_]/g, '');
+          const betName = (betData.betName || betData.userName || 'Participante').trim().toUpperCase();
+          const sellerCode = (betData.sellerCode || '').trim().toUpperCase();
+          const key = `${betName}_${sellerCode}`;
           
-          if (!key) continue;
+          if (!key || key === '_') continue;
 
           if (!contestBestScores[key] || totalHits > contestBestScores[key].score) {
             contestBestScores[key] = { betName, sellerCode, score: totalHits, userId: betData.userId };

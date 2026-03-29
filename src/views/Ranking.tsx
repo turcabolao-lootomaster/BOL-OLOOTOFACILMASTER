@@ -193,6 +193,14 @@ const Ranking: React.FC = () => {
                   Vendedor: {p.sellerCode}
                 </p>
               )}
+              {((activeTab === 'geral' ? p.points : p.totalHits) >= 27) && (
+                <div className="flex flex-col items-center gap-1 mt-2">
+                  <span className="px-2 py-0.5 bg-slate-900 text-white text-[8px] font-bold uppercase tracking-tighter rounded flex items-center gap-1 shadow-lg ring-1 ring-lotofacil-yellow/50">
+                    <Trophy size={8} className="text-lotofacil-yellow" />
+                    PRÊMIO 27 PTS
+                  </span>
+                </div>
+              )}
               {activeTab === 'concurso' && isWinner(p.position) && contestStatus !== 'aberto' && (
                 <div className="flex flex-col items-center gap-1 mt-2">
                   <span className="px-2 py-0.5 bg-blue-600 text-white text-[8px] font-bold uppercase tracking-tighter rounded flex items-center gap-1 shadow-sm">
@@ -207,9 +215,16 @@ const Ranking: React.FC = () => {
               <p className="text-[10px] sm:text-xs text-slate-600 uppercase tracking-widest mt-0.5 sm:mt-1">Participante</p>
             </div>
             <div className="w-full space-y-2 sm:space-y-3">
-              <div className="flex justify-between text-[10px] sm:text-sm">
+              <div className="flex justify-between items-center text-[10px] sm:text-sm">
                 <span className="text-slate-600 uppercase tracking-widest text-[8px] sm:text-[10px]">{activeTab === 'geral' ? 'Progresso' : 'Total de Acertos'}</span>
-                <span className="text-lotofacil-purple font-bold">{activeTab === 'geral' ? p.points : p.totalHits} {activeTab === 'geral' ? 'PTS' : 'ACERTOS'}</span>
+                <div className={cn(
+                  "px-2 py-0.5 rounded font-bold transition-all",
+                  (activeTab === 'geral' ? p.points : p.totalHits) >= 27 
+                    ? "bg-slate-900 text-white shadow-lg scale-110 ring-2 ring-lotofacil-yellow/50" 
+                    : "text-lotofacil-purple"
+                )}>
+                  {activeTab === 'geral' ? p.points : p.totalHits} {activeTab === 'geral' ? 'PTS' : 'ACERTOS'}
+                </div>
               </div>
               <div className="h-1.5 sm:h-2 bg-slate-100 rounded-full overflow-hidden">
                 <motion.div 
@@ -267,6 +282,12 @@ const Ranking: React.FC = () => {
                       Vendedor: {p.sellerCode}
                     </span>
                   )}
+                  {(activeTab === 'geral' ? p.points : p.totalHits) >= 27 && (
+                    <span className="text-[7px] sm:text-[8px] bg-slate-900 text-white font-bold uppercase tracking-tighter px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm ring-1 ring-lotofacil-yellow/30">
+                      <Trophy size={8} className="text-lotofacil-yellow" />
+                      PRÊMIO 27 PTS
+                    </span>
+                  )}
                   {activeTab === 'concurso' && isWinner(p.position) && contestStatus !== 'aberto' && (
                     <div className="flex items-center gap-2">
                       <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[7px] font-bold uppercase tracking-tighter rounded flex items-center gap-1">
@@ -283,8 +304,16 @@ const Ranking: React.FC = () => {
                   <div className="flex-1 h-1 sm:h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div className="h-full bg-lotofacil-purple/40 rounded-full" style={{ width: activeTab === 'geral' ? `${Math.min((p.points / RANKING_GOAL) * 100, 100)}%` : `${(p.totalHits / 30) * 100}%` }} />
                   </div>
-                  <div className="flex flex-col items-end shrink-0">
-                    <span className="text-[10px] sm:text-xs font-bold text-lotofacil-purple whitespace-nowrap leading-none">
+                  <div className={cn(
+                    "flex flex-col items-center justify-center p-1.5 rounded-lg transition-all min-w-[40px]",
+                    (activeTab === 'geral' ? p.points : p.totalHits) >= 27 
+                      ? "bg-slate-900 text-white shadow-md scale-110 ring-1 ring-lotofacil-yellow/30" 
+                      : "bg-slate-50 border border-slate-100"
+                  )}>
+                    <span className={cn(
+                      "text-[10px] sm:text-xs font-bold whitespace-nowrap leading-none",
+                      (activeTab === 'geral' ? p.points : p.totalHits) >= 27 ? "text-white" : "text-lotofacil-purple"
+                    )}>
                       {(activeTab === 'geral' ? p.points : p.totalHits).toString().padStart(2, '0')}
                     </span>
                     <span className="text-[6px] font-black text-slate-400 uppercase tracking-tighter mt-0.5">PTS</span>

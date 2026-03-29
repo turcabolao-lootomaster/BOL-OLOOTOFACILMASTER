@@ -285,17 +285,30 @@ const Participants: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <div className={cn(
-                          "inline-flex flex-col items-center justify-center w-10 h-10 rounded-lg border transition-all shadow-sm",
-                          rank <= 3 ? "bg-white border-lotofacil-yellow/30" : "bg-slate-50 border-slate-200"
-                        )}>
-                          <span className={cn(
-                            "text-sm sm:text-base font-display tracking-tighter leading-none",
-                            rank === 1 ? "text-lotofacil-yellow" : rank === 2 ? "text-slate-600" : rank === 3 ? "text-lotofacil-purple" : "text-lotofacil-purple"
+                        <div className="flex flex-col items-center gap-1">
+                          <div className={cn(
+                            "inline-flex flex-col items-center justify-center w-10 h-10 rounded-lg border transition-all shadow-sm",
+                            total >= 27 
+                              ? "bg-slate-900 border-slate-900 shadow-lg scale-110 ring-2 ring-lotofacil-yellow/50" 
+                              : rank <= 3 ? "bg-white border-lotofacil-yellow/30" : "bg-slate-50 border-slate-200"
                           )}>
-                            {total.toString().padStart(2, '0')}
-                          </span>
-                          <span className="text-[6px] font-black text-slate-400 uppercase tracking-tighter mt-0.5">PTS</span>
+                            <span className={cn(
+                              "text-sm sm:text-base font-display tracking-tighter leading-none",
+                              total >= 27 ? "text-white" :
+                              rank === 1 ? "text-lotofacil-yellow" : rank === 2 ? "text-slate-600" : rank === 3 ? "text-lotofacil-purple" : "text-lotofacil-purple"
+                            )}>
+                              {total.toString().padStart(2, '0')}
+                            </span>
+                            <span className={cn(
+                              "text-[6px] font-black uppercase tracking-tighter mt-0.5",
+                              total >= 27 ? "text-slate-400" : "text-slate-400"
+                            )}>PTS</span>
+                          </div>
+                          {total >= 27 && (
+                            <span className="text-[6px] font-bold text-slate-900 uppercase tracking-tighter bg-lotofacil-yellow px-1 rounded animate-pulse">
+                              PRÊMIO
+                            </span>
+                          )}
                         </div>
                       </td>
                     </motion.tr>
