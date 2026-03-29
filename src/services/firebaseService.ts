@@ -63,54 +63,6 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 export const firebaseService = {
-  async getContestRanking(contestId: string): Promise<any[]> {
-    const path = 'bets';
-    try {
-      const q = query(
-        collection(db, 'bets'), 
-        where('contestId', '==', contestId),
-        where('status', '==', 'validado')
-      );
-      const querySnapshot = await getDocs(q);
-      const bets = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bet));
-      
-      // Group by betName + sellerCode
-      const participantHits: { [key: string]: { userName: string, totalHits: number, sellerCode: string } } = {};
-      
-      bets.forEach(bet => {
-        const totalHits = (bet.hits || [0, 0, 0]).reduce((acc, h) => acc + h, 0);
-        const displayName = (bet.betName || bet.userName || 'Participante').trim().toUpperCase();
-        const sellerCode = (bet.sellerCode || '').trim().toUpperCase();
-        const key = `${displayName}_${sellerCode}`;
-
-        if (!participantHits[key]) {
-          participantHits[key] = { userName: displayName, totalHits: 0, sellerCode };
-        }
-        // Take the best bet for this specific name+seller combination in this contest
-        if (totalHits > participantHits[key].totalHits) {
-          participantHits[key].totalHits = totalHits;
-        }
-      });
-
-      const sortedData = Object.entries(participantHits)
-        .map(([key, data]) => ({ userId: key, ...data }))
-        .sort((a, b) => b.totalHits - a.totalHits);
-
-      let currentRank = 0;
-      let lastScore = -1;
-      return sortedData.map((p) => {
-        if (p.totalHits !== lastScore) {
-          currentRank++;
-          lastScore = p.totalHits;
-        }
-        return { ...p, position: currentRank };
-      });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.LIST, path);
-      return [];
-    }
-  },
-
   // Users
   async getUser(userId: string): Promise<User | null> {
     const path = `users/${userId}`;
@@ -423,7 +375,13 @@ export const firebaseService = {
     }
   },
 
-  async createContest(number: number, prizes?: Contest['prizes'], publicLink?: string): Promise<void> {
+  async createContest(
+    number: number, 
+    prizes?: Contest['prizes'], 
+    publicLink?: string,
+    betPrice?: number,
+    prizeConfig?: Contest['prizeConfig']
+  ): Promise<void> {
     const path = 'contests';
     try {
       // 1. Close any existing active or in-progress contests
@@ -451,6 +409,15 @@ export const firebaseService = {
           rankeada: 'LOTOMASTER'
         },
         publicLink: publicLink || '',
+        betPrice: betPrice || 10,
+        prizeConfig: prizeConfig || {
+          pctRapidinha: 0.10,
+          pctChampion: 0.45,
+          pctVice: 0.15,
+          pctSeller: 0.15,
+          pctAdmin: 0.10,
+          pctReserve: 0.05
+        },
         createdAt: serverTimestamp()
       });
 
@@ -699,6 +666,26 @@ export const firebaseService = {
     try {
       const contestRef = doc(db, 'contests', contestId);
       await updateDoc(contestRef, { publicLink });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
+  async updateContestBetPrice(contestId: string, betPrice: number): Promise<void> {
+    const path = `contests/${contestId}`;
+    try {
+      const contestRef = doc(db, 'contests', contestId);
+      await updateDoc(contestRef, { betPrice });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
+  async updateContestPrizeConfig(contestId: string, prizeConfig: Contest['prizeConfig']): Promise<void> {
+    const path = `contests/${contestId}`;
+    try {
+      const contestRef = doc(db, 'contests', contestId);
+      await updateDoc(contestRef, { prizeConfig });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
     }

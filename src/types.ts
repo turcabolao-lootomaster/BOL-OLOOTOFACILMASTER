@@ -42,6 +42,7 @@ export interface Contest {
   draws: Draw[];
   createdAt: any;
   totalCollected?: number;
+  betPrice?: number;
   prizes?: {
     draw1: string;
     draw2: string;
@@ -49,6 +50,18 @@ export interface Contest {
     rapidinha1: string;
     rapidinha2: string;
     rankeada: string;
+  };
+  prizeConfig?: {
+    fixed10PtsDraw1: number;
+    fixed10PtsDraw2: number;
+    fixed10PtsDraw3: number;
+    fixed27PlusTotal: number;
+    pctRapidinha: number;
+    pctChampion: number;
+    pctVice: number;
+    pctSeller: number;
+    pctAdmin: number;
+    pctReserve: number;
   };
   publicLink?: string;
 }

@@ -37,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
     { id: 'my-bets', label: 'Minhas Apostas', icon: History, roles: ['master', 'admin', 'vendedor', 'cliente'] },
     { id: 'participants', label: 'Classificação (Ao Vivo)', icon: Users, roles: ['master', 'admin', 'vendedor', 'cliente'] },
     { id: 'current-contest', label: 'Sorteios do Concurso', icon: Trophy, roles: ['master', 'admin', 'vendedor', 'cliente'] },
-    { id: 'ranking', label: 'Ranking Geral', icon: BarChart3, roles: ['master', 'admin', 'vendedor', 'cliente'] },
+    { id: 'ranking', label: 'Corrida 150 PTS', icon: BarChart3, roles: ['master', 'admin', 'vendedor', 'cliente'] },
     { id: 'instructions', label: 'Instruções', icon: BookOpen, roles: ['master', 'admin', 'vendedor', 'cliente'] },
     { id: 'seller', label: 'Vendedor', icon: Store, roles: ['master', 'admin', 'vendedor'] },
     { id: 'admin', label: 'Admin', icon: Settings, roles: ['master', 'admin'] },

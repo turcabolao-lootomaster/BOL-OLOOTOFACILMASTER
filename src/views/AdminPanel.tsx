@@ -29,7 +29,9 @@ import {
   Play,
   Lock,
   Unlock,
-  Download
+  Download,
+  DollarSign,
+  Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
@@ -47,6 +49,7 @@ const AdminPanel: React.FC = () => {
     { id: 'vendedores', label: 'Vendedores', icon: Users },
     { id: 'usuarios', label: 'Usuários', icon: ShieldCheck },
     { id: 'relatorios', label: 'Relatórios', icon: BarChart3 },
+    { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
     { id: 'config', label: 'Config', icon: Save },
   ];
 
@@ -99,6 +102,7 @@ const AdminPanel: React.FC = () => {
           {activeTab === 'vendedores' && <SellersTab />}
           {activeTab === 'usuarios' && <UsersTab />}
           {activeTab === 'relatorios' && <ReportsTab />}
+          {activeTab === 'financeiro' && <FinanceiroTab />}
           {activeTab === 'config' && <ConfigTab />}
         </motion.div>
       </AnimatePresence>
@@ -589,7 +593,7 @@ const DrawsTab = () => {
       console.log('Calling firebaseService.recalculateGeneralRanking()...');
       await firebaseService.recalculateGeneralRanking();
       console.log('Recalculate ranking success');
-      showSuccess('Ranking Geral recalculado com sucesso!');
+      showSuccess('Corrida 150 PTS recalculada com sucesso!');
     } catch (error) {
       console.error('Error recalculating ranking:', error);
       alert('Erro ao recalcular ranking.');
@@ -671,9 +675,9 @@ const DrawsTab = () => {
                 <TrendingUp size={32} />
               </div>
               <div className="text-center space-y-2">
-                <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">RECALCULAR <span className="text-lotofacil-purple">RANKING</span></h3>
+                <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">RECALCULAR <span className="text-lotofacil-purple uppercase">CORRIDA 150 PTS</span></h3>
                 <p className="text-sm text-slate-600 leading-relaxed">
-                  Deseja realmente recalcular todo o Ranking Geral? Isso irá reconstruir a pontuação de todos os participantes com base nos concursos encerrados.
+                  Deseja realmente recalcular toda a Corrida 150 PTS? Isso irá reconstruir a pontuação de todos os participantes com base nos concursos encerrados.
                 </p>
               </div>
               <div className="flex gap-3">
@@ -903,6 +907,7 @@ const ContestsTab = () => {
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [newContestNumber, setNewContestNumber] = useState('');
+  const [newBetPrice, setNewBetPrice] = useState('10');
   const [newPublicLink, setNewPublicLink] = useState('');
   const [newPrizes, setNewPrizes] = useState<NonNullable<Contest['prizes']>>({
     draw1: '10 PTS',
@@ -913,7 +918,16 @@ const ContestsTab = () => {
     rankeada: 'LOTOMASTER'
   });
 
-  const [editingPrizes, setEditingPrizes] = useState<{ id: string, prizes: NonNullable<Contest['prizes']> } | null>(null);
+  const [newPrizeConfig, setNewPrizeConfig] = useState<NonNullable<Contest['prizeConfig']>>({
+    pctRapidinha: 0.10,
+    pctChampion: 0.45,
+    pctVice: 0.15,
+    pctSeller: 0.15,
+    pctAdmin: 0.10,
+    pctReserve: 0.05
+  });
+
+  const [editingPrizes, setEditingPrizes] = useState<{ id: string, prizes: NonNullable<Contest['prizes']>, prizeConfig?: Contest['prizeConfig'] } | null>(null);
   const [editingPublicLink, setEditingPublicLink] = useState<{ id: string, publicLink: string } | null>(null);
 
   const fetchContests = async () => {
@@ -948,7 +962,13 @@ const ContestsTab = () => {
     if (isNaN(num)) return;
 
     try {
-      await firebaseService.createContest(num, newPrizes, newPublicLink);
+      await firebaseService.createContest(
+        num, 
+        newPrizes, 
+        newPublicLink, 
+        parseFloat(newBetPrice) || 10,
+        newPrizeConfig
+      );
       setNewContestNumber('');
       setNewPublicLink('');
       setNewPrizes({
@@ -958,6 +978,14 @@ const ContestsTab = () => {
         rapidinha1: '1° LUGAR',
         rapidinha2: '2° LUGAR',
         rankeada: 'LOTOMASTER'
+      });
+      setNewPrizeConfig({
+        pctRapidinha: 0.10,
+        pctChampion: 0.45,
+        pctVice: 0.15,
+        pctSeller: 0.15,
+        pctAdmin: 0.10,
+        pctReserve: 0.05
       });
       setIsCreating(false);
       await fetchContests();
@@ -972,6 +1000,9 @@ const ContestsTab = () => {
 
     try {
       await firebaseService.updateContestPrizes(editingPrizes.id, editingPrizes.prizes);
+      if (editingPrizes.prizeConfig) {
+        await firebaseService.updateContestPrizeConfig(editingPrizes.id, editingPrizes.prizeConfig);
+      }
       setEditingPrizes(null);
       await fetchContests();
     } catch (error) {
@@ -1103,6 +1134,17 @@ const ContestsTab = () => {
                 />
               </div>
               <div className="space-y-2">
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest">Preço da Aposta (R$)</label>
+                <input 
+                  type="number" 
+                  value={newBetPrice}
+                  onChange={(e) => setNewBetPrice(e.target.value)}
+                  placeholder="Ex: 10"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
                 <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest">Link Público (Sorteio)</label>
                 <input 
                   type="text" 
@@ -1181,6 +1223,66 @@ const ContestsTab = () => {
                   className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
                   required
                 />
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-slate-200">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900">Configuração de Porcentagens (%)</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Rapidinha (10%)</label>
+                  <input 
+                    type="number" step="0.01"
+                    value={newPrizeConfig.pctRapidinha}
+                    onChange={(e) => setNewPrizeConfig({...newPrizeConfig, pctRapidinha: parseFloat(e.target.value)})}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Campeão (45%)</label>
+                  <input 
+                    type="number" step="0.01"
+                    value={newPrizeConfig.pctChampion}
+                    onChange={(e) => setNewPrizeConfig({...newPrizeConfig, pctChampion: parseFloat(e.target.value)})}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Vice (15%)</label>
+                  <input 
+                    type="number" step="0.01"
+                    value={newPrizeConfig.pctVice}
+                    onChange={(e) => setNewPrizeConfig({...newPrizeConfig, pctVice: parseFloat(e.target.value)})}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Vendedor (15%)</label>
+                  <input 
+                    type="number" step="0.01"
+                    value={newPrizeConfig.pctSeller}
+                    onChange={(e) => setNewPrizeConfig({...newPrizeConfig, pctSeller: parseFloat(e.target.value)})}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Admin (10%)</label>
+                  <input 
+                    type="number" step="0.01"
+                    value={newPrizeConfig.pctAdmin}
+                    onChange={(e) => setNewPrizeConfig({...newPrizeConfig, pctAdmin: parseFloat(e.target.value)})}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Reserva (5%)</label>
+                  <input 
+                    type="number" step="0.01"
+                    value={newPrizeConfig.pctReserve}
+                    onChange={(e) => setNewPrizeConfig({...newPrizeConfig, pctReserve: parseFloat(e.target.value)})}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1277,6 +1379,66 @@ const ContestsTab = () => {
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
                   required
                 />
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-slate-200">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900">Configuração de Porcentagens (%)</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Rapidinha (10%)</label>
+                    <input 
+                      type="number" step="0.01"
+                      value={editingPrizes.prizeConfig?.pctRapidinha}
+                      onChange={(e) => setEditingPrizes({...editingPrizes, prizeConfig: {...(editingPrizes.prizeConfig || {}), pctRapidinha: parseFloat(e.target.value)} as any})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Campeão (45%)</label>
+                    <input 
+                      type="number" step="0.01"
+                      value={editingPrizes.prizeConfig?.pctChampion}
+                      onChange={(e) => setEditingPrizes({...editingPrizes, prizeConfig: {...(editingPrizes.prizeConfig || {}), pctChampion: parseFloat(e.target.value)} as any})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Vice (15%)</label>
+                    <input 
+                      type="number" step="0.01"
+                      value={editingPrizes.prizeConfig?.pctVice}
+                      onChange={(e) => setEditingPrizes({...editingPrizes, prizeConfig: {...(editingPrizes.prizeConfig || {}), pctVice: parseFloat(e.target.value)} as any})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Vendedor (15%)</label>
+                    <input 
+                      type="number" step="0.01"
+                      value={editingPrizes.prizeConfig?.pctSeller}
+                      onChange={(e) => setEditingPrizes({...editingPrizes, prizeConfig: {...(editingPrizes.prizeConfig || {}), pctSeller: parseFloat(e.target.value)} as any})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Admin (10%)</label>
+                    <input 
+                      type="number" step="0.01"
+                      value={editingPrizes.prizeConfig?.pctAdmin}
+                      onChange={(e) => setEditingPrizes({...editingPrizes, prizeConfig: {...(editingPrizes.prizeConfig || {}), pctAdmin: parseFloat(e.target.value)} as any})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Reserva (5%)</label>
+                    <input 
+                      type="number" step="0.01"
+                      value={editingPrizes.prizeConfig?.pctReserve}
+                      onChange={(e) => setEditingPrizes({...editingPrizes, prizeConfig: {...(editingPrizes.prizeConfig || {}), pctReserve: parseFloat(e.target.value)} as any})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-4">
@@ -1385,6 +1547,14 @@ const ContestsTab = () => {
                     rapidinha1: '1° LUGAR',
                     rapidinha2: '2° LUGAR',
                     rankeada: 'LOTOMASTER'
+                  },
+                  prizeConfig: c.prizeConfig || {
+                    pctRapidinha: 0.10,
+                    pctChampion: 0.45,
+                    pctVice: 0.15,
+                    pctSeller: 0.15,
+                    pctAdmin: 0.10,
+                    pctReserve: 0.05
                   }
                 })}
                 className="w-8 h-8 sm:w-10 sm:h-10 bg-white text-slate-600 hover:text-lotofacil-purple border border-slate-200 rounded-lg sm:rounded-xl flex items-center justify-center transition-all shadow-sm"
@@ -1735,21 +1905,114 @@ const UsersTab = () => {
   );
 };
 
-const ReportsTab = () => (
-  <div className="space-y-6 sm:space-y-8">
-    <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">RELATÓRIOS <span className="text-lotofacil-purple">FINANCEIROS</span></h2>
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-      <div className="bg-white p-6 sm:p-8 rounded-xl sm:rounded-2xl border border-slate-200 space-y-3 sm:space-y-4 shadow-sm">
-        <p className="text-[10px] sm:text-xs uppercase tracking-widest text-slate-600">Arrecadação Total</p>
-        <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">R$ 0,00</h3>
-        <div className="flex items-center gap-2 text-lotofacil-yellow text-[10px] sm:text-xs">
-          <TrendingUp size={12} />
-          <span>+0% este mês</span>
+const ReportsTab = () => {
+  const [contests, setContests] = useState<Contest[]>([]);
+  const [betCounts, setBetCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const allContests = await firebaseService.getAllContests();
+        setContests(allContests);
+        
+        const counts: Record<string, number> = {};
+        await Promise.all(allContests.map(async (c) => {
+          counts[c.id] = await firebaseService.getContestTotalBets(c.id, 'validado');
+        }));
+        setBetCounts(counts);
+      } catch (error) {
+        console.error('Error fetching reports data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) return <div className="p-10 text-center text-slate-500">Carregando relatórios...</div>;
+
+  const totalRevenue = contests.reduce((acc, c) => {
+    const count = betCounts[c.id] || 0;
+    const price = c.betPrice || 10;
+    return acc + (count * price);
+  }, 0);
+
+  const totalBets = Object.values(betCounts).reduce((acc, count) => (acc as number) + (count as number), 0) as number;
+
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">RELATÓRIOS <span className="text-lotofacil-purple">FINANCEIROS</span></h2>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+        <div className="bg-white p-6 sm:p-8 rounded-xl sm:rounded-2xl border border-slate-200 space-y-3 sm:space-y-4 shadow-sm">
+          <p className="text-[10px] sm:text-xs uppercase tracking-widest text-slate-600">Arrecadação Total</p>
+          <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">
+            {totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </h3>
+          <div className="flex items-center gap-2 text-lotofacil-yellow text-[10px] sm:text-xs">
+            <TrendingUp size={12} />
+            <span>{totalBets} Apostas Validadas</span>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 sm:p-8 rounded-xl sm:rounded-2xl border border-slate-200 space-y-3 sm:space-y-4 shadow-sm">
+          <p className="text-[10px] sm:text-xs uppercase tracking-widest text-slate-600">Média por Concurso</p>
+          <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">
+            {(contests.length > 0 ? totalRevenue / contests.length : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </h3>
+          <p className="text-[10px] text-slate-500 uppercase tracking-widest">{contests.length} Concursos Realizados</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="p-6 border-b border-slate-100">
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Histórico por Concurso</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Concurso</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Status</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Apostas</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Preço</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-right">Arrecadação</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {contests.map(c => {
+                const count = betCounts[c.id] || 0;
+                const price = c.betPrice || 10;
+                const revenue = count * price;
+                return (
+                  <tr key={c.id} className="hover:bg-slate-50 transition-all">
+                    <td className="px-6 py-4 font-bold text-slate-900">#{c.number}</td>
+                    <td className="px-6 py-4">
+                      <span className={cn(
+                        "px-2 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest",
+                        c.status === 'aberto' ? "bg-green-100 text-green-700" :
+                        c.status === 'em_andamento' ? "bg-yellow-100 text-yellow-700" :
+                        "bg-slate-100 text-slate-600"
+                      )}>
+                        {c.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center text-sm text-slate-600">{count}</td>
+                    <td className="px-6 py-4 text-center text-sm text-slate-600">R$ {price.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-right font-bold text-lotofacil-purple">
+                      {revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ConfigTab: React.FC = () => {
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -1834,5 +2097,147 @@ const ConfigTab: React.FC = () => {
     </div>
   );
 };
+
+const FinanceiroTab: React.FC = () => {
+  const [activeContest, setActiveContest] = useState<Contest | null>(null);
+  const [bets, setBets] = useState<Bet[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const contest = await firebaseService.getActiveContest();
+      setActiveContest(contest);
+      if (contest) {
+        const contestBets = await firebaseService.getContestBets(contest.id);
+        setBets(contestBets);
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  if (loading) return <div className="p-10 text-center text-slate-500">Carregando dados financeiros...</div>;
+  if (!activeContest) return <div className="p-10 text-center text-slate-500 italic uppercase tracking-widest text-[10px] font-bold">Nenhum concurso ativo para análise financeira.</div>;
+
+  const betPrice = activeContest.betPrice || 10;
+  const totalRevenue = bets.length * betPrice;
+  
+  // Percentages from contest config or defaults
+  const config = activeContest.prizeConfig || {
+    pctRapidinha: 0.10,
+    pctChampion: 0.45,
+    pctVice: 0.15,
+    pctSeller: 0.15,
+    pctAdmin: 0.10,
+    pctReserve: 0.05
+  };
+
+  const values = {
+    rapidinha: totalRevenue * (config.pctRapidinha || 0.10),
+    champion: totalRevenue * (config.pctChampion || 0.45),
+    vice: totalRevenue * (config.pctVice || 0.15),
+    seller: totalRevenue * (config.pctSeller || 0.15),
+    admin: totalRevenue * (config.pctAdmin || 0.10),
+    reserve: totalRevenue * (config.pctReserve || 0.05),
+    totalPrizes: totalRevenue * ((config.pctRapidinha || 0.10) + (config.pctChampion || 0.45) + (config.pctVice || 0.15)),
+    totalOperation: totalRevenue * ((config.pctSeller || 0.15) + (config.pctAdmin || 0.10)),
+  };
+
+  return (
+    <div className="space-y-6 sm:space-y-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">RESUMO <span className="text-lotofacil-purple">FINANCEIRO</span></h2>
+          <p className="text-[10px] sm:text-sm text-slate-600 mt-1">Concurso #{activeContest.number} • {bets.length} Apostas Validadas</p>
+        </div>
+        <div className="bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-xl">
+          <p className="text-[8px] uppercase tracking-widest text-slate-400 mb-1">Total Arrecadado</p>
+          <p className="text-xl sm:text-3xl font-black text-lotofacil-yellow">
+            {totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
+        {/* Prizes Column */}
+        <div className="space-y-4">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+            <Trophy size={14} className="text-lotofacil-purple" />
+            Distribuição de Prêmios (70%)
+          </h3>
+          <div className="glass-card p-6 space-y-6 border-lotofacil-purple/10">
+            <FinanceItem label="Rapidinha (10%)" value={values.rapidinha} color="text-slate-900" />
+            <FinanceItem label="Campeão (45%)" value={values.champion} color="text-lotofacil-purple" />
+            <FinanceItem label="Vice-Campeão (15%)" value={values.vice} color="text-blue-600" />
+            <div className="pt-4 border-t border-slate-100">
+              <FinanceItem label="Total em Prêmios" value={values.totalPrizes} color="text-slate-900" bold />
+            </div>
+          </div>
+        </div>
+
+        {/* Operation Column */}
+        <div className="space-y-4">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+            <Users size={14} className="text-blue-600" />
+            Operação e Vendas (25%)
+          </h3>
+          <div className="glass-card p-6 space-y-6 border-blue-100">
+            <FinanceItem label="Comissão Vendedores (15%)" value={values.seller} color="text-slate-900" />
+            <FinanceItem label="Operação Admin (10%)" value={values.admin} color="text-blue-600" />
+            <div className="pt-4 border-t border-slate-100">
+              <FinanceItem label="Total Operação" value={values.totalOperation} color="text-slate-900" bold />
+            </div>
+          </div>
+        </div>
+
+        {/* Reserve Column */}
+        <div className="space-y-4">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+            <ShieldCheck size={14} className="text-lotofacil-yellow" />
+            Reserva e Garantia (5%)
+          </h3>
+          <div className="glass-card p-6 space-y-6 border-lotofacil-yellow/10">
+            <FinanceItem label="Fundo de Reserva (5%)" value={values.reserve} color="text-lotofacil-yellow" />
+            <div className="pt-4 border-t border-slate-100">
+              <p className="text-[8px] uppercase tracking-widest text-slate-400 mb-2">Prêmios Fixos Garantidos</p>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-slate-600">10 PTS (Sorteios)</span>
+                  <span className="text-[10px] font-bold text-slate-900">R$ 500,00</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-slate-600">27+ PTS (Total)</span>
+                  <span className="text-[10px] font-bold text-slate-900">R$ 5.000,00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200 flex items-start gap-4">
+        <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
+          <Info size={20} className="text-slate-600" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs font-bold text-slate-900 uppercase tracking-widest">Nota sobre Automação</p>
+          <p className="text-[10px] text-slate-600 leading-relaxed">
+            Os valores acima são calculados automaticamente com base no número de apostas validadas e no preço definido para o concurso (R$ {betPrice}). 
+            A distribuição segue rigorosamente as porcentagens definidas: 70% Prêmios, 25% Operação e 5% Reserva.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FinanceItem = ({ label, value, color, bold = false }: { label: string, value: number, color: string, bold?: boolean }) => (
+  <div className="flex justify-between items-center">
+    <span className={cn("text-[10px] uppercase tracking-widest text-slate-500", bold && "font-bold text-slate-700")}>{label}</span>
+    <span className={cn("text-sm font-bold", color, bold && "text-lg font-black")}>
+      {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+    </span>
+  </div>
+);
 
 export default AdminPanel;
