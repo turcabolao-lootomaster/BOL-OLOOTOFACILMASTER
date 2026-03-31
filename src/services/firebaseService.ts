@@ -276,7 +276,8 @@ export const firebaseService = {
           userName: doc.data().betName || 'Participante',
           points: points,
           position: currentRank,
-          sellerCode: doc.data().sellerCode
+          sellerCode: doc.data().sellerCode,
+          numbers: doc.data().numbers
         };
       });
       callback(ranking);
@@ -764,7 +765,7 @@ export const firebaseService = {
         .sort((a, b) => a.number - b.number);
       
       console.log(`Found ${closedContests.length} closed contests`);
-      const participantTotals: { [key: string]: { betName: string, sellerCode: string, totalPoints: number, ownerId: string } } = {};
+      const participantTotals: { [key: string]: { betName: string, sellerCode: string, totalPoints: number, ownerId: string, numbers: number[] } } = {};
 
       for (const contest of closedContests) {
         const contestId = contest.id;
@@ -779,7 +780,9 @@ export const firebaseService = {
         console.log(`Found ${betsSnap.size} validated bets for contest #${contest.number}`);
         
         // Group by participant (betName + sellerCode) and take the best score in this contest
-        const contestBestScores: { [key: string]: { betName: string, sellerCode: string, score: number, userId: string } } = {};
+        // Rule: A participant can have multiple bets with different names (e.g., "ROMARIO" and "VALMIR").
+        // For each unique name + seller combination, only the best bet in the contest counts for the general ranking.
+        const contestBestScores: { [key: string]: { betName: string, sellerCode: string, score: number, userId: string, numbers: number[] } } = {};
         
         for (const betDoc of betsSnap.docs) {
           const betData = betDoc.data() as Bet;
@@ -792,7 +795,7 @@ export const firebaseService = {
           if (!key || key === '_') continue;
 
           if (!contestBestScores[key] || totalHits > contestBestScores[key].score) {
-            contestBestScores[key] = { betName, sellerCode, score: totalHits, userId: betData.userId };
+            contestBestScores[key] = { betName, sellerCode, score: totalHits, userId: betData.userId, numbers: betData.numbers };
           }
         }
         
@@ -803,7 +806,8 @@ export const firebaseService = {
               betName: data.betName, 
               sellerCode: data.sellerCode, 
               totalPoints: 0, 
-              ownerId: data.userId 
+              ownerId: data.userId,
+              numbers: data.numbers
             };
           }
           participantTotals[key].totalPoints += data.score;

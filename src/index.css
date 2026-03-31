@@ -59,10 +59,21 @@
 }
 
 .mobile-p {
-  @apply p-3 sm:p-6 lg:p-10;
+  @apply p-2 sm:p-6 lg:p-10;
 }
 
 .mobile-gap {
-  @apply gap-3 sm:gap-6 lg:gap-10;
+  @apply gap-2 sm:gap-6 lg:gap-10;
+}
+
+/* Mobile-specific table adjustments */
+@media (max-width: 640px) {
+  .compact-table th, .compact-table td {
+    @apply py-3;
+  }
+  
+  .compact-table .hide-mobile {
+    @apply hidden;
+  }
 }
 

@@ -105,7 +105,7 @@ const Dashboard: React.FC = () => {
       {/* Welcome Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-3xl lg:text-4xl font-display tracking-widest text-slate-900 uppercase">
+          <h1 className="text-lg sm:text-3xl lg:text-4xl font-display tracking-widest text-slate-900 uppercase">
             OLÁ, <span className="text-lotofacil-purple">{user?.name}</span>, <span className="text-slate-500">{user?.whatsapp || user?.email}</span>
           </h1>
           <p className="text-[10px] sm:text-sm text-slate-500 mt-0.5 sm:mt-2">Bem-vindo ao seu painel de controle do Bolão Lotofácil.</p>

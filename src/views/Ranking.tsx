@@ -6,15 +6,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { firebaseService } from '../services/firebaseService';
-import { Trophy, Medal, TrendingUp, Search, Share2 } from 'lucide-react';
+import { Trophy, Medal, TrendingUp, Search, Share2, Crown } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../utils';
 import { RANKING_GOAL } from '../utils';
-import { UserRanking, ContestStatus } from '../types';
+import { UserRanking, ContestStatus, Bet } from '../types';
 
 const Ranking: React.FC = () => {
   const { user } = useAuth();
   const [ranking, setRanking] = useState<UserRanking[]>([]);
+  const [activeBetKeys, setActiveBetKeys] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -24,20 +25,37 @@ const Ranking: React.FC = () => {
       setLoading(false);
     });
 
+    // Subscribe to active contest bets to show blinking dot
+    let unsubscribeBets: (() => void) | undefined;
+    const unsubscribeContest = firebaseService.subscribeToActiveContest((contest) => {
+      if (contest) {
+        if (unsubscribeBets) unsubscribeBets();
+        unsubscribeBets = firebaseService.subscribeToContestBets(contest.id, (bets: Bet[]) => {
+          const keys = new Set(bets.map(b => 
+            `${(b.betName || b.userName || '').trim().toUpperCase()}_${(b.sellerCode || '').trim().toUpperCase()}`
+          ));
+          setActiveBetKeys(keys);
+        });
+      }
+    });
+
     return () => {
       unsubscribeRanking();
+      unsubscribeContest();
+      if (unsubscribeBets) unsubscribeBets();
     };
   }, []);
 
   const filteredRanking = React.useMemo(() => {
-    return ranking.filter(p => 
+    const filtered = ranking.filter(p => 
       (p.userName || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
+    return filtered.slice(0, 25); // Limit to Top 25
   }, [ranking, searchTerm]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
-      case 1: return <Medal className="text-lotofacil-yellow" size={24} />;
+      case 1: return <Crown className="text-lotofacil-yellow" size={24} />;
       case 2: return <Medal className="text-slate-400" size={24} />;
       case 3: return <Medal className="text-orange-600" size={24} />;
       default: return <span className="text-sm font-bold text-slate-600">#{rank}</span>;
@@ -54,8 +72,8 @@ const Ranking: React.FC = () => {
     <div className="p-4 sm:p-6 lg:p-10 space-y-6 sm:space-y-10">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 sm:gap-6">
         <div>
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl sm:text-4xl font-display tracking-widest text-slate-900 uppercase">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <h1 className="text-lg sm:text-4xl font-display tracking-widest text-slate-900 uppercase">
               CORRIDA DOS CAMPEÕES
               <span className="text-lotofacil-purple"> - 150 PTS</span>
             </h1>
@@ -94,7 +112,7 @@ const Ranking: React.FC = () => {
       </div>
 
       {/* Top 3 Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
         {loading ? (
           <div className="col-span-3 text-center py-10 text-slate-600 text-xs sm:text-sm">Carregando ranking...</div>
         ) : filteredRanking.slice(0, 3).map((p, idx) => (
@@ -104,7 +122,7 @@ const Ranking: React.FC = () => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: idx * 0.1 }}
             className={cn(
-              "glass-card p-5 sm:p-8 flex flex-col items-center text-center space-y-4 sm:space-y-6 relative overflow-hidden",
+              "glass-card p-4 sm:p-8 flex flex-col items-center text-center space-y-3 sm:space-y-6 relative overflow-hidden",
               p.position === 1 && "border-lotofacil-yellow/30 ring-1 ring-lotofacil-yellow/20 shadow-sm"
             )}
           >
@@ -118,7 +136,7 @@ const Ranking: React.FC = () => {
               {getRankIcon(p.position)}
               {p.position === 1 && (
                 <div className="absolute -top-2 -right-2 bg-slate-900 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg ring-1 ring-lotofacil-yellow/50 flex items-center gap-1">
-                  <span>👑</span> Líder
+                  <Crown size={8} className="text-lotofacil-yellow" /> Líder
                 </div>
               )}
             </div>
@@ -127,6 +145,18 @@ const Ranking: React.FC = () => {
                 "text-lg sm:text-xl font-bold",
                 p.position === 1 ? "text-lotofacil-yellow" : p.position === 2 ? "text-slate-600" : "text-slate-900"
               )}>{p.userName}</h3>
+              
+              {/* Numbers Display */}
+              {p.numbers && (
+                <div className="flex flex-wrap justify-center gap-0.5 mt-2">
+                  {p.numbers.map(num => (
+                    <span key={num} className="text-[9px] font-bold text-lotofacil-purple bg-lotofacil-purple/5 px-0.5 rounded border border-lotofacil-purple/10">
+                      {num.toString().padStart(2, '0')}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {p.sellerCode && (
                 <p className="text-[8px] sm:text-[10px] text-lotofacil-purple font-bold uppercase tracking-widest mt-0.5">
                   Vendedor: {p.sellerCode}
@@ -134,7 +164,9 @@ const Ranking: React.FC = () => {
               )}
               {p.position === 1 && (
                 <div className="mt-1">
-                  <span className="text-[8px] font-black text-lotofacil-yellow uppercase tracking-widest">👑 Líder do Ranking</span>
+                  <span className="text-[8px] font-black text-lotofacil-yellow uppercase tracking-widest flex items-center justify-center gap-1">
+                    <Crown size={10} /> Líder do Ranking
+                  </span>
                 </div>
               )}
               {p.points >= 150 && (
@@ -185,9 +217,9 @@ const Ranking: React.FC = () => {
       </div>
 
       {/* List */}
-      <div className="glass-card p-5 sm:p-8 space-y-6 sm:space-y-8">
+      <div className="glass-card p-3 sm:p-8 space-y-4 sm:space-y-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">Classificação <span className="text-slate-600">Completa</span></h2>
+          <h2 className="text-base sm:text-2xl font-display tracking-widest text-slate-900 uppercase">Top 25 <span className="text-slate-600">Classificação</span></h2>
           <div className="flex items-center gap-4 w-full sm:w-auto">
             <div className="relative w-full sm:w-48">
               <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
@@ -211,7 +243,7 @@ const Ranking: React.FC = () => {
               transition={{ delay: idx * 0.05 }}
               className="flex items-center gap-3 sm:gap-6 p-3 sm:p-4 bg-white rounded-xl sm:rounded-2xl border border-slate-100 hover:border-slate-200 transition-all shadow-sm"
             >
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-50 rounded-lg sm:rounded-xl flex items-center justify-center text-[10px] sm:text-xs font-bold text-slate-600 shrink-0 border border-slate-100">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-50 rounded-lg sm:rounded-xl flex items-center justify-center text-[10px] sm:text-xs font-bold text-slate-600 shrink-0 border border-slate-100 relative">
                 #{p.position}
               </div>
               <div className="flex-1 min-w-0">
@@ -229,6 +261,17 @@ const Ranking: React.FC = () => {
                     </span>
                   )}
                 </div>
+                
+                {/* Numbers Display */}
+                {p.numbers && (
+                  <div className="flex flex-wrap gap-0.5 mt-1">
+                    {p.numbers.map(num => (
+                      <span key={num} className="text-[9px] font-bold text-lotofacil-purple bg-lotofacil-purple/5 px-0.5 rounded border border-lotofacil-purple/10">
+                        {num.toString().padStart(2, '0')}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <div className="flex items-center gap-3 sm:gap-4 mt-1 sm:mt-2">
                   <div className="flex-1 flex flex-col gap-1">
                     <div className="h-1 sm:h-1.5 bg-slate-100 rounded-full overflow-hidden">

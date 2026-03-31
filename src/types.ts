@@ -90,6 +90,7 @@ export interface UserRanking {
   points: number;
   position: number;
   sellerCode?: string;
+  numbers?: number[];
 }
 
 export interface Commission {

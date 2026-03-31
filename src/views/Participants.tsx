@@ -110,7 +110,7 @@ const Participants: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl sm:text-4xl font-display tracking-widest text-slate-900">
+            <h1 className="text-lg sm:text-4xl font-display tracking-widest text-slate-900">
               CLASSIFICAÇÃO <span className="text-lotofacil-purple uppercase">AO VIVO</span>
             </h1>
             <button 
@@ -196,16 +196,16 @@ const Participants: React.FC = () => {
       {/* Ranking Table */}
       <div className="glass-card overflow-hidden border-slate-200 shadow-xl">
         <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full text-left border-collapse min-w-[800px]">
+          <table className="w-full text-left border-collapse min-w-full sm:min-w-[800px] compact-table">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-6 py-4 text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center w-20">Pos</th>
-                <th className="px-6 py-4 text-[9px] uppercase tracking-widest text-slate-600 font-bold">Participante</th>
-                <th className="px-6 py-4 text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center">Números</th>
-                <th className="px-4 py-4 text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center w-16">S1</th>
-                <th className="px-4 py-4 text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center w-16">S2</th>
-                <th className="px-4 py-4 text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center w-16">S3</th>
-                <th className="px-6 py-4 text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center w-24">Total</th>
+                <th className="px-1 sm:px-6 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center w-8 sm:w-20">Pos</th>
+                <th className="px-2 sm:px-6 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest text-slate-600 font-bold">Participante</th>
+                <th className="px-6 py-4 text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center hide-mobile">Números</th>
+                <th className="px-1 sm:px-4 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center w-10 sm:w-16">S1</th>
+                <th className="px-1 sm:px-4 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center w-10 sm:w-16">S2</th>
+                <th className="px-1 sm:px-4 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center w-10 sm:w-16">S3</th>
+                <th className="px-1 sm:px-6 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center w-12 sm:w-24">Total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -248,10 +248,10 @@ const Participants: React.FC = () => {
                       idx === 0 && "bg-gradient-to-r from-lotofacil-yellow/5 to-transparent"
                     )}
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-1 sm:px-6 py-4">
                       <div className="flex items-center justify-center">
                         <div className={cn(
-                          "w-8 h-8 rounded-lg flex items-center justify-center font-display text-xs shadow-sm",
+                          "w-5 h-5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center font-display text-[9px] sm:text-xs shadow-sm",
                           idx === 0 ? "bg-lotofacil-yellow text-white" :
                           idx === 1 ? "bg-slate-300 text-white" :
                           idx === 2 ? "bg-lotofacil-purple text-white" :
@@ -261,14 +261,24 @@ const Participants: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 sm:px-6 py-4">
                       <div className="flex flex-col">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-slate-900">{b.betName || b.userName}</span>
+                          <span className="text-[11px] sm:text-sm font-bold text-slate-900 truncate max-w-[110px] sm:max-w-none">{b.betName || b.userName}</span>
                           {isCurrentUser && (
-                            <span className="bg-lotofacil-purple text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase">Você</span>
+                            <span className="bg-lotofacil-purple text-white text-[6px] sm:text-[7px] font-black px-1 py-0.5 rounded uppercase">Você</span>
                           )}
                         </div>
+                        
+                        {/* Mobile Numbers Display */}
+                        <div className="flex flex-wrap gap-0.5 mt-1 sm:hidden">
+                          {b.numbers.map(num => (
+                            <span key={num} className="text-[9px] font-bold text-lotofacil-purple bg-lotofacil-purple/5 px-0.5 rounded border border-lotofacil-purple/10">
+                              {num.toString().padStart(2, '0')}
+                            </span>
+                          ))}
+                        </div>
+
                         <div className="flex flex-wrap gap-1 mt-1">
                           {isRapidinha && <WinnerBadge label="Rapidinha" color="bg-blue-600" />}
                           {isChampion && <WinnerBadge label="Campeão" color="bg-lotofacil-purple" />}
@@ -278,7 +288,7 @@ const Participants: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 hide-mobile">
                       <div className="flex items-center justify-center gap-1">
                         {b.numbers.map(num => (
                           <div key={num} className="w-6 h-6 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600">
@@ -290,19 +300,19 @@ const Participants: React.FC = () => {
                     <DrawScore score={hits[0]} isWinner={hits[0] >= 10} />
                     <DrawScore score={hits[1]} isWinner={hits[1] >= 10} />
                     <DrawScore score={hits[2]} isWinner={hits[2] >= 10} />
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-1 sm:px-6 py-4 text-center">
                       <div className={cn(
-                        "inline-flex flex-col items-center justify-center w-12 h-12 rounded-xl border transition-all shadow-sm",
+                        "inline-flex flex-col items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded-xl border transition-all shadow-sm",
                         total >= 27 ? "bg-slate-900 border-slate-900 shadow-lg scale-110" :
                         idx < 3 ? "bg-white border-lotofacil-yellow/30" : "bg-slate-50 border-slate-200"
                       )}>
                         <span className={cn(
-                          "text-lg font-display tracking-tighter leading-none",
+                          "text-xs sm:text-lg font-display tracking-tighter leading-none",
                           total >= 27 ? "text-white" : "text-lotofacil-purple"
                         )}>
                           {total.toString().padStart(2, '0')}
                         </span>
-                        <span className="text-[7px] font-black uppercase tracking-tighter text-slate-400 mt-0.5">PTS</span>
+                        <span className="text-[5px] sm:text-[7px] font-black uppercase tracking-tighter text-slate-400 mt-0.5">PTS</span>
                       </div>
                     </td>
                   </motion.tr>
@@ -360,10 +370,10 @@ const WinnerBadge = ({ label, color }: { label: string, color: string }) => (
 );
 
 const DrawScore = ({ score, isWinner }: { score: number, isWinner: boolean }) => (
-  <td className="px-4 py-4 text-center">
+  <td className="px-1 sm:px-4 py-4 text-center">
     <div className="flex flex-col items-center gap-1">
       <span className={cn(
-        "text-sm font-bold font-mono",
+        "text-xs sm:text-sm font-bold font-mono",
         isWinner ? "text-lotofacil-yellow" : score >= 9 ? "text-lotofacil-purple" : "text-slate-400"
       )}>
         {score.toString().padStart(2, '0')}

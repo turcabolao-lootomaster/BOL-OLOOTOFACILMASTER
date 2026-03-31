@@ -6,11 +6,12 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
+import MobileZoomHint from './components/MobileZoomHint';
 import Login from './views/Login';
 import Dashboard from './views/Dashboard';
 import Betting from './views/Betting';
 import MyBets from './views/MyBets';
-import Participants from './views/Participants';
+import LiveRanking from './views/LiveRanking';
 import CurrentContest from './views/CurrentContest';
 import Ranking from './views/Ranking';
 import Instructions from './views/Instructions';
@@ -61,7 +62,7 @@ const AppContent: React.FC = () => {
       case 'dashboard': return <Dashboard />;
       case 'bet': return <Betting />;
       case 'my-bets': return <MyBets />;
-      case 'participants': return <Participants />;
+      case 'participants': return <LiveRanking />;
       case 'current-contest': return <CurrentContest />;
       case 'ranking': return <Ranking />;
       case 'instructions': return <Instructions />;
@@ -81,6 +82,7 @@ const AppContent: React.FC = () => {
       />
       
       <main className="flex-1 lg:ml-64 min-h-screen">
+        <MobileZoomHint />
         {/* Mobile Header - More compact */}
         <header className="lg:hidden p-4 flex items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-30">
           <div className="flex items-center gap-2">

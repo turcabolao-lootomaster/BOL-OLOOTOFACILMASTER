@@ -195,7 +195,7 @@ const Betting: React.FC = () => {
 
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-4xl font-display tracking-widest text-slate-900">FAZER <span className="text-lotofacil-purple uppercase">APOSTA</span></h1>
+          <h1 className="text-lg sm:text-4xl font-display tracking-widest text-slate-900">FAZER <span className="text-lotofacil-purple uppercase">APOSTA</span></h1>
           <p className="text-[10px] sm:text-sm text-slate-600 mt-1">Selecione exatamente 10 números entre 01 e 25.</p>
         </div>
         <div className="glass-card px-4 py-2 flex items-center gap-3 bg-lotofacil-purple/5 border-lotofacil-purple/20 self-start sm:self-auto">
@@ -226,7 +226,7 @@ const Betting: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
         {/* Number Grid */}
         <div className="lg:col-span-2 space-y-4 sm:space-y-8">
-          <div className="grid grid-cols-5 gap-1.5 sm:gap-4 w-full max-w-[500px] mx-auto lg:mx-0">
+          <div className="grid grid-cols-5 gap-1 sm:gap-4 w-full max-w-[500px] mx-auto lg:mx-0">
             {Array.from({ length: 25 }, (_, i) => i + 1).map(num => (
               <motion.button
                 key={num}
@@ -234,7 +234,7 @@ const Betting: React.FC = () => {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => toggleNumber(num)}
                 className={cn(
-                  "aspect-square rounded-lg sm:rounded-2xl transition-all flex items-center justify-center border-2 text-base sm:text-2xl font-bold",
+                  "aspect-square rounded-lg sm:rounded-2xl transition-all flex items-center justify-center border-2 text-sm sm:text-2xl font-bold",
                   selectedNumbers.includes(num)
                     ? "bg-lotofacil-purple border-lotofacil-purple text-white shadow-md"
                     : "bg-slate-50 border-slate-200 text-blue-600 hover:border-blue-300"
@@ -250,10 +250,11 @@ const Betting: React.FC = () => {
             <button 
               onClick={registerBet}
               disabled={selectedNumbers.length !== 10}
-              className="flex-[1.2] bg-emerald-600 text-white h-10 sm:h-12 flex items-center justify-center gap-1 text-[9px] sm:text-xs font-bold uppercase tracking-widest disabled:opacity-30 rounded-xl shadow-md hover:bg-emerald-700 transition-all"
+              className="flex-[1.2] bg-gradient-to-r from-slate-900 to-slate-800 text-white h-10 sm:h-12 flex items-center justify-center gap-1 text-[9px] sm:text-xs font-bold uppercase tracking-widest disabled:opacity-50 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.6)] hover:brightness-125 active:scale-95 transition-all border-2 border-white/10 relative overflow-hidden group"
             >
-              <Plus size={14} />
-              REGISTRAR APOSTA
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+              <Plus size={14} className="text-lotofacil-yellow" />
+              <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400">REGISTRAR APOSTA</span>
             </button>
             
             <div className="flex-[1.8] flex gap-1 items-center h-10 sm:h-12">
@@ -265,7 +266,7 @@ const Betting: React.FC = () => {
                   <Minus size={12} />
                 </button>
                 <span className="text-[10px] sm:text-xs font-bold text-slate-900 w-4 text-center">{surpresinhaCount}</span>
-                <button onClick={() => setSurpresinhaCount(Math.min(10, surpresinhaCount + 1))} className="text-slate-400 hover:text-slate-900 p-1"><Plus size={12} /></button>
+                <button onClick={() => setSurpresinhaCount(Math.min(30, surpresinhaCount + 1))} className="text-slate-400 hover:text-slate-900 p-1"><Plus size={12} /></button>
               </div>
               <button 
                 onClick={handleAddSurpresinha}
@@ -356,9 +357,12 @@ const Betting: React.FC = () => {
                 <button 
                   type="submit"
                   disabled={pendingBets.length === 0 || isSubmitting || (activeContest?.status !== 'aberto') || !betName.trim()}
-                  className="w-full bg-lotofacil-purple text-white h-12 rounded-xl flex items-center justify-center shadow-md disabled:opacity-30 disabled:cursor-not-allowed text-xs sm:text-sm uppercase tracking-widest font-bold"
+                  className="w-full bg-gradient-to-r from-slate-900 to-slate-800 text-white h-12 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm uppercase tracking-widest font-bold hover:brightness-125 transition-all border-2 border-white/10 relative overflow-hidden group"
                 >
-                  {isSubmitting ? 'PROCESSANDO...' : (activeContest?.status !== 'aberto' ? 'APOSTAS BLOQUEADAS' : 'FINALIZAR E ENVIAR')}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                  <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400">
+                    {isSubmitting ? 'PROCESSANDO...' : (activeContest?.status !== 'aberto' ? 'APOSTAS BLOQUEADAS' : 'FINALIZAR E ENVIAR')}
+                  </span>
                 </button>
               </div>
             </form>
