@@ -64,25 +64,26 @@ const AdminPanel: React.FC = () => {
 
   return (
     <div className="mobile-p lg:p-10 space-y-4 sm:space-y-10">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
+      <div className="flex flex-col gap-6">
+        <div className="text-center sm:text-left">
           <h1 className="text-xl sm:text-4xl font-display tracking-widest text-slate-900">PAINEL <span className="text-lotofacil-purple uppercase">ADMINISTRATIVO</span></h1>
           <p className="text-[10px] sm:text-sm text-slate-600 mt-1">Gestão completa do sistema, sorteios e relatórios.</p>
         </div>
-        <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200 overflow-x-auto no-scrollbar max-w-full">
+        
+        <div className="flex flex-wrap items-center justify-center gap-1.5 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 w-full max-w-5xl mx-auto">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[9px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+                "flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-[9px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                 activeTab === tab.id 
-                  ? "bg-lotofacil-purple text-white shadow-[0_4px_10px_rgba(107,33,168,0.3)]" 
+                  ? "bg-lotofacil-purple text-white shadow-[0_4px_12px_rgba(107,33,168,0.3)]" 
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               )}
             >
-              <tab.icon size={12} />
-              <span className="inline">{tab.label}</span>
+              <tab.icon size={14} />
+              <span>{tab.label}</span>
             </button>
           ))}
         </div>
@@ -776,7 +777,7 @@ const DrawsTab = () => {
                   </span>
                 </div>
                 
-                <div className="grid grid-cols-5 gap-1.5">
+                <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
                   {drawResults[num - 1].map((val, idx) => (
                     <input
                       key={idx}
@@ -798,7 +799,7 @@ const DrawsTab = () => {
                       }}
                       id={`draw-${num}-input-${idx}`}
                       className={cn(
-                        "w-full bg-white border border-slate-200 rounded-lg py-1.5 text-center text-xs font-bold text-slate-900 focus:outline-none focus:border-lotofacil-purple/50 transition-all shadow-sm",
+                        "w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white border border-slate-200 text-center text-[10px] sm:text-xs font-black text-slate-900 focus:outline-none focus:border-lotofacil-purple focus:ring-2 focus:ring-lotofacil-purple/20 transition-all shadow-[0_2px_4px_rgba(0,0,0,0.1),inset_0_-1px_2px_rgba(0,0,0,0.05)] mx-auto",
                         val && drawResults[num - 1].filter(v => v === val).length > 1 && "border-red-500 text-red-600 bg-red-50",
                         val && (parseInt(val) < 1 || parseInt(val) > 25) && "border-orange-500 text-orange-600 bg-orange-50"
                       )}
@@ -838,7 +839,7 @@ const DrawsTab = () => {
                   <h3 className="text-xl sm:text-2xl font-display tracking-widest text-slate-900 uppercase">ACERTOS <span className="text-blue-600">SORTEIO #{selectedDrawForBets.number}</span></h3>
                   <div className="flex flex-wrap gap-2 mt-4">
                     {selectedDrawForBets.results.map(num => (
-                      <span key={num} className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-md">
+                      <span key={num} className="w-8 h-8 rounded-full bg-white text-slate-900 flex items-center justify-center text-xs font-black shadow-[0_2px_4px_rgba(0,0,0,0.2),inset_0_-1px_2px_rgba(0,0,0,0.1)] border border-slate-200">
                         {num.toString().padStart(2, '0')}
                       </span>
                     ))}

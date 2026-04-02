@@ -163,6 +163,39 @@ const Dashboard: React.FC = () => {
         ))}
       </div>
 
+      {/* Current Draw Section (If available) */}
+      {activeContest && activeContest.draws.some(d => d.results.length > 0) && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-4 sm:p-6 bg-slate-900 text-white overflow-hidden relative"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-lotofacil-purple/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-lotofacil-purple animate-pulse" />
+                <h2 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-lotofacil-purple">ÚLTIMO RESULTADO <span className="text-white/40 ml-1">#{activeContest.number}</span></h2>
+              </div>
+              <p className="text-[8px] sm:text-[10px] text-white/40 uppercase tracking-widest mt-1">Confira os números sorteados no concurso atual</p>
+            </div>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              {activeContest.draws.find(d => d.results.length > 0)?.results.sort((a, b) => a - b).map((num, i) => (
+                <motion.span 
+                  key={num} 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white text-slate-900 flex items-center justify-center text-[9px] sm:text-xs font-black shadow-[0_4px_8px_rgba(0,0,0,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1)] border border-slate-200"
+                >
+                  {num.toString().padStart(2, '0')}
+                </motion.span>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
         {/* Ranking Progress */}

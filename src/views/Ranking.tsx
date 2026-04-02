@@ -89,11 +89,11 @@ const Ranking: React.FC = () => {
             Acompanhe a corrida rumo aos 150 pontos!
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
-            <div className="px-3 py-1.5 bg-slate-900 text-white rounded-lg flex items-center gap-2 shadow-md border border-lotofacil-yellow/30">
-              <Trophy size={14} className="text-lotofacil-yellow" />
+            <div className="px-3 py-1.5 bg-slate-900 text-white rounded-lg flex items-center gap-2 shadow-md border border-lotofacil-purple/30">
+              <Trophy size={14} className="text-lotofacil-purple" />
               <span className="text-[10px] font-bold uppercase tracking-widest">Meta: 150 Pontos</span>
             </div>
-            <div className="px-3 py-1.5 bg-lotofacil-yellow text-slate-900 rounded-lg flex items-center gap-2 shadow-md">
+            <div className="px-3 py-1.5 bg-lotofacil-purple text-white rounded-lg flex items-center gap-2 shadow-md">
               <span className="text-[10px] font-bold uppercase tracking-widest">Prêmio para quem alcançar primeiro: R$ 1.000</span>
             </div>
           </div>
@@ -135,8 +135,8 @@ const Ranking: React.FC = () => {
             )}>
               {getRankIcon(p.position)}
               {p.position === 1 && (
-                <div className="absolute -top-2 -right-2 bg-slate-900 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg ring-1 ring-lotofacil-yellow/50 flex items-center gap-1">
-                  <Crown size={8} className="text-lotofacil-yellow" /> Líder
+                <div className="absolute -top-2 -right-2 bg-slate-900 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg ring-1 ring-lotofacil-purple/50 flex items-center gap-1">
+                  <Crown size={8} className="text-lotofacil-purple" /> Líder
                 </div>
               )}
             </div>
@@ -255,8 +255,8 @@ const Ranking: React.FC = () => {
                     </span>
                   )}
                   {p.points >= 150 && (
-                    <span className="text-[7px] sm:text-[8px] bg-slate-900 text-white font-bold uppercase tracking-tighter px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm ring-1 ring-lotofacil-yellow/30">
-                      <Trophy size={8} className="text-lotofacil-yellow" />
+                    <span className="text-[7px] sm:text-[8px] bg-slate-900 text-white font-bold uppercase tracking-tighter px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm ring-1 ring-lotofacil-purple/30">
+                      <Trophy size={8} className="text-lotofacil-purple" />
                       META ALCANÇADA
                     </span>
                   )}

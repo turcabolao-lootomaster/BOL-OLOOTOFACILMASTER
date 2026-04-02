@@ -183,7 +183,7 @@ const Betting: React.FC = () => {
   };
 
   return (
-    <div className="mobile-p lg:p-10 max-w-6xl mx-auto space-y-4 sm:space-y-10">
+    <div className="mobile-p lg:p-10 max-w-[900px] mx-auto space-y-4 sm:space-y-10">
       {activeContest && activeContest.status !== 'aberto' && (
         <div className="bg-lotofacil-yellow/10 border border-lotofacil-yellow/20 p-3 rounded-xl flex items-center gap-3">
           <AlertCircle className="text-lotofacil-yellow shrink-0" size={18} />
@@ -204,29 +204,29 @@ const Betting: React.FC = () => {
         </div>
       </div>
 
-      {/* Bet Name Input - Moved here for prominence */}
-      <div className="max-w-[500px] mx-auto lg:mx-0 space-y-2">
-        <label className="block text-[10px] sm:text-xs uppercase tracking-widest text-lotofacil-purple font-black ml-1">
-          NOME NA APOSTA (NICK)
-        </label>
-        <div className="relative">
-          <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-lotofacil-purple/40" size={18} />
-          <input 
-            type="text" 
-            value={betName}
-            onChange={handleBetNameChange}
-            placeholder="EX: JOÃO SILVA (AMIGO 1)"
-            required
-            className="w-full bg-white border-2 border-lotofacil-purple/20 rounded-2xl py-3 sm:py-4 pl-12 pr-4 focus:outline-none focus:border-lotofacil-purple focus:ring-4 focus:ring-lotofacil-purple/10 transition-all text-sm sm:text-base font-bold text-slate-900 placeholder:text-slate-300 uppercase shadow-sm"
-          />
-        </div>
-        <p className="text-[9px] text-slate-500 ml-1 italic">* Use nomes diferentes para amigos aparecerem separadamente no ranking.</p>
-      </div>
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 justify-center items-start">
+        {/* Number Grid Column */}
+        <div className="w-full lg:w-[380px] space-y-4 sm:space-y-8 shrink-0">
+          {/* Bet Name Input - Moved inside column for alignment */}
+          <div className="space-y-2">
+            <label className="block text-[10px] sm:text-xs uppercase tracking-widest text-lotofacil-purple font-black ml-1">
+              NOME NA APOSTA (NICK)
+            </label>
+            <div className="relative">
+              <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-lotofacil-purple/40" size={18} />
+              <input 
+                type="text" 
+                value={betName}
+                onChange={handleBetNameChange}
+                placeholder="EX: JOÃO SILVA (AMIGO 1)"
+                required
+                className="w-full bg-white border-2 border-lotofacil-purple/20 rounded-2xl py-3 sm:py-4 pl-12 pr-4 focus:outline-none focus:border-lotofacil-purple focus:ring-4 focus:ring-lotofacil-purple/10 transition-all text-sm sm:text-base font-bold text-slate-900 placeholder:text-slate-300 uppercase shadow-sm"
+              />
+            </div>
+            <p className="text-[9px] text-slate-500 ml-1 italic">* Use nomes diferentes para amigos aparecerem separadamente no ranking.</p>
+          </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
-        {/* Number Grid */}
-        <div className="lg:col-span-2 space-y-4 sm:space-y-8">
-          <div className="grid grid-cols-5 gap-1 sm:gap-4 w-full max-w-[500px] mx-auto lg:mx-0">
+          <div className="grid grid-cols-5 gap-1.5 sm:gap-2 w-full">
             {Array.from({ length: 25 }, (_, i) => i + 1).map(num => (
               <motion.button
                 key={num}
@@ -234,7 +234,7 @@ const Betting: React.FC = () => {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => toggleNumber(num)}
                 className={cn(
-                  "aspect-square rounded-lg sm:rounded-2xl transition-all flex items-center justify-center border-2 text-sm sm:text-2xl font-bold",
+                  "aspect-square rounded-lg sm:rounded-xl transition-all flex items-center justify-center border-2 text-xs sm:text-lg font-bold",
                   selectedNumbers.includes(num)
                     ? "bg-lotofacil-purple border-lotofacil-purple text-white shadow-md"
                     : "bg-slate-50 border-slate-200 text-blue-600 hover:border-blue-300"
@@ -246,7 +246,7 @@ const Betting: React.FC = () => {
           </div>
 
           {/* Action Buttons below grid */}
-          <div className="flex items-center gap-2 max-w-[500px] mx-auto lg:mx-0">
+          <div className="flex items-center gap-2 w-full">
             <button 
               onClick={registerBet}
               disabled={selectedNumbers.length !== 10}
@@ -278,7 +278,7 @@ const Betting: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col items-center justify-center gap-2 max-w-[500px] mx-auto lg:mx-0">
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col items-center justify-center gap-2 w-full">
             <p className="text-[9px] sm:text-[11px] text-slate-600 leading-tight text-center px-2">
               Cada aposta de 10 números é válida para os 3 sorteios do concurso atual. O valor é fixo por aposta registrada.
             </p>
@@ -286,8 +286,8 @@ const Betting: React.FC = () => {
         </div>
 
         {/* Bet Summary Sidebar */}
-        <div className="space-y-4">
-          <div className="glass-card p-4 sm:p-8 space-y-4 sm:space-y-8 lg:sticky lg:top-10 w-full">
+        <div className="w-full lg:w-[420px] space-y-4">
+          <div className="glass-card p-4 sm:p-8 space-y-4 sm:space-y-8 lg:sticky lg:top-10 w-full shadow-2xl border-slate-200">
             <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">RESUMO DO <span className="text-lotofacil-purple">BOLÃO</span></h2>
             
             {/* List of Registered Bets */}

@@ -134,7 +134,7 @@ const CurrentContest: React.FC = () => {
               <div className="flex items-center gap-3 sm:gap-4">
                 <div className={cn(
                   "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0",
-                  draw.status === 'concluido' ? "bg-lotofacil-yellow/10 text-lotofacil-yellow" : "bg-orange-100 text-orange-600"
+                  draw.status === 'concluido' ? "bg-lotofacil-purple/10 text-lotofacil-purple" : "bg-orange-100 text-orange-600"
                 )}>
                   <Trophy size={20} />
                 </div>
@@ -153,13 +153,13 @@ const CurrentContest: React.FC = () => {
                     </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     {draw.status === 'concluido' ? (
-                      <CheckCircle2 className="text-lotofacil-yellow" size={12} />
+                      <CheckCircle2 className="text-lotofacil-purple" size={12} />
                     ) : (
                       <Clock className="text-orange-600" size={12} />
                     )}
                     <span className={cn(
                       "text-[9px] sm:text-[10px] font-bold uppercase tracking-widest",
-                      draw.status === 'concluido' ? "text-lotofacil-yellow" : "text-orange-600"
+                      draw.status === 'concluido' ? "text-lotofacil-purple" : "text-orange-600"
                     )}>
                       {draw.status === 'concluido' ? `Realizado` : `Aguardando sorteio`}
                     </span>
@@ -176,13 +176,13 @@ const CurrentContest: React.FC = () => {
             </div>
 
             {draw.status === 'concluido' ? (
-              <div className="flex flex-wrap gap-1.5 sm:gap-3 relative z-10">
+              <div className="flex flex-wrap gap-1 sm:gap-2 relative z-10">
                 {draw.results.sort((a, b) => a - b).map(num => (
                   <motion.div
                     key={num}
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="w-7 h-7 sm:w-10 sm:h-10 bg-lotofacil-yellow rounded-full flex items-center justify-center text-black font-bold text-[10px] sm:text-sm shadow-[0_0_10px_rgba(255,215,0,0.3)]"
+                    className="w-7 h-7 sm:w-10 sm:h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-900 font-black text-[10px] sm:text-base shadow-[0_4px_8px_rgba(0,0,0,0.1),inset_0_-2px_4px_rgba(0,0,0,0.05)]"
                   >
                     {num.toString().padStart(2, '0')}
                   </motion.div>
@@ -218,7 +218,7 @@ const CurrentContest: React.FC = () => {
                   <h3 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">APOSTAS <span className="text-lotofacil-purple">SORTEIO #{selectedDrawForBets.number}</span></h3>
                   <div className="flex flex-wrap gap-1.5 mt-4">
                     {selectedDrawForBets.results.map(num => (
-                      <span key={num} className="w-7 h-7 rounded-full bg-lotofacil-yellow text-black flex items-center justify-center text-[10px] font-bold">
+                      <span key={num} className="w-7 h-7 rounded-full bg-lotofacil-purple text-white flex items-center justify-center text-[10px] font-bold">
                         {num.toString().padStart(2, '0')}
                       </span>
                     ))}
@@ -274,7 +274,7 @@ const CurrentContest: React.FC = () => {
                                   className={cn(
                                     "w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-bold border transition-all",
                                     isHit 
-                                      ? "bg-lotofacil-yellow border-lotofacil-yellow text-black shadow-[0_0_10px_rgba(255,215,0,0.3)]" 
+                                      ? "bg-lotofacil-purple border-lotofacil-purple text-white shadow-[0_0_10px_rgba(107,33,168,0.3)]" 
                                       : "bg-slate-50 border-slate-200 text-slate-300"
                                   )}
                                 >
@@ -284,7 +284,7 @@ const CurrentContest: React.FC = () => {
                             })}
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-lotofacil-yellow font-bold text-lg leading-none">
+                            <p className="text-lotofacil-purple font-bold text-lg leading-none">
                               {hitsCount} <span className="text-[9px] uppercase font-normal text-slate-400">Acertos</span>
                             </p>
                           </div>
