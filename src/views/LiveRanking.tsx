@@ -36,6 +36,7 @@ const LiveRanking: React.FC = () => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'points' | 'name'>('points');
   const [selectedDraw, setSelectedDraw] = useState(0);
   const [expandedBetId, setExpandedBetId] = useState<string | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -109,9 +110,15 @@ const LiveRanking: React.FC = () => {
 
   // Process ranking data - Show all bets individually (No grouping in Live Ranking)
   const sortedRanking = [...bets].sort((a, b) => {
-    const totalA = (a.hits || [0, 0, 0]).reduce((sum, h) => sum + h, 0);
-    const totalB = (b.hits || [0, 0, 0]).reduce((sum, h) => sum + h, 0);
-    return totalB - totalA;
+    if (sortBy === 'points') {
+      const totalA = (a.hits || [0, 0, 0]).reduce((sum, h) => sum + h, 0);
+      const totalB = (b.hits || [0, 0, 0]).reduce((sum, h) => sum + h, 0);
+      return totalB - totalA;
+    } else {
+      const nameA = (a.betName || a.userName).toLowerCase();
+      const nameB = (b.betName || b.userName).toLowerCase();
+      return nameA.localeCompare(nameB);
+    }
   });
 
   // Calculate ranks with ties (Dense Ranking: 1, 1, 2, 3...)
@@ -594,15 +601,41 @@ const LiveRanking: React.FC = () => {
       <div className="glass-card overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h2 className="text-sm sm:text-lg font-display tracking-widest text-slate-900 uppercase">RANKING DO <span className="text-lotofacil-purple">CONCURSO</span></h2>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-            <input 
-              type="text" 
-              placeholder="Buscar participante..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-4 text-xs focus:outline-none focus:border-lotofacil-purple/50 transition-all"
-            />
+          
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            {/* Sort Options */}
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 w-full sm:w-auto">
+              <button
+                onClick={() => setSortBy('points')}
+                className={cn(
+                  "flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                  sortBy === 'points' ? "bg-lotofacil-purple text-white shadow-md" : "text-slate-500 hover:bg-slate-200"
+                )}
+              >
+                Pontos
+              </button>
+              <button
+                onClick={() => setSortBy('name')}
+                className={cn(
+                  "flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                  sortBy === 'name' ? "bg-lotofacil-purple text-white shadow-md" : "text-slate-500 hover:bg-slate-200"
+                )}
+              >
+                A-Z
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <input 
+                type="text" 
+                placeholder="Buscar participante..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-4 text-xs focus:outline-none focus:border-lotofacil-purple/50 transition-all"
+              />
+            </div>
           </div>
         </div>
 
@@ -951,8 +984,8 @@ const LiveRanking: React.FC = () => {
         <div className="space-y-1">
           <p className="text-[10px] font-bold uppercase tracking-widest">Informações sobre Premiações</p>
           <p className="text-[9px] text-slate-400 leading-relaxed">
-            Prêmios fixos (10 PTS nos Sorteios S1/S2/S3 e 27+ PTS) são garantidos. Em caso de empate, os prêmios são divididos igualmente entre os ganhadores. 
-            A classificação é atualizada em tempo real conforme os resultados são inseridos.
+            A classificação é atualizada em tempo real conforme os resultados da Lotofácil Oficial Caixa.
+            Prêmios fixos (10 PTS nos Sorteios S1/S2/S3 e BÔNUS 25 PTS e 27 PTS) são garantidos. Em caso de empate, os prêmios são divididos igualmente entre os ganhadores.
           </p>
         </div>
       </div>

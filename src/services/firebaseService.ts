@@ -561,19 +561,41 @@ export const firebaseService = {
   },
 
   // Seller functions
-  async getSellerByUserId(userId: string): Promise<Seller | null> {
-    const path = 'sellers';
-    try {
-      const q = query(collection(db, 'sellers'), where('userId', '==', userId));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        return { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as Seller;
+  subscribeToSellerSales(sellerCode: string, callback: (bets: Bet[]) => void) {
+    const q = query(
+      collection(db, 'bets'), 
+      where('sellerCode', '==', sellerCode)
+    );
+    return onSnapshot(q, (snapshot) => {
+      const bets = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return { 
+          id: doc.id, 
+          ...data,
+          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt
+        } as Bet;
+      }).sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : 0;
+        const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : 0;
+        return dateB - dateA;
+      });
+      callback(bets);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'bets');
+    });
+  },
+
+  subscribeToSellerData(userId: string, callback: (seller: Seller | null) => void) {
+    const q = query(collection(db, 'sellers'), where('userId', '==', userId));
+    return onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        callback({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Seller);
+      } else {
+        callback(null);
       }
-      return null;
-    } catch (error) {
-      handleFirestoreError(error, OperationType.GET, path);
-      return null;
-    }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'sellers');
+    });
   },
 
   async getSellerRecentSales(sellerCode: string): Promise<Bet[]> {
@@ -581,12 +603,24 @@ export const firebaseService = {
     try {
       const q = query(
         collection(db, 'bets'), 
-        where('sellerCode', '==', sellerCode),
-        orderBy('createdAt', 'desc'),
-        limit(100)
+        where('sellerCode', '==', sellerCode)
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bet));
+      const bets = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return { 
+          id: doc.id, 
+          ...data,
+          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt
+        } as Bet;
+      });
+      
+      // Sort in memory to avoid index requirements
+      return bets.sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : 0;
+        const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : 0;
+        return dateB - dateA;
+      });
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, path);
       return [];

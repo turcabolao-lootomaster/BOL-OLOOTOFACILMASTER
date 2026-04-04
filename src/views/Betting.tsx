@@ -16,6 +16,7 @@ const Betting: React.FC = () => {
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [pendingBets, setPendingBets] = useState<number[][]>([]);
   const [sellerCode, setSellerCode] = useState('');
+  const [isSellerLink, setIsSellerLink] = useState(false);
   const [betName, setBetName] = useState('');
 
   const handleBetNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,6 +38,7 @@ const Betting: React.FC = () => {
       const ref = params.get('ref');
       if (ref) {
         setSellerCode(ref.toUpperCase());
+        setIsSellerLink(true);
         const seller = await firebaseService.getSellerByCode(ref);
         if (seller) {
           const ws = await firebaseService.getSellerWhatsApp(seller.userId);
@@ -337,13 +339,19 @@ const Betting: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-600 mb-1.5 ml-1">Código do Vendedor (Opcional)</label>
+                  <label className="block text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-600 mb-1.5 ml-1">
+                    Código do Vendedor {isSellerLink ? '(Vinculado)' : '(Opcional)'}
+                  </label>
                   <input 
                     type="text" 
                     value={sellerCode}
-                    onChange={(e) => setSellerCode(e.target.value)}
+                    onChange={(e) => !isSellerLink && setSellerCode(e.target.value)}
+                    readOnly={isSellerLink}
                     placeholder="Ex: REF123"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 sm:py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs text-slate-900"
+                    className={cn(
+                      "w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 sm:py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs text-slate-900",
+                      isSellerLink && "bg-slate-100 text-slate-400 cursor-not-allowed border-dashed"
+                    )}
                   />
                 </div>
               </div>

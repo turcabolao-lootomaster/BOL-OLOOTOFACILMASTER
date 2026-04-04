@@ -29,23 +29,46 @@ const SellerPanel: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!user?.uid) return;
-      try {
-        const sellerData = await firebaseService.getSellerByUserId(user.uid);
-        if (sellerData) {
-          setSeller(sellerData);
-          const sales = await firebaseService.getSellerRecentSales(sellerData.code);
+    if (!user?.uid) return;
+    
+    let unsubscribeSales: (() => void) | null = null;
+
+    // Subscribe to seller data
+    const unsubscribeSeller = firebaseService.subscribeToSellerData(user.uid, (sellerData) => {
+      setSeller(sellerData);
+      
+      // Clean up previous sales subscription if it exists
+      if (unsubscribeSales) {
+        unsubscribeSales();
+        unsubscribeSales = null;
+      }
+
+      if (sellerData) {
+        // Subscribe to seller sales
+        unsubscribeSales = firebaseService.subscribeToSellerSales(sellerData.code, (sales) => {
           setRecentSales(sales);
-        }
-      } catch (error) {
-        console.error('Error fetching seller data:', error);
-      } finally {
+          setLoading(false);
+        });
+      } else {
         setLoading(false);
       }
+    });
+
+    return () => {
+      unsubscribeSeller();
+      if (unsubscribeSales) unsubscribeSales();
     };
-    fetchData();
   }, [user]);
+
+  const handleValidate = async (id: string, status: 'validado' | 'rejeitado') => {
+    try {
+      await firebaseService.validateBet(id, status);
+      // No need to manually refresh, subscriptions will handle it
+    } catch (error) {
+      console.error('Erro ao validar aposta:', error);
+      alert('Erro ao processar validação.');
+    }
+  };
 
   const copyLink = () => {
     if (!seller) return;
@@ -203,7 +226,7 @@ const SellerPanel: React.FC = () => {
                       ) : sale.status === 'pendente' ? (
                         <Clock className="text-orange-600" size={12} />
                       ) : (
-                        <DollarSign className="text-red-600" size={12} />
+                        <AlertCircle className="text-red-600" size={12} />
                       )}
                       <span className={cn(
                         "text-[8px] sm:text-[10px] font-bold uppercase tracking-widest",
@@ -213,6 +236,22 @@ const SellerPanel: React.FC = () => {
                         {sale.status === 'validado' ? 'Validada' : sale.status === 'pendente' ? 'Pendente' : 'Rejeitada'}
                       </span>
                     </div>
+                    {sale.status === 'pendente' && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <button 
+                          onClick={() => handleValidate(sale.id, 'validado')}
+                          className="bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white px-2 py-1 rounded text-[8px] font-bold uppercase transition-all"
+                        >
+                          Validar
+                        </button>
+                        <button 
+                          onClick={() => handleValidate(sale.id, 'rejeitado')}
+                          className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white px-2 py-1 rounded text-[8px] font-bold uppercase transition-all"
+                        >
+                          Rejeitar
+                        </button>
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 sm:px-6 py-4 sm:py-5 text-center text-[10px] sm:text-sm font-medium text-slate-600">R$ 10.00</td>
                   <td className="px-4 sm:px-6 py-4 sm:py-5 text-center">

@@ -31,7 +31,8 @@ import {
   Unlock,
   Download,
   DollarSign,
-  Info
+  Info,
+  Store
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
@@ -1604,6 +1605,7 @@ const ContestsTab = () => {
 const SellersTab = () => {
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(true);
   const [newSeller, setNewSeller] = useState({
@@ -1619,18 +1621,37 @@ const SellersTab = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Fetch sellers and users in parallel but handle them more robustly
+      const sellersPromise = firebaseService.getAllSellers();
+      const usersPromise = firebaseService.getAllUsers();
+      
       const [sellersData, usersData] = await Promise.all([
-        firebaseService.getAllSellers(),
-        firebaseService.getAllUsers()
+        sellersPromise,
+        usersPromise
       ]);
-      setSellers(sellersData);
-      setUsers(usersData);
+      
+      setSellers(sellersData || []);
+      setUsers(usersData || []);
     } catch (error) {
       console.error('Error fetching data for sellers tab:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const filteredUsersForSeller = users.filter(u => {
+    const isClient = u.role === 'cliente' || !u.role;
+    if (!isClient) return false;
+    
+    if (!userSearchTerm) return true;
+    
+    const searchLower = userSearchTerm.toLowerCase();
+    return (
+      (u.name || '').toLowerCase().includes(searchLower) ||
+      (u.email || '').toLowerCase().includes(searchLower) ||
+      (u.whatsapp || '').toLowerCase().includes(searchLower)
+    );
+  });
 
   const handleAddSeller = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1688,52 +1709,84 @@ const SellersTab = () => {
       </div>
 
       {isAdding && (
-        <div className="bg-slate-50 p-6 rounded-2xl border border-lotofacil-purple/30 space-y-4">
+        <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-lotofacil-purple/30 space-y-4">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Cadastrar Novo Vendedor</h3>
-          <form onSubmit={handleAddSeller} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <select 
-              value={newSeller.userId}
-              onChange={(e) => setNewSeller({ ...newSeller, userId: e.target.value })}
-              className="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
-              required
-            >
-              <option value="">Selecionar Usuário</option>
-              {users.filter(u => u.role === 'cliente' || !u.role).map(u => (
-                <option key={u.id} value={u.id}>{u.name} {u.email ? `(${u.email})` : u.whatsapp ? `(${u.whatsapp})` : ''}</option>
-              ))}
-            </select>
-            <input 
-              type="text" 
-              value={newSeller.code}
-              onChange={(e) => setNewSeller({ ...newSeller, code: e.target.value.toUpperCase() })}
-              placeholder="Código (ex: REF123)"
-              className="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
-              required
-            />
-            <input 
-              type="number" 
-              value={newSeller.commissionPct}
-              onChange={(e) => setNewSeller({ ...newSeller, commissionPct: Number(e.target.value) })}
-              placeholder="Comissão %"
-              className="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
-              required
-            />
-            <div className="sm:col-span-3 flex gap-2">
-              <button 
-                type="submit"
-                className="flex-1 bg-lotofacil-purple text-white px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-lotofacil-purple/80 transition-all shadow-lg"
-              >
-                Confirmar
-              </button>
-              <button 
-                type="button"
-                onClick={() => setIsAdding(false)}
-                className="flex-1 border border-slate-200 text-slate-400 px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all"
-              >
-                Cancelar
-              </button>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Buscar Usuário</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                  <input 
+                    type="text" 
+                    placeholder="Nome, e-mail ou whatsapp..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Selecionar Usuário</label>
+                <select 
+                  value={newSeller.userId}
+                  onChange={(e) => setNewSeller({ ...newSeller, userId: e.target.value })}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                  required
+                >
+                  <option value="">{filteredUsersForSeller.length === 0 ? 'Nenhum usuário encontrado' : 'Selecionar Usuário'}</option>
+                  {filteredUsersForSeller.map(u => (
+                    <option key={u.id} value={u.id}>{u.name} {u.email ? `(${u.email})` : u.whatsapp ? `(${u.whatsapp})` : ''}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </form>
+
+            <form onSubmit={handleAddSeller} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Código do Vendedor</label>
+                <input 
+                  type="text" 
+                  value={newSeller.code}
+                  onChange={(e) => setNewSeller({ ...newSeller, code: e.target.value.toUpperCase() })}
+                  placeholder="Código (ex: REF123)"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Comissão %</label>
+                <input 
+                  type="number" 
+                  value={newSeller.commissionPct}
+                  onChange={(e) => setNewSeller({ ...newSeller, commissionPct: Number(e.target.value) })}
+                  placeholder="Comissão %"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                  required
+                />
+              </div>
+              <div className="sm:col-span-2 flex gap-2 pt-2">
+                <button 
+                  type="submit"
+                  className="flex-1 bg-lotofacil-purple text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-lotofacil-purple/80 transition-all shadow-lg"
+                >
+                  Confirmar Cadastro
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setIsAdding(false);
+                    setUserSearchTerm('');
+                  }}
+                  className="flex-1 border border-slate-200 text-slate-400 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -2102,12 +2155,19 @@ const ConfigTab: React.FC = () => {
 const FinanceiroTab: React.FC = () => {
   const [activeContest, setActiveContest] = useState<Contest | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
+  const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      const contest = await firebaseService.getActiveContest();
+      const [contest, allSellers] = await Promise.all([
+        firebaseService.getActiveContest(),
+        firebaseService.getAllSellers()
+      ]);
+      
       setActiveContest(contest);
+      setSellers(allSellers);
+      
       if (contest) {
         const contestBets = await firebaseService.getContestBets(contest.id);
         setBets(contestBets);
@@ -2143,6 +2203,18 @@ const FinanceiroTab: React.FC = () => {
     totalPrizes: totalRevenue * ((config.pctRapidinha || 0.10) + (config.pctChampion || 0.45) + (config.pctVice || 0.15)),
     totalOperation: totalRevenue * ((config.pctSeller || 0.15) + (config.pctAdmin || 0.10)),
   };
+
+  // Calculate seller performance for this contest
+  const sellerStats = sellers.map(seller => {
+    const sellerBets = bets.filter(b => b.sellerCode === seller.code);
+    const sales = sellerBets.length;
+    const commission = sales * betPrice * (seller.commissionPct / 100);
+    return {
+      ...seller,
+      currentSales: sales,
+      currentCommission: commission
+    };
+  }).filter(s => s.currentSales > 0).sort((a, b) => b.currentSales - a.currentSales);
 
   return (
     <div className="space-y-6 sm:space-y-10">
@@ -2212,6 +2284,53 @@ const FinanceiroTab: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Seller Performance Table */}
+      <div className="space-y-4">
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+          <Store size={14} className="text-lotofacil-purple" />
+          Desempenho por Vendedor (Concurso Atual)
+        </h3>
+        <div className="glass-card overflow-hidden border-slate-200">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-6 py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold">Vendedor</th>
+                  <th className="px-6 py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold text-center">Código</th>
+                  <th className="px-6 py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold text-center">Vendas</th>
+                  <th className="px-6 py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold text-right">Comissão</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {sellerStats.map((s) => (
+                  <tr key={s.id} className="hover:bg-slate-50 transition-all">
+                    <td className="px-6 py-4">
+                      <p className="text-xs font-bold text-slate-900 uppercase tracking-widest">{s.code}</p>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">{s.code}</span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="text-xs font-bold text-slate-900">{s.currentSales}</span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <span className="text-xs font-black text-emerald-600">
+                        {s.currentCommission.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {sellerStats.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-10 text-center text-slate-400 italic text-sm">Nenhuma venda registrada por vendedores neste concurso.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
