@@ -95,8 +95,11 @@ const SellerPanel: React.FC = () => {
     );
   }
 
+  const totalSalesCount = recentSales.length;
   const validatedSalesCount = recentSales.filter(s => s.status === 'validado').length;
-  const pendingSalesCount = recentSales.filter(s => s.status === 'pendente').length;
+  const totalCommission = validatedSalesCount * (10 * (seller.commissionPct / 100));
+  const totalSalesValue = validatedSalesCount * 10;
+  const toSend = totalSalesValue - totalCommission;
 
   return (
     <div className="p-4 sm:p-6 lg:p-10 space-y-6 sm:space-y-10">
@@ -151,10 +154,10 @@ const SellerPanel: React.FC = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {[
-          { label: 'Vendas Totais', value: seller.totalSales || 0, icon: Store, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Vendas Totais', value: totalSalesCount, icon: Store, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Validadas', value: validatedSalesCount, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Comissão Total', value: `R$ ${(seller.totalCommission || 0).toFixed(2)}`, icon: DollarSign, color: 'text-purple-600', bg: 'bg-purple-50' },
-          { label: 'A Receber', value: `R$ ${((seller.totalCommission || 0)).toFixed(2)}`, icon: ArrowUpRight, color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Comissão Total', value: `R$ ${totalCommission.toFixed(2)}`, icon: DollarSign, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'ENVIAR', value: `R$ ${toSend.toFixed(2)}`, icon: ArrowUpRight, color: 'text-orange-600', bg: 'bg-orange-50' },
         ].map((stat, idx) => (
           <motion.div 
             key={stat.label}
