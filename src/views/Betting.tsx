@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { firebaseService } from '../services/firebaseService';
+import { auth } from '../firebase';
 import { Ticket, Check, Info, AlertCircle, Plus, Minus, Sparkles, X, Users, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../utils';
@@ -108,7 +109,14 @@ const Betting: React.FC = () => {
     
     setIsSubmitting(true);
     const ids: string[] = [];
-    const userId = user?.id || user?.uid || '';
+    const userId = user?.uid || user?.id || auth.currentUser?.uid || '';
+    
+    if (!userId) {
+      alert('Erro de autenticação. Por favor, tente sair e entrar novamente.');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       // 1. Check name availability
       if (sellerCode) {

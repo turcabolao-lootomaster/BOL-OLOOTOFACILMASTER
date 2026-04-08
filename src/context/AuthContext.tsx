@@ -36,23 +36,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let unsubscribeAuth: (() => void) | undefined;
 
     const initAuth = async () => {
-      // Force sign out on initial load to always show login screen as requested
-      // This ensures that even if a session exists, the user must log in again
-      try {
-        await signOut(auth);
-      } catch (error) {
-        console.error('Error in initial signOut:', error);
-      }
-
       unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
         console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'No user');
         if (firebaseUser) {
           try {
-            const userDocRef = doc(db, 'users', firebaseUser.uid);
-            const userDoc = await getDoc(userDocRef);
-            console.log('User doc exists:', userDoc.exists());
+            // Always search for user by UID field first to find wa_ or code_ docs
+            const q = query(collection(db, 'users'), where('uid', '==', firebaseUser.uid));
+            const snapshot = await getDocs(q);
+            
+            let userDocRef = doc(db, 'users', firebaseUser.uid);
+            let foundDoc = false;
 
-            if (userDoc.exists()) {
+            if (!snapshot.empty) {
+              // If multiple docs found, prefer the one that is NOT just the UID (wa_ or code_)
+              const bestDoc = snapshot.docs.find(d => d.id !== firebaseUser.uid) || snapshot.docs[0];
+              userDocRef = doc(db, 'users', bestDoc.id);
+              foundDoc = true;
+            } else {
+              // Check if a doc with UID as ID exists
+              const directDoc = await getDoc(userDocRef);
+              if (directDoc.exists()) {
+                foundDoc = true;
+              }
+            }
+
+            if (foundDoc) {
               unsubscribeUser = onSnapshot(userDocRef, (doc) => {
                 if (doc.exists()) {
                   const data = doc.data() as User;
@@ -61,36 +69,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setLoading(false);
               });
             } else {
-              const q = query(collection(db, 'users'), where('uid', '==', firebaseUser.uid));
-              const snapshot = await getDocs(q);
-
-              if (!snapshot.empty) {
-                const docId = snapshot.docs[0].id;
-                unsubscribeUser = onSnapshot(doc(db, 'users', docId), (doc) => {
-                  if (doc.exists()) {
-                    const data = doc.data() as User;
-                    setUser({ id: doc.id, ...data });
-                  }
-                  setLoading(false);
-                });
-              } else if (firebaseUser.providerData.length > 0) {
-                const isMaster = firebaseUser.email === 'turcabolao@gmail.com';
-                const newUser: User = {
-                  id: firebaseUser.uid,
-                  uid: firebaseUser.uid,
-                  name: firebaseUser.displayName || 'Usuário',
-                  email: firebaseUser.email || '',
-                  role: isMaster ? 'master' : 'cliente',
-                  totalPoints: 0,
-                  createdAt: Timestamp.now()
-                };
-                await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
-                setUser(newUser);
-                setLoading(false);
-              } else {
-                setUser(null);
-                setLoading(false);
-              }
+              // If user is authenticated but has no document, create a default one
+              // This fulfills "PRECISO QUE TODO USUARIO SEJA REGISTRADO NO SISTEMA"
+              const isMaster = firebaseUser.email === 'turcabolao@gmail.com';
+              const newUser: User = {
+                id: firebaseUser.uid,
+                uid: firebaseUser.uid,
+                name: firebaseUser.displayName || (firebaseUser.isAnonymous ? 'Visitante' : 'Usuário'),
+                email: firebaseUser.email || '',
+                role: isMaster ? 'master' : 'cliente',
+                totalPoints: 0,
+                createdAt: Timestamp.now()
+              };
+              
+              await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
+              setUser(newUser);
+              setLoading(false);
             }
           } catch (error) {
             console.error('Error in AuthProvider:', error);
