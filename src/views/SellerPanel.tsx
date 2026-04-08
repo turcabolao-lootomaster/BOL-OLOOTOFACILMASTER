@@ -29,12 +29,15 @@ const SellerPanel: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user?.uid) return;
+    const userId = user?.id || user?.uid;
+    if (!userId) return;
     
     let unsubscribeSales: (() => void) | null = null;
+    let isMounted = true;
 
     // Subscribe to seller data
-    const unsubscribeSeller = firebaseService.subscribeToSellerData(user.uid, (sellerData) => {
+    const unsubscribeSeller = firebaseService.subscribeToSellerData(userId, (sellerData) => {
+      if (!isMounted) return;
       setSeller(sellerData);
       
       // Clean up previous sales subscription if it exists
@@ -46,6 +49,7 @@ const SellerPanel: React.FC = () => {
       if (sellerData) {
         // Subscribe to seller sales
         unsubscribeSales = firebaseService.subscribeToSellerSales(sellerData.code, (sales) => {
+          if (!isMounted) return;
           setRecentSales(sales);
           setLoading(false);
         });
@@ -54,11 +58,20 @@ const SellerPanel: React.FC = () => {
       }
     });
 
+    // Safety timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (isMounted && loading) {
+        setLoading(false);
+      }
+    }, 5000);
+
     return () => {
+      isMounted = false;
       unsubscribeSeller();
       if (unsubscribeSales) unsubscribeSales();
+      clearTimeout(timeout);
     };
-  }, [user]);
+  }, [user?.id, user?.uid]);
 
   const handleValidate = async (id: string, status: 'validado' | 'rejeitado') => {
     try {

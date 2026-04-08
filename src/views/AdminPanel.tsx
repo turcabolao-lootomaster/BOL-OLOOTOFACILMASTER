@@ -598,6 +598,16 @@ const BetsTab = () => {
                         >
                           <Pencil size={12} />
                         </button>
+                        <button 
+                          onClick={() => {
+                            setSelectedIds([bet.id]);
+                            setShowDeleteConfirm(true);
+                          }}
+                          className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center"
+                          title="Excluir Aposta"
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </>
                     ) : (
                       <div className="flex items-center gap-2">

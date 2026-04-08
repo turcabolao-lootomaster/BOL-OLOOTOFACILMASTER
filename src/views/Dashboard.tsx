@@ -41,12 +41,13 @@ const Dashboard: React.FC = () => {
     let unsubscribe: (() => void) | undefined;
 
     const fetchData = async () => {
-      if (!user) return;
+      const userId = user?.id || user?.uid;
+      if (!userId) return;
       
       try {
         const [contest, bets] = await Promise.all([
           firebaseService.getActiveContest(),
-          firebaseService.getUserBets(user.uid)
+          firebaseService.getUserBets(userId)
         ]);
         
         setActiveContest(contest);
@@ -71,10 +72,11 @@ const Dashboard: React.FC = () => {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    const userId = user?.id || user?.uid;
+    if (!userId) return;
     setSavingProfile(true);
     try {
-      await firebaseService.updateUserProfile(user.uid, profileData);
+      await firebaseService.updateUserProfile(userId, profileData);
       setIsEditingProfile(false);
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -83,7 +85,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const userRank = ranking.find(r => r.userId === user?.uid);
+  const userRank = ranking.find(r => r.userId === (user?.id || user?.uid));
   const totalBets = userBets.length;
   const validatedBets = userBets.filter(b => b.status === 'validado').length;
 

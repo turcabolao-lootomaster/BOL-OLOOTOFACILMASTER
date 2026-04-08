@@ -24,7 +24,8 @@ import {
   X,
   ChevronRight,
   FileText,
-  Pencil
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ExcelJS from 'exceljs';
@@ -486,6 +487,18 @@ const LiveRanking: React.FC = () => {
       alert('Erro ao atualizar aposta.');
     } finally {
       setIsUpdatingBet(false);
+    }
+  };
+
+  const handleDeleteBet = async (betId: string) => {
+    if (!window.confirm('Deseja realmente excluir esta aposta? Esta ação não pode ser desfeita.')) return;
+    
+    try {
+      await firebaseService.deleteBet(betId);
+      alert('Aposta excluída com sucesso!');
+    } catch (error) {
+      console.error('Erro ao excluir aposta:', error);
+      alert('Erro ao excluir aposta.');
     }
   };
 
@@ -1017,16 +1030,28 @@ const LiveRanking: React.FC = () => {
                                   <div className="flex items-center gap-2">
                                     <p className="text-[9px] text-white/40 uppercase font-bold">Toque novamente para fechar</p>
                                     {isAdmin && (
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleEditBet(b);
-                                        }}
-                                        className="flex items-center gap-1 px-2 py-1 bg-white/10 hover:bg-white/20 rounded-md text-[8px] font-bold text-white uppercase tracking-widest transition-all"
-                                      >
-                                        <Pencil size={8} />
-                                        Editar
-                                      </button>
+                                      <>
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleEditBet(b);
+                                          }}
+                                          className="flex items-center gap-1 px-2 py-1 bg-white/10 hover:bg-white/20 rounded-md text-[8px] font-bold text-white uppercase tracking-widest transition-all"
+                                        >
+                                          <Pencil size={8} />
+                                          Editar
+                                        </button>
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteBet(b.id);
+                                          }}
+                                          className="flex items-center gap-1 px-2 py-1 bg-red-500/10 hover:bg-red-500/20 rounded-md text-[8px] font-bold text-red-500 uppercase tracking-widest transition-all"
+                                        >
+                                          <Trash2 size={8} />
+                                          Excluir
+                                        </button>
+                                      </>
                                     )}
                                   </div>
                                   <p className="text-[9px] text-white/40 uppercase font-bold tracking-widest">ID: {b.id.slice(0, 8)}</p>

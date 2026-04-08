@@ -108,10 +108,11 @@ const Betting: React.FC = () => {
     
     setIsSubmitting(true);
     const ids: string[] = [];
+    const userId = user?.id || user?.uid || '';
     try {
       // 1. Check name availability
       if (sellerCode) {
-        const availability = await firebaseService.checkBetNameAvailability(betName, sellerCode, user?.uid || '');
+        const availability = await firebaseService.checkBetNameAvailability(betName, sellerCode, userId);
         if (!availability.available) {
           throw new Error(availability.message);
         }
@@ -142,7 +143,7 @@ const Betting: React.FC = () => {
       // Submit all pending bets
       for (const numbers of pendingBets) {
         const id = await firebaseService.createBet({
-          userId: user?.uid || '',
+          userId: userId,
           userName: user?.name || '',
           contestId: activeContest.id,
           contestNumber: activeContest.number,
