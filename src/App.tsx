@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
+import BottomNav from './components/BottomNav';
 import MobileZoomHint from './components/MobileZoomHint';
 import Login from './views/Login';
 import Dashboard from './views/Dashboard';
@@ -17,10 +18,11 @@ import Ranking from './views/Ranking';
 import Instructions from './views/Instructions';
 import SellerPanel from './views/SellerPanel';
 import AdminPanel from './views/AdminPanel';
-import { Menu } from 'lucide-react';
+import { Menu, LogOut } from 'lucide-react';
+import { cn } from './utils';
 
 const AppContent: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [currentView, setView] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -77,7 +79,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg flex">
+    <div className="min-h-screen bg-dark-bg flex flex-col lg:flex-row">
       <Sidebar 
         currentView={currentView} 
         setView={setView} 
@@ -85,24 +87,93 @@ const AppContent: React.FC = () => {
         setIsOpen={setIsSidebarOpen} 
       />
       
-      <main className="flex-1 lg:ml-64 min-h-screen">
+      <main className="flex-1 lg:ml-72 min-h-screen flex flex-col">
         <MobileZoomHint />
-        {/* Mobile Header - More compact */}
-        <header className="lg:hidden p-4 flex items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-30">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-lotofacil-purple rounded flex items-center justify-center shadow-md">
-              <span className="text-white font-bold text-lg">L</span>
+        
+        {/* Modern Header */}
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(true)} 
+              className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="w-8 h-8 bg-lotofacil-purple rounded-lg flex items-center justify-center shadow-md">
+                <span className="text-white font-bold text-lg">L</span>
+              </div>
+              <h1 className="text-lg font-display tracking-widest text-slate-900 uppercase">
+                BOLÃO <span className="text-lotofacil-purple">LOTOFÁCIL</span>
+              </h1>
             </div>
-            <h1 className="text-base font-display tracking-wider text-slate-900">BOLÃO <span className="text-lotofacil-purple">LOTOFÁCIL</span></h1>
+            <div className="sm:hidden flex items-center gap-2">
+              <div className="w-7 h-7 bg-lotofacil-purple rounded flex items-center justify-center">
+                <span className="text-white font-bold text-sm">L</span>
+              </div>
+              <span className="text-sm font-display tracking-widest text-slate-900 uppercase">BOLÃO</span>
+            </div>
           </div>
-          <button onClick={() => setIsSidebarOpen(true)} className="p-1.5 text-slate-400 hover:text-slate-900 bg-slate-100 rounded-lg">
-            <Menu size={20} />
-          </button>
+
+          {/* Quick Access Desktop Buttons */}
+          <div className="hidden lg:flex items-center gap-2">
+            <button 
+              onClick={() => setView('dashboard')}
+              className={cn(
+                "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
+                currentView === 'dashboard' ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" : "text-slate-500 hover:bg-slate-50"
+              )}
+            >
+              Início
+            </button>
+            <button 
+              onClick={() => setView('bet')}
+              className={cn(
+                "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
+                currentView === 'bet' ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" : "text-slate-500 hover:bg-slate-50"
+              )}
+            >
+              Apostar
+            </button>
+            {user && (user.role === 'admin' || user.role === 'master') && (
+              <button 
+                onClick={() => setView('admin')}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
+                  currentView === 'admin' ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" : "text-slate-900 bg-lotofacil-yellow/20 hover:bg-lotofacil-yellow/30"
+                )}
+              >
+                Painel Admin
+              </button>
+            )}
+          </div>
+
+          {/* User Profile Quick View */}
+          {user && (
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="hidden sm:block text-right">
+                <p className="text-[10px] font-bold text-slate-900 leading-none uppercase">{user.name || 'Usuário'}</p>
+                <p className="text-[8px] text-lotofacil-purple font-bold uppercase tracking-widest mt-0.5">{user.role}</p>
+              </div>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs sm:text-sm">
+                {user.name?.charAt(0) || 'U'}
+              </div>
+              <button 
+                onClick={logout}
+                className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                title="Sair da Conta"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
+          )}
         </header>
 
-        <div className="pb-10">
+        <div className="flex-1 pb-24">
           {renderView()}
         </div>
+
+        <BottomNav currentView={currentView} setView={setView} />
       </main>
     </div>
   );

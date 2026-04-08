@@ -62,22 +62,28 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed top-0 left-0 h-full w-64 bg-white border-r border-slate-200 z-50 transition-transform duration-300 lg:translate-x-0",
+        "fixed top-0 left-0 h-full w-72 bg-white border-r border-slate-200 z-50 transition-transform duration-300 lg:translate-x-0 flex flex-col shadow-2xl lg:shadow-none",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="p-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-lotofacil-purple rounded flex items-center justify-center shadow-md">
-              <span className="text-white font-bold text-xl">L</span>
+        <div className="p-6 flex items-center justify-between shrink-0 border-b border-slate-50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-lotofacil-purple rounded-xl flex items-center justify-center shadow-lg shadow-lotofacil-purple/20">
+              <span className="text-white font-bold text-2xl">L</span>
             </div>
-            <h1 className="text-xl font-display tracking-wider text-slate-900">BOLÃO <span className="text-lotofacil-purple">LOTOFÁCIL</span></h1>
+            <div>
+              <h1 className="text-lg font-display tracking-widest text-slate-900 leading-none">BOLÃO</h1>
+              <span className="text-lotofacil-purple font-bold text-[10px] tracking-[0.2em] uppercase">Lotofácil</span>
+            </div>
           </div>
-          <button className="lg:hidden p-1.5 bg-slate-100 rounded-lg text-slate-400" onClick={() => setIsOpen(false)}>
+          <button className="lg:hidden p-2 bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-colors" onClick={() => setIsOpen(false)}>
             <X size={20} />
           </button>
         </div>
 
-        <nav className="mt-6 px-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
+          <div className="px-4 mb-4">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Menu Principal</p>
+          </div>
           {filteredMenu.map(item => (
             <button
               key={item.id}
@@ -86,44 +92,59 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
                 setIsOpen(false);
               }}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm uppercase tracking-widest font-medium",
+                "w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all text-xs uppercase tracking-widest font-bold group",
                 currentView === item.id 
-                  ? "bg-lotofacil-purple text-white font-bold shadow-md" 
-                  : "text-slate-400 hover:bg-slate-50 hover:text-slate-900"
+                  ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" 
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
               )}
             >
-              <item.icon size={18} />
+              <item.icon size={18} className={cn(
+                "transition-transform group-hover:scale-110",
+                currentView === item.id ? "text-white" : "text-slate-400 group-hover:text-lotofacil-purple"
+              )} />
               <span>{item.label}</span>
+              {currentView === item.id && (
+                <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full" />
+              )}
             </button>
           ))}
         </nav>
 
-        <div className="absolute bottom-8 left-0 w-full px-4 space-y-2">
+        <div className="p-6 border-t border-slate-100 bg-slate-50/50 shrink-0">
           {user && (
-            <div className="px-4 py-1">
-              <p className="text-[10px] text-slate-400 truncate uppercase tracking-widest">{user.email || user.whatsapp || 'Usuário'}</p>
+            <div className="flex items-center gap-3 mb-4 px-2">
+              <div className="w-8 h-8 rounded-full bg-lotofacil-purple/10 flex items-center justify-center text-lotofacil-purple font-bold text-xs border border-lotofacil-purple/20">
+                {user.name?.charAt(0) || 'U'}
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold text-slate-900 truncate uppercase tracking-wider">{user.name || 'Usuário'}</p>
+                <p className="text-[9px] text-slate-400 truncate tracking-tight">{user.email || user.whatsapp}</p>
+              </div>
             </div>
           )}
-          {user ? (
-            <button 
-              onClick={logout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-accent-red hover:bg-accent-red/10 transition-all"
-            >
-              <LogOut size={20} />
-              <span>Sair</span>
-            </button>
-          ) : (
-            <button 
-              onClick={() => {
-                setView('login');
-                setIsOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-lotofacil-purple hover:bg-lotofacil-purple/10 transition-all font-bold uppercase tracking-widest text-xs"
-            >
-              <LogOut size={20} className="rotate-180" />
-              <span>Entrar</span>
-            </button>
-          )}
+          
+          <div className="space-y-2">
+            {user ? (
+              <button 
+                onClick={logout}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all text-xs font-bold uppercase tracking-widest"
+              >
+                <LogOut size={18} />
+                <span>Sair da Conta</span>
+              </button>
+            ) : (
+              <button 
+                onClick={() => {
+                  setView('login');
+                  setIsOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-lotofacil-purple text-white hover:bg-lotofacil-purple/90 transition-all font-bold uppercase tracking-widest text-xs shadow-lg shadow-lotofacil-purple/20"
+              >
+                <LogOut size={18} className="rotate-180" />
+                <span>Entrar / Login</span>
+              </button>
+            )}
+          </div>
         </div>
       </aside>
     </>

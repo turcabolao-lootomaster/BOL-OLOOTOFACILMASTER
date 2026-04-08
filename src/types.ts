@@ -56,6 +56,7 @@ export interface Contest {
     fixed10PtsDraw1: number;
     fixed10PtsDraw2: number;
     fixed10PtsDraw3: number;
+    fixed25PlusTotal: number;
     fixed27PlusTotal: number;
     pctRapidinha: number;
     pctChampion: number;

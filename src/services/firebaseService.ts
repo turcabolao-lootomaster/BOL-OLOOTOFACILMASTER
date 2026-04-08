@@ -90,6 +90,17 @@ export const firebaseService = {
     }
   },
 
+  subscribeToAllUsers(callback: (users: User[]) => void) {
+    const path = 'users';
+    const q = query(collection(db, 'users'));
+    return onSnapshot(q, (snapshot) => {
+      const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+      callback(users);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, path);
+    });
+  },
+
   // Contests
   subscribeToActiveContest(callback: (contest: Contest | null) => void) {
     const q = query(
@@ -646,6 +657,17 @@ export const firebaseService = {
       handleFirestoreError(error, OperationType.LIST, path);
       return [];
     }
+  },
+
+  subscribeToAllSellers(callback: (sellers: Seller[]) => void) {
+    const path = 'sellers';
+    const q = query(collection(db, 'sellers'));
+    return onSnapshot(q, (snapshot) => {
+      const sellers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Seller));
+      callback(sellers);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, path);
+    });
   },
 
   async createSeller(seller: Omit<Seller, 'id' | 'totalSales' | 'totalCommission'>): Promise<string> {

@@ -1070,6 +1070,11 @@ const ContestsTab = () => {
   });
 
   const [newPrizeConfig, setNewPrizeConfig] = useState<NonNullable<Contest['prizeConfig']>>({
+    fixed10PtsDraw1: 500,
+    fixed10PtsDraw2: 500,
+    fixed10PtsDraw3: 500,
+    fixed25PlusTotal: 2000,
+    fixed27PlusTotal: 5000,
     pctRapidinha: 0.10,
     pctChampion: 0.45,
     pctVice: 0.15,
@@ -1377,64 +1382,86 @@ const ContestsTab = () => {
               </div>
             </div>
 
-            <div className="space-y-4 pt-4 border-t border-slate-200">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900">Configuração de Porcentagens (%)</h4>
+            {/* Prêmios Fixos (Valores) */}
+            <div className="space-y-4 pt-6 border-t border-slate-200">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                Valores dos Prêmios Fixos (R$)
+              </h4>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Rapidinha (10%)</label>
-                  <input 
-                    type="number" step="0.01"
-                    value={newPrizeConfig.pctRapidinha}
-                    onChange={(e) => setNewPrizeConfig({...newPrizeConfig, pctRapidinha: parseFloat(e.target.value)})}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Campeão (45%)</label>
-                  <input 
-                    type="number" step="0.01"
-                    value={newPrizeConfig.pctChampion}
-                    onChange={(e) => setNewPrizeConfig({...newPrizeConfig, pctChampion: parseFloat(e.target.value)})}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Vice (15%)</label>
-                  <input 
-                    type="number" step="0.01"
-                    value={newPrizeConfig.pctVice}
-                    onChange={(e) => setNewPrizeConfig({...newPrizeConfig, pctVice: parseFloat(e.target.value)})}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Vendedor (15%)</label>
-                  <input 
-                    type="number" step="0.01"
-                    value={newPrizeConfig.pctSeller}
-                    onChange={(e) => setNewPrizeConfig({...newPrizeConfig, pctSeller: parseFloat(e.target.value)})}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Admin (10%)</label>
-                  <input 
-                    type="number" step="0.01"
-                    value={newPrizeConfig.pctAdmin}
-                    onChange={(e) => setNewPrizeConfig({...newPrizeConfig, pctAdmin: parseFloat(e.target.value)})}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Reserva (5%)</label>
-                  <input 
-                    type="number" step="0.01"
-                    value={newPrizeConfig.pctReserve}
-                    onChange={(e) => setNewPrizeConfig({...newPrizeConfig, pctReserve: parseFloat(e.target.value)})}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
-                  />
+                {[
+                  { label: '10 Pts (S1)', key: 'fixed10PtsDraw1' },
+                  { label: '10 Pts (S2)', key: 'fixed10PtsDraw2' },
+                  { label: '10 Pts (S3)', key: 'fixed10PtsDraw3' },
+                  { label: 'Bônus 25 Pts', key: 'fixed25PlusTotal' },
+                  { label: 'Super 27 Pts', key: 'fixed27PlusTotal' },
+                ].map(item => (
+                  <div key={item.key} className="space-y-1.5">
+                    <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">{item.label}</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">R$</span>
+                      <input 
+                        type="number" 
+                        value={(newPrizeConfig as any)[item.key] || 0}
+                        onChange={(e) => setNewPrizeConfig({
+                          ...newPrizeConfig, 
+                          [item.key]: parseFloat(e.target.value) || 0
+                        })}
+                        className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm font-bold text-slate-900 focus:outline-none focus:border-emerald-500/50 transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-6 border-t border-slate-200">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900">Configuração de Porcentagens (%)</h4>
+                <div className={cn(
+                  "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border",
+                  Math.round((newPrizeConfig.pctRapidinha + newPrizeConfig.pctChampion + newPrizeConfig.pctVice + newPrizeConfig.pctSeller + newPrizeConfig.pctAdmin + newPrizeConfig.pctReserve) * 100) === 100
+                    ? "bg-green-50 text-green-600 border-green-200"
+                    : "bg-red-50 text-red-600 border-red-200"
+                )}>
+                  Total: {Math.round((newPrizeConfig.pctRapidinha + newPrizeConfig.pctChampion + newPrizeConfig.pctVice + newPrizeConfig.pctSeller + newPrizeConfig.pctAdmin + newPrizeConfig.pctReserve) * 100)}%
                 </div>
               </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                {[
+                  { label: 'Rapidinha', key: 'pctRapidinha', color: 'bg-blue-50 text-blue-600' },
+                  { label: 'Campeão', key: 'pctChampion', color: 'bg-green-50 text-green-600' },
+                  { label: 'Vice', key: 'pctVice', color: 'bg-orange-50 text-orange-600' },
+                  { label: 'Vendedor', key: 'pctSeller', color: 'bg-purple-50 text-purple-600' },
+                  { label: 'Admin', key: 'pctAdmin', color: 'bg-slate-50 text-slate-600' },
+                  { label: 'Reserva', key: 'pctReserve', color: 'bg-red-50 text-red-600' },
+                ].map((item) => (
+                  <div key={item.key} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm space-y-2">
+                    <label className={cn("block text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md w-fit", item.color)}>
+                      {item.label}
+                    </label>
+                    <div className="relative">
+                      <input 
+                        type="number"
+                        value={Math.round((newPrizeConfig as any)[item.key] * 100)}
+                        onChange={(e) => setNewPrizeConfig({
+                          ...newPrizeConfig, 
+                          [item.key]: (parseFloat(e.target.value) || 0) / 100
+                        })}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-900 focus:outline-none focus:border-lotofacil-purple/50 pr-8"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {Math.round((newPrizeConfig.pctRapidinha + newPrizeConfig.pctChampion + newPrizeConfig.pctVice + newPrizeConfig.pctSeller + newPrizeConfig.pctAdmin + newPrizeConfig.pctReserve) * 100) !== 100 && (
+                <p className="text-[10px] text-red-500 font-medium animate-pulse">
+                  * A soma das porcentagens deve ser exatamente 100%
+                </p>
+              )}
             </div>
 
             <div className="flex gap-2 pt-2">
@@ -1459,155 +1486,193 @@ const ContestsTab = () => {
       {editingPrizes && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white border border-slate-200 p-8 rounded-3xl max-w-2xl w-full space-y-6 shadow-2xl"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
           >
-            <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase text-center">Editar Premiações</h3>
-            <form onSubmit={handleUpdatePrizes} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest">1° Sorteio</label>
-                  <input 
-                    type="text" 
-                    value={editingPrizes.prizes.draw1}
-                    onChange={(e) => setEditingPrizes({...editingPrizes, prizes: {...editingPrizes.prizes, draw1: e.target.value}})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
-                    required
-                  />
+            {/* Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-lotofacil-purple/10 text-lotofacil-purple flex items-center justify-center">
+                  <Trophy size={20} />
                 </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest">2° Sorteio</label>
-                  <input 
-                    type="text" 
-                    value={editingPrizes.prizes.draw2}
-                    onChange={(e) => setEditingPrizes({...editingPrizes, prizes: {...editingPrizes.prizes, draw2: e.target.value}})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest">3° Sorteio</label>
-                  <input 
-                    type="text" 
-                    value={editingPrizes.prizes.draw3}
-                    onChange={(e) => setEditingPrizes({...editingPrizes, prizes: {...editingPrizes.prizes, draw3: e.target.value}})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
-                    required
-                  />
+                <div>
+                  <h3 className="text-lg font-display tracking-widest text-slate-900 uppercase">Configurar Premiações</h3>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Concurso #{editingPrizes.id.split('_')[0]}</p>
                 </div>
               </div>
+              <button 
+                onClick={() => setEditingPrizes(null)}
+                className="w-10 h-10 rounded-xl hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all flex items-center justify-center"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest">Rapidinha 1° Lugar</label>
-                  <input 
-                    type="text" 
-                    value={editingPrizes.prizes.rapidinha1}
-                    onChange={(e) => setEditingPrizes({...editingPrizes, prizes: {...editingPrizes.prizes, rapidinha1: e.target.value}})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest">Rapidinha 2° Lugar</label>
-                  <input 
-                    type="text" 
-                    value={editingPrizes.prizes.rapidinha2}
-                    onChange={(e) => setEditingPrizes({...editingPrizes, prizes: {...editingPrizes.prizes, rapidinha2: e.target.value}})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
-                    required
-                  />
-                </div>
-              </div>
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-8 custom-scrollbar">
+              <form id="prizes-form" onSubmit={handleUpdatePrizes} className="space-y-8">
+                {/* Descrições dos Prêmios */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-lotofacil-purple" />
+                    Descrições dos Prêmios (Textos)
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { label: '1° Sorteio', key: 'draw1' },
+                      { label: '2° Sorteio', key: 'draw2' },
+                      { label: '3° Sorteio', key: 'draw3' },
+                    ].map(item => (
+                      <div key={item.key} className="space-y-1.5">
+                        <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">{item.label}</label>
+                        <input 
+                          type="text" 
+                          value={(editingPrizes.prizes as any)[item.key]}
+                          onChange={(e) => setEditingPrizes({...editingPrizes, prizes: {...editingPrizes.prizes, [item.key]: e.target.value}})}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50 transition-all"
+                          required
+                        />
+                      </div>
+                    ))}
+                  </div>
 
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest">Rankeada</label>
-                <input 
-                  type="text" 
-                  value={editingPrizes.prizes.rankeada}
-                  onChange={(e) => setEditingPrizes({...editingPrizes, prizes: {...editingPrizes.prizes, rankeada: e.target.value}})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
-                  required
-                />
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { label: 'Rapidinha 1° Lugar', key: 'rapidinha1' },
+                      { label: 'Rapidinha 2° Lugar', key: 'rapidinha2' },
+                    ].map(item => (
+                      <div key={item.key} className="space-y-1.5">
+                        <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">{item.label}</label>
+                        <input 
+                          type="text" 
+                          value={(editingPrizes.prizes as any)[item.key]}
+                          onChange={(e) => setEditingPrizes({...editingPrizes, prizes: {...editingPrizes.prizes, [item.key]: e.target.value}})}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50 transition-all"
+                          required
+                        />
+                      </div>
+                    ))}
+                  </div>
 
-              <div className="space-y-4 pt-4 border-t border-slate-200">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900">Configuração de Porcentagens (%)</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Rapidinha (10%)</label>
+                  <div className="space-y-1.5">
+                    <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Rankeada</label>
                     <input 
-                      type="number" step="0.01"
-                      value={editingPrizes.prizeConfig?.pctRapidinha}
-                      onChange={(e) => setEditingPrizes({...editingPrizes, prizeConfig: {...(editingPrizes.prizeConfig || {}), pctRapidinha: parseFloat(e.target.value)} as any})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Campeão (45%)</label>
-                    <input 
-                      type="number" step="0.01"
-                      value={editingPrizes.prizeConfig?.pctChampion}
-                      onChange={(e) => setEditingPrizes({...editingPrizes, prizeConfig: {...(editingPrizes.prizeConfig || {}), pctChampion: parseFloat(e.target.value)} as any})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Vice (15%)</label>
-                    <input 
-                      type="number" step="0.01"
-                      value={editingPrizes.prizeConfig?.pctVice}
-                      onChange={(e) => setEditingPrizes({...editingPrizes, prizeConfig: {...(editingPrizes.prizeConfig || {}), pctVice: parseFloat(e.target.value)} as any})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Vendedor (15%)</label>
-                    <input 
-                      type="number" step="0.01"
-                      value={editingPrizes.prizeConfig?.pctSeller}
-                      onChange={(e) => setEditingPrizes({...editingPrizes, prizeConfig: {...(editingPrizes.prizeConfig || {}), pctSeller: parseFloat(e.target.value)} as any})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Admin (10%)</label>
-                    <input 
-                      type="number" step="0.01"
-                      value={editingPrizes.prizeConfig?.pctAdmin}
-                      onChange={(e) => setEditingPrizes({...editingPrizes, prizeConfig: {...(editingPrizes.prizeConfig || {}), pctAdmin: parseFloat(e.target.value)} as any})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Reserva (5%)</label>
-                    <input 
-                      type="number" step="0.01"
-                      value={editingPrizes.prizeConfig?.pctReserve}
-                      onChange={(e) => setEditingPrizes({...editingPrizes, prizeConfig: {...(editingPrizes.prizeConfig || {}), pctReserve: parseFloat(e.target.value)} as any})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                      type="text" 
+                      value={editingPrizes.prizes.rankeada}
+                      onChange={(e) => setEditingPrizes({...editingPrizes, prizes: {...editingPrizes.prizes, rankeada: e.target.value}})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50 transition-all"
+                      required
                     />
                   </div>
                 </div>
-              </div>
 
-              <div className="flex gap-4">
-                <button 
-                  type="button"
-                  onClick={() => setEditingPrizes(null)}
-                  className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit"
-                  className="flex-1 py-3 bg-lotofacil-purple text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-lotofacil-purple/80 transition-all shadow-lg"
-                >
-                  Salvar Alterações
-                </button>
-              </div>
-            </form>
+                {/* Prêmios Fixos (Valores) */}
+                <div className="space-y-4 pt-6 border-t border-slate-100">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                    Valores dos Prêmios Fixos (R$)
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[
+                      { label: '10 Pts (S1)', key: 'fixed10PtsDraw1' },
+                      { label: '10 Pts (S2)', key: 'fixed10PtsDraw2' },
+                      { label: '10 Pts (S3)', key: 'fixed10PtsDraw3' },
+                      { label: 'Bônus 25 Pts', key: 'fixed25PlusTotal' },
+                      { label: 'Super 27 Pts', key: 'fixed27PlusTotal' },
+                    ].map(item => (
+                      <div key={item.key} className="space-y-1.5">
+                        <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">{item.label}</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">R$</span>
+                          <input 
+                            type="number" 
+                            value={(editingPrizes.prizeConfig as any)?.[item.key] || 0}
+                            onChange={(e) => setEditingPrizes({
+                              ...editingPrizes, 
+                              prizeConfig: {
+                                ...(editingPrizes.prizeConfig || {}), 
+                                [item.key]: parseFloat(e.target.value) || 0
+                              } as any
+                            })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm font-bold text-slate-900 focus:outline-none focus:border-emerald-500/50 transition-all"
+                            required
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Porcentagens */}
+                <div className="space-y-4 pt-6 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-blue-500" />
+                      Distribuição por Porcentagem (%)
+                    </h4>
+                    <div className={cn(
+                      "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border",
+                      Math.round(((editingPrizes.prizeConfig?.pctRapidinha || 0) + (editingPrizes.prizeConfig?.pctChampion || 0) + (editingPrizes.prizeConfig?.pctVice || 0) + (editingPrizes.prizeConfig?.pctSeller || 0) + (editingPrizes.prizeConfig?.pctAdmin || 0) + (editingPrizes.prizeConfig?.pctReserve || 0)) * 100) === 100
+                        ? "bg-green-50 text-green-600 border-green-200"
+                        : "bg-red-50 text-red-600 border-red-200"
+                    )}>
+                      Total: {Math.round(((editingPrizes.prizeConfig?.pctRapidinha || 0) + (editingPrizes.prizeConfig?.pctChampion || 0) + (editingPrizes.prizeConfig?.pctVice || 0) + (editingPrizes.prizeConfig?.pctSeller || 0) + (editingPrizes.prizeConfig?.pctAdmin || 0) + (editingPrizes.prizeConfig?.pctReserve || 0)) * 100)}%
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {[
+                      { label: 'Rapidinha', key: 'pctRapidinha', color: 'bg-blue-50 text-blue-600' },
+                      { label: 'Campeão', key: 'pctChampion', color: 'bg-green-50 text-green-600' },
+                      { label: 'Vice', key: 'pctVice', color: 'bg-orange-50 text-orange-600' },
+                      { label: 'Vendedor', key: 'pctSeller', color: 'bg-purple-50 text-purple-600' },
+                      { label: 'Admin', key: 'pctAdmin', color: 'bg-slate-50 text-slate-600' },
+                      { label: 'Reserva', key: 'pctReserve', color: 'bg-red-50 text-red-600' },
+                    ].map((item) => (
+                      <div key={item.key} className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 space-y-2">
+                        <label className={cn("block text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md w-fit", item.color)}>
+                          {item.label}
+                        </label>
+                        <div className="relative">
+                          <input 
+                            type="number"
+                            value={Math.round(((editingPrizes.prizeConfig as any)?.[item.key] || 0) * 100)}
+                            onChange={(e) => setEditingPrizes({
+                              ...editingPrizes, 
+                              prizeConfig: {
+                                ...(editingPrizes.prizeConfig || {}), 
+                                [item.key]: (parseFloat(e.target.value) || 0) / 100
+                              } as any
+                            })}
+                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-900 focus:outline-none focus:border-lotofacil-purple/50 pr-8"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex gap-3">
+              <button 
+                type="button"
+                onClick={() => setEditingPrizes(null)}
+                className="flex-1 py-4 bg-white border border-slate-200 rounded-2xl text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="submit"
+                form="prizes-form"
+                className="flex-1 py-4 bg-lotofacil-purple text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-lotofacil-purple/90 transition-all shadow-lg shadow-purple-200"
+              >
+                Salvar Configurações
+              </button>
+            </div>
           </motion.div>
         </div>
       )}
@@ -1700,6 +1765,11 @@ const ContestsTab = () => {
                     rankeada: 'LOTOMASTER'
                   },
                   prizeConfig: c.prizeConfig || {
+                    fixed10PtsDraw1: 500,
+                    fixed10PtsDraw2: 500,
+                    fixed10PtsDraw3: 500,
+                    fixed25PlusTotal: 2000,
+                    fixed27PlusTotal: 5000,
                     pctRapidinha: 0.10,
                     pctChampion: 0.45,
                     pctVice: 0.15,
@@ -1766,29 +1836,20 @@ const SellersTab = () => {
   });
 
   useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      // Fetch sellers and users in parallel but handle them more robustly
-      const sellersPromise = firebaseService.getAllSellers();
-      const usersPromise = firebaseService.getAllUsers();
-      
-      const [sellersData, usersData] = await Promise.all([
-        sellersPromise,
-        usersPromise
-      ]);
-      
-      setSellers(sellersData || []);
-      setUsers(usersData || []);
-    } catch (error) {
-      console.error('Error fetching data for sellers tab:', error);
-    } finally {
+    const unsubscribeSellers = firebaseService.subscribeToAllSellers((sellersData) => {
+      setSellers(sellersData);
       setLoading(false);
-    }
-  };
+    });
+
+    const unsubscribeUsers = firebaseService.subscribeToAllUsers((usersData) => {
+      setUsers(usersData);
+    });
+
+    return () => {
+      unsubscribeSellers();
+      unsubscribeUsers();
+    };
+  }, []);
 
   const filteredUsersForSeller = users.filter(u => {
     const isClient = u.role === 'cliente' || !u.role;
@@ -1810,7 +1871,6 @@ const SellersTab = () => {
     
     try {
       await firebaseService.createSeller(newSeller);
-      await fetchData();
       setIsAdding(false);
       setNewSeller({ userId: '', code: '', commissionPct: 15, pixKey: '' });
       alert('Vendedor cadastrado com sucesso!');
@@ -1824,7 +1884,6 @@ const SellersTab = () => {
     if (!window.confirm('Deseja realmente remover este vendedor? O usuário voltará a ser "cliente".')) return;
     try {
       await firebaseService.deleteSeller(sellerId, userId);
-      await fetchData();
       alert('Vendedor removido com sucesso!');
     } catch (error) {
       console.error('Error deleting seller:', error);
@@ -1835,7 +1894,6 @@ const SellersTab = () => {
     if (!window.confirm('Deseja promover este usuário a ADMINISTRADOR?')) return;
     try {
       await firebaseService.updateUserRole(userId, 'admin');
-      await fetchData();
       alert('Usuário promovido a Administrador!');
     } catch (error) {
       console.error('Error promoting user:', error);
@@ -1850,7 +1908,6 @@ const SellersTab = () => {
         commissionPct: editingSeller.commissionPct,
         pixKey: editingSeller.pixKey
       });
-      await fetchData();
       setEditingSeller(null);
       alert('Vendedor atualizado com sucesso!');
     } catch (error) {
@@ -2104,26 +2161,18 @@ const UsersTab = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const usersData = await firebaseService.getAllUsers();
+    const unsubscribe = firebaseService.subscribeToAllUsers((usersData) => {
       setUsers(usersData);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
       setLoading(false);
-    }
-  };
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleUpdateRole = async (userId: string, role: AppUser['role']) => {
     if (!window.confirm(`Deseja alterar o cargo deste usuário para ${role.toUpperCase()}?`)) return;
     try {
       await firebaseService.updateUserRole(userId, role);
-      await fetchUsers();
       alert('Cargo atualizado com sucesso!');
     } catch (error) {
       console.error('Error updating role:', error);
@@ -2140,7 +2189,14 @@ const UsersTab = () => {
   return (
     <div className="space-y-4 sm:space-y-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">GESTÃO DE <span className="text-lotofacil-purple">USUÁRIOS</span></h2>
+        <div className="space-y-1">
+          <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">GESTÃO DE <span className="text-lotofacil-purple">USUÁRIOS</span></h2>
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-full border border-slate-200 uppercase tracking-widest">
+              Total: {users.length} Usuários
+            </span>
+          </div>
+        </div>
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
           <input 
@@ -2212,9 +2268,14 @@ const UsersTab = () => {
 const ReportsTab = () => {
   const [contests, setContests] = useState<Contest[]>([]);
   const [betCounts, setBetCounts] = useState<Record<string, number>>({});
+  const [userCount, setUserCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const unsubscribeUsers = firebaseService.subscribeToAllUsers((allUsers) => {
+      setUserCount(allUsers.length);
+    });
+
     const fetchData = async () => {
       try {
         const allContests = await firebaseService.getAllContests();
@@ -2232,6 +2293,8 @@ const ReportsTab = () => {
       }
     };
     fetchData();
+
+    return () => unsubscribeUsers();
   }, []);
 
   if (loading) return <div className="p-10 text-center text-slate-500">Carregando relatórios...</div>;
@@ -2266,6 +2329,17 @@ const ReportsTab = () => {
             {(contests.length > 0 ? totalRevenue / contests.length : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </h3>
           <p className="text-[10px] text-slate-500 uppercase tracking-widest">{contests.length} Concursos Realizados</p>
+        </div>
+
+        <div className="bg-white p-6 sm:p-8 rounded-xl sm:rounded-2xl border border-slate-200 space-y-3 sm:space-y-4 shadow-sm">
+          <p className="text-[10px] sm:text-xs uppercase tracking-widest text-slate-600">Base de Usuários</p>
+          <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">
+            {userCount}
+          </h3>
+          <div className="flex items-center gap-2 text-blue-600 text-[10px] sm:text-xs">
+            <Users size={12} />
+            <span>Usuários Cadastrados</span>
+          </div>
         </div>
       </div>
 

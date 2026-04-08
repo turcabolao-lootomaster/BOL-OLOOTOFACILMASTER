@@ -104,16 +104,23 @@ const LiveRanking: React.FC = () => {
   const prizeConfig = activeContest.prizeConfig || {
     pctRapidinha: 0.10,
     pctChampion: 0.45,
-    pctVice: 0.15
+    pctVice: 0.15,
+    fixed10PtsDraw1: 500,
+    fixed10PtsDraw2: 500,
+    fixed10PtsDraw3: 500,
+    fixed25PlusTotal: 2000,
+    fixed27PlusTotal: 5000
   };
 
   const prizes = {
     rapidinha: totalRevenue * (prizeConfig.pctRapidinha || 0.10),
     campeao: totalRevenue * (prizeConfig.pctChampion || 0.45),
     vice: totalRevenue * (prizeConfig.pctVice || 0.15),
-    fixed10Pts: 500,
-    fixed25Plus: 2000,
-    fixed27Plus: 5000
+    fixed10PtsDraw1: prizeConfig.fixed10PtsDraw1 || 500,
+    fixed10PtsDraw2: prizeConfig.fixed10PtsDraw2 || 500,
+    fixed10PtsDraw3: prizeConfig.fixed10PtsDraw3 || 500,
+    fixed25Plus: prizeConfig.fixed25PlusTotal || 2000,
+    fixed27Plus: prizeConfig.fixed27PlusTotal || 5000
   };
 
   // Process ranking data - Show all bets individually (No grouping in Live Ranking)
@@ -577,7 +584,7 @@ const LiveRanking: React.FC = () => {
           <PrizeCard 
             key={num}
             title={`${num}º SORTEIO 10 PTS`} 
-            value={prizes.fixed10Pts} 
+            value={num === 1 ? prizes.fixed10PtsDraw1 : num === 2 ? prizes.fixed10PtsDraw2 : prizes.fixed10PtsDraw3} 
             count={winners10Pts[num-1].length}
             icon={Target}
             color="text-orange-600"
