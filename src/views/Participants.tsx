@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { firebaseService } from '../services/firebaseService';
-import { Trophy, Medal, Search, Share2, DollarSign, TrendingUp, Info, Zap, Download, X, Lock, ChevronRight, FileText } from 'lucide-react';
+import { Trophy, Medal, Search, Share2, DollarSign, TrendingUp, Info, Zap, Download, X, Lock, ChevronRight, FileText, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
@@ -25,6 +25,10 @@ const Participants: React.FC = () => {
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
   const [downloadType, setDownloadType] = useState<'excel' | 'pdf' | null>(null);
+  const [editingBet, setEditingBet] = useState<Bet | null>(null);
+  const [editBetName, setEditBetName] = useState('');
+  const [editBetNumbers, setEditBetNumbers] = useState<number[]>([]);
+  const [isUpdatingBet, setIsUpdatingBet] = useState(false);
 
   useEffect(() => {
     let unsubscribeBets: () => void = () => {};
@@ -310,60 +314,60 @@ const Participants: React.FC = () => {
     
     const doc = new jsPDF({ orientation: 'landscape' });
 
-    // Header
-    doc.setFillColor(107, 33, 168); // lotofacil-purple
+    // Header - Main Title (Green like the example)
+    doc.setFillColor(16, 128, 64); // Dark Green
     doc.rect(0, 0, 297, 25, 'F');
-    doc.setFontSize(18);
+    doc.setFontSize(22);
     doc.setTextColor(255, 255, 255);
-    doc.text(`LISTA DE PARTICIPANTES - CONCURSO #${contest?.number || '...'}`, 148.5, 15, { align: 'center' });
+    doc.setFont('helvetica', 'bold');
+    doc.text(`BOLÃO SURPRESINHA LOTOFÁCIL`, 148.5, 15, { align: 'center' });
 
-    // Prize Info
+    // Subheader Info
     doc.setFontSize(10);
     doc.setTextColor(30, 41, 59);
-    doc.text('DETALHES DA PREMIAÇÃO', 14, 35);
-    doc.setFontSize(8);
-    doc.text(`Rapidinha: ${prizes.rapidinha.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 14, 42);
-    doc.text(`Campeão: ${prizes.champion.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 14, 47);
-    doc.text(`Vice: ${prizes.vice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 14, 52);
+    doc.text(`RANKING DE ACERTOS - CONCURSO #${contest?.number || '...'}`, 14, 35);
+    
+    // Results in Header (Like the example)
+    const allResults = contest?.draws?.flatMap(d => d.results) || [];
+    const sortedResults = [...allResults].sort((a, b) => a - b);
+    doc.setFontSize(11);
+    doc.setTextColor(16, 128, 64);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`SORTEADOS: ${sortedResults.join(' - ')}`, 148.5, 45, { align: 'center' });
 
-    // Draw Results
-    doc.setFontSize(10);
-    doc.text('RESULTADOS SORTEIOS:', 100, 35);
+    // Prize Info (Compact)
     doc.setFontSize(8);
-    contest?.draws?.forEach((draw, idx) => {
-      doc.text(`Sorteio ${idx + 1}: ${draw.results.sort((a, b) => a - b).join(', ')}`, 100, 42 + (idx * 5));
-    });
+    doc.setTextColor(100, 116, 139);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Rapidinha: ${prizes.rapidinha.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} | Campeão: ${prizes.champion.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} | Vice: ${prizes.vice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 14, 55);
 
     // Info Row
     doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139);
     doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')} | Total de Apostas: ${bets.length}`, 14, 65);
 
-    // Table
+    // Table Headers (Matching the example)
     const headers = [
-      'ID', 'Participante', 
-      'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10',
-      'S1', 'S2', 'S3', 'Total', 'Vendedor'
+      'POS', 'CLIENTE', 'VENDEDOR', 'S1', 'S2', 'S3', 'SOMA', 
+      'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10'
     ];
-
-    const allResults = contest?.draws?.flatMap(d => d.results) || [];
 
     const data = filteredBets.map((b: any, index: number) => {
       const hits = b.hits || [0, 0, 0];
       const total = hits.reduce((sum: number, h: number) => sum + h, 0);
       const sortedNumbers = [...b.numbers].sort((a, b) => a - b);
       
-      // Garantir exatamente 10 colunas para os números (N1 a N10)
       const numCols = Array(10).fill('');
       sortedNumbers.forEach((n, i) => { if (i < 10) numCols[i] = n; });
       
       return [
-        index + 1,
-        b.betName || b.userName,
-        ...numCols,
-        hits[0], hits[1], hits[2],
+        `${index + 1}º`,
+        (b.betName || b.userName).toUpperCase(),
+        b.sellerCode || '-',
+        hits[0],
+        hits[1],
+        hits[2],
         total,
-        b.sellerCode || '-'
+        ...numCols
       ];
     });
 
@@ -372,26 +376,26 @@ const Participants: React.FC = () => {
       body: data,
       startY: 70,
       theme: 'grid',
-      styles: { fontSize: 7, halign: 'center', cellPadding: 1 },
-      headStyles: { fillColor: [107, 33, 168], textColor: 255 },
+      styles: { fontSize: 6, halign: 'center', cellPadding: 1, font: 'helvetica' },
+      headStyles: { fillColor: [71, 85, 105], textColor: 255, fontStyle: 'bold' }, // Dark Slate for header
+      columnStyles: {
+        0: { fillColor: [241, 245, 249], fontStyle: 'bold', cellWidth: 10 }, // POS
+        1: { halign: 'left', cellWidth: 'auto' }, // CLIENTE
+        2: { cellWidth: 15 }, // VENDEDOR
+        3: { cellWidth: 8 }, // S1
+        4: { cellWidth: 8 }, // S2
+        5: { cellWidth: 8 }, // S3
+        6: { fillColor: [30, 58, 138], textColor: 255, fontStyle: 'bold', cellWidth: 12 }, // SOMA (Blue)
+      },
       alternateRowStyles: { fillColor: [248, 250, 252] },
       didParseCell: (data) => {
         if (data.section === 'body') {
-          // Highlight hit numbers (N1 to N10 are at indices 2 to 11)
-          if (data.column.index >= 2 && data.column.index <= 11) {
+          // Highlight hit numbers (N1 to N10 are now at indices 7 to 16)
+          if (data.column.index >= 7 && data.column.index <= 16) {
             const num = data.cell.raw;
             if (typeof num === 'number' && allResults.includes(num)) {
-              data.cell.styles.fillColor = [147, 51, 234]; // purple-600
+              data.cell.styles.fillColor = [16, 128, 64]; // Green like example
               data.cell.styles.textColor = 255;
-              data.cell.styles.fontStyle = 'bold';
-            }
-          }
-          // Highlight S1, S2, S3 and Total (now at indices 12 to 15)
-          if (data.column.index >= 12 && data.column.index <= 15) {
-            const val = data.cell.raw;
-            if (typeof val === 'number' && val >= 10) {
-              data.cell.styles.fillColor = [254, 243, 199]; // yellow-100
-              data.cell.styles.textColor = [146, 64, 14]; // amber-800
               data.cell.styles.fontStyle = 'bold';
             }
           }
@@ -401,6 +405,50 @@ const Participants: React.FC = () => {
 
     doc.save(`Participantes_Bolao_Concurso_${contest?.number || '...'}.pdf`);
   };
+
+  const handleEditBet = (bet: Bet) => {
+    setEditingBet(bet);
+    setEditBetName(bet.betName || bet.userName);
+    setEditBetNumbers([...bet.numbers]);
+  };
+
+  const handleUpdateBet = async () => {
+    if (!editingBet) return;
+    
+    if (editBetNumbers.length !== 10) {
+      alert('A aposta deve ter exatamente 10 números.');
+      return;
+    }
+
+    const uniqueNumbers = new Set(editBetNumbers);
+    if (uniqueNumbers.size !== 10) {
+      alert('Não é permitido números repetidos na aposta.');
+      return;
+    }
+
+    setIsUpdatingBet(true);
+    try {
+      await firebaseService.updateBet(editingBet.id, {
+        betName: editBetName,
+        numbers: editBetNumbers
+      });
+      setEditingBet(null);
+      alert('Aposta atualizada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao atualizar aposta:', error);
+      alert('Erro ao atualizar aposta.');
+    } finally {
+      setIsUpdatingBet(false);
+    }
+  };
+
+  const toggleNumberInEdit = (num: number) => {
+    setEditBetNumbers(prev => 
+      prev.includes(num) ? prev.filter(n => n !== num) : (prev.length < 10 ? [...prev, num] : prev)
+    );
+  };
+
+  const isAdmin = user?.role === 'admin' || user?.role === 'master';
 
   return (
     <div className="mobile-p lg:p-10 space-y-6 sm:space-y-10">
@@ -544,6 +592,7 @@ const Participants: React.FC = () => {
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="px-1 sm:px-6 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center w-8 sm:w-20">Pos</th>
                 <th className="px-2 sm:px-6 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest text-slate-600 font-bold">Participante</th>
+                <th className="px-2 sm:px-4 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center">Vendedor</th>
                 <th className="px-6 py-4 text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center hide-mobile">Números</th>
                 <th className="px-1 sm:px-4 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center w-10 sm:w-16">S1</th>
                 <th className="px-1 sm:px-4 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest text-slate-600 font-bold text-center w-10 sm:w-16">S2</th>
@@ -554,7 +603,7 @@ const Participants: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center">
+                  <td colSpan={8} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-10 h-10 border-4 border-lotofacil-purple/20 border-t-lotofacil-purple rounded-full animate-spin" />
                       <p className="text-slate-500 text-[10px] uppercase tracking-widest font-black">Sincronizando Ranking...</p>
@@ -563,7 +612,7 @@ const Participants: React.FC = () => {
                 </tr>
               ) : filteredBets.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center">
+                  <td colSpan={8} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center gap-4 opacity-30">
                       <Trophy size={48} className="text-slate-900" />
                       <p className="text-slate-900 text-[10px] uppercase tracking-widest font-black">Nenhuma aposta encontrada</p>
@@ -661,6 +710,14 @@ const Participants: React.FC = () => {
                           </div>
                         </div>
                       </td>
+                      <td className="px-2 sm:px-4 py-4 text-center">
+                        <span className={cn(
+                          "text-[9px] sm:text-[10px] font-bold uppercase tracking-widest",
+                          isExpanded ? "text-white/60" : "text-lotofacil-purple"
+                        )}>
+                          {b.sellerCode || '-'}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 hide-mobile">
                         <div className="flex items-center justify-center gap-1">
                           {b.numbers.map(num => {
@@ -712,7 +769,7 @@ const Participants: React.FC = () => {
                     <AnimatePresence>
                       {isExpanded && (
                         <tr className="bg-slate-900 border-none">
-                          <td colSpan={7} className="px-4 pb-6 pt-0">
+                          <td colSpan={8} className="px-4 pb-6 pt-0">
                             <motion.div
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: 'auto', opacity: 1 }}
@@ -750,7 +807,21 @@ const Participants: React.FC = () => {
                                 </div>
 
                                 <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                                  <p className="text-[9px] text-white/40 uppercase font-bold">Toque novamente para fechar</p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-[9px] text-white/40 uppercase font-bold">Toque novamente para fechar</p>
+                                    {isAdmin && (
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEditBet(b);
+                                        }}
+                                        className="flex items-center gap-1 px-2 py-1 bg-white/10 hover:bg-white/20 rounded-md text-[8px] font-bold text-white uppercase tracking-widest transition-all"
+                                      >
+                                        <Pencil size={8} />
+                                        Editar
+                                      </button>
+                                    )}
+                                  </div>
                                   <p className="text-[9px] text-white/40 uppercase font-bold tracking-widest">ID: {b.id.slice(0, 8)}</p>
                                 </div>
                               </div>
@@ -783,6 +854,83 @@ const Participants: React.FC = () => {
 
       {/* Password Modal */}
       <AnimatePresence>
+        {editingBet && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg p-6 sm:p-8 space-y-6 shadow-2xl overflow-y-auto max-h-[90vh]"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-display tracking-widest uppercase text-slate-900">Editar Aposta</h3>
+                <button onClick={() => setEditingBet(null)} className="text-slate-400 hover:text-slate-600 transition-all">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest">Nome na Aposta</label>
+                  <input 
+                    type="text" 
+                    value={editBetName}
+                    onChange={(e) => setEditBetName(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50 font-bold uppercase"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest">Números ({editBetNumbers.length}/10)</label>
+                    <button 
+                      onClick={() => setEditBetNumbers([])}
+                      className="text-[8px] font-bold text-red-500 uppercase tracking-widest hover:underline"
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-5 gap-2">
+                    {Array.from({ length: 25 }, (_, i) => i + 1).map(num => (
+                      <button
+                        key={num}
+                        onClick={() => toggleNumberInEdit(num)}
+                        className={cn(
+                          "aspect-square rounded-lg border-2 flex items-center justify-center text-xs font-bold transition-all",
+                          editBetNumbers.includes(num)
+                            ? "bg-lotofacil-purple border-lotofacil-purple text-white shadow-md"
+                            : "bg-slate-50 border-slate-200 text-slate-400 hover:border-slate-300"
+                        )}
+                      >
+                        {num.toString().padStart(2, '0')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={() => setEditingBet(null)}
+                  className="flex-1 py-3 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all uppercase tracking-widest text-[10px] font-bold border border-slate-200"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleUpdateBet}
+                  disabled={isUpdatingBet || editBetNumbers.length !== 10}
+                  className="flex-1 py-3 rounded-xl bg-lotofacil-purple text-white hover:bg-lotofacil-purple/80 transition-all uppercase tracking-widest text-[10px] font-bold shadow-lg disabled:opacity-50"
+                >
+                  {isUpdatingBet ? 'SALVANDO...' : 'SALVAR ALTERAÇÕES'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
         {showPasswordModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div 

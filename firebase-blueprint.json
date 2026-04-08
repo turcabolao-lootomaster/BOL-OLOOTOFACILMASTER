@@ -76,7 +76,8 @@
         "code": { "type": "string" },
         "commissionPct": { "type": "number" },
         "totalSales": { "type": "integer" },
-        "totalCommission": { "type": "number" }
+        "totalCommission": { "type": "number" },
+        "pixKey": { "type": "string" }
       },
       "required": ["userId", "code", "commissionPct"]
     },

@@ -28,6 +28,12 @@ const AppContent: React.FC = () => {
 
   React.useEffect(() => {
     document.title = "Bolão Lotofácil";
+    
+    if (!loading && !user) {
+      setView('login');
+      return;
+    }
+
     const params = new URLSearchParams(window.location.search);
     if (params.has('ref')) {
       setView('bet');
@@ -36,8 +42,6 @@ const AppContent: React.FC = () => {
       if (['participants', 'current-contest', 'ranking', 'instructions'].includes(view)) {
         setView(view);
       }
-    } else if (!loading && !user) {
-      setView('participants');
     }
   }, [loading, user]);
 

@@ -328,6 +328,16 @@ export const firebaseService = {
     }
   },
 
+  async updateBet(betId: string, data: Partial<Bet>): Promise<void> {
+    const path = `bets/${betId}`;
+    try {
+      const docRef = doc(db, 'bets', betId);
+      await updateDoc(docRef, data);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
   async deleteBet(betId: string): Promise<void> {
     const path = `bets/${betId}`;
     try {
@@ -654,6 +664,15 @@ export const firebaseService = {
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, path);
       return '';
+    }
+  },
+
+  async updateSeller(sellerId: string, data: Partial<Seller>): Promise<void> {
+    const path = `sellers/${sellerId}`;
+    try {
+      await updateDoc(doc(db, 'sellers', sellerId), data);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
     }
   },
 

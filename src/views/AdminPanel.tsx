@@ -32,7 +32,8 @@ import {
   Download,
   DollarSign,
   Info,
-  Store
+  Store,
+  Pencil
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
@@ -121,6 +122,10 @@ const BetsTab = () => {
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editingBet, setEditingBet] = useState<Bet | null>(null);
+  const [editBetName, setEditBetName] = useState('');
+  const [editBetNumbers, setEditBetNumbers] = useState<number[]>([]);
+  const [isUpdatingBet, setIsUpdatingBet] = useState(false);
 
   const fetchBets = async () => {
     setLoading(true);
@@ -215,6 +220,49 @@ const BetsTab = () => {
     );
   };
 
+  const handleEditBet = (bet: Bet) => {
+    setEditingBet(bet);
+    setEditBetName(bet.betName || bet.userName);
+    setEditBetNumbers([...bet.numbers]);
+  };
+
+  const handleUpdateBet = async () => {
+    if (!editingBet) return;
+    
+    if (editBetNumbers.length !== 10) {
+      alert('A aposta deve ter exatamente 10 números.');
+      return;
+    }
+
+    const uniqueNumbers = new Set(editBetNumbers);
+    if (uniqueNumbers.size !== 10) {
+      alert('Não é permitido números repetidos na aposta.');
+      return;
+    }
+
+    setIsUpdatingBet(true);
+    try {
+      await firebaseService.updateBet(editingBet.id, {
+        betName: editBetName,
+        numbers: editBetNumbers
+      });
+      showSuccess('Aposta atualizada com sucesso!');
+      setEditingBet(null);
+      fetchBets();
+    } catch (error) {
+      console.error('Erro ao atualizar aposta:', error);
+      alert('Erro ao atualizar aposta.');
+    } finally {
+      setIsUpdatingBet(false);
+    }
+  };
+
+  const toggleNumberInEdit = (num: number) => {
+    setEditBetNumbers(prev => 
+      prev.includes(num) ? prev.filter(n => n !== num) : (prev.length < 10 ? [...prev, num] : prev)
+    );
+  };
+
   const handleDownloadExcel = () => {
     if (filteredBets.length === 0) return;
 
@@ -297,6 +345,83 @@ const BetsTab = () => {
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
+        {editingBet && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg p-6 sm:p-8 space-y-6 shadow-2xl overflow-y-auto max-h-[90vh]"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-display tracking-widest uppercase text-slate-900">Editar Aposta</h3>
+                <button onClick={() => setEditingBet(null)} className="text-slate-400 hover:text-slate-600 transition-all">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest">Nome na Aposta</label>
+                  <input 
+                    type="text" 
+                    value={editBetName}
+                    onChange={(e) => setEditBetName(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50 font-bold uppercase"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest">Números ({editBetNumbers.length}/10)</label>
+                    <button 
+                      onClick={() => setEditBetNumbers([])}
+                      className="text-[8px] font-bold text-red-500 uppercase tracking-widest hover:underline"
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-5 gap-2">
+                    {Array.from({ length: 25 }, (_, i) => i + 1).map(num => (
+                      <button
+                        key={num}
+                        onClick={() => toggleNumberInEdit(num)}
+                        className={cn(
+                          "aspect-square rounded-lg border-2 flex items-center justify-center text-xs font-bold transition-all",
+                          editBetNumbers.includes(num)
+                            ? "bg-lotofacil-purple border-lotofacil-purple text-white shadow-md"
+                            : "bg-slate-50 border-slate-200 text-slate-400 hover:border-slate-300"
+                        )}
+                      >
+                        {num.toString().padStart(2, '0')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={() => setEditingBet(null)}
+                  className="flex-1 py-3 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all uppercase tracking-widest text-[10px] font-bold border border-slate-200"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleUpdateBet}
+                  disabled={isUpdatingBet || editBetNumbers.length !== 10}
+                  className="flex-1 py-3 rounded-xl bg-lotofacil-purple text-white hover:bg-lotofacil-purple/80 transition-all uppercase tracking-widest text-[10px] font-bold shadow-lg disabled:opacity-50"
+                >
+                  {isUpdatingBet ? 'SALVANDO...' : 'SALVAR ALTERAÇÕES'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
         {showDeleteConfirm && (
           <motion.div 
             initial={{ opacity: 0 }}
@@ -466,6 +591,13 @@ const BetsTab = () => {
                         >
                           <X size={14} />
                         </button>
+                        <button 
+                          onClick={() => handleEditBet(bet)}
+                          className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center"
+                          title="Editar Aposta"
+                        >
+                          <Pencil size={12} />
+                        </button>
                       </>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -475,6 +607,13 @@ const BetsTab = () => {
                         )}>
                           {bet.status}
                         </span>
+                        <button 
+                          onClick={() => handleEditBet(bet)}
+                          className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center"
+                          title="Editar Aposta"
+                        >
+                          <Pencil size={12} />
+                        </button>
                         <button 
                           onClick={() => {
                             setSelectedIds([bet.id]);
@@ -1607,11 +1746,13 @@ const SellersTab = () => {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [editingSeller, setEditingSeller] = useState<Seller | null>(null);
   const [loading, setLoading] = useState(true);
   const [newSeller, setNewSeller] = useState({
     userId: '',
     code: '',
-    commissionPct: 15
+    commissionPct: 15,
+    pixKey: ''
   });
 
   useEffect(() => {
@@ -1661,7 +1802,7 @@ const SellersTab = () => {
       await firebaseService.createSeller(newSeller);
       await fetchData();
       setIsAdding(false);
-      setNewSeller({ userId: '', code: '', commissionPct: 15 });
+      setNewSeller({ userId: '', code: '', commissionPct: 15, pixKey: '' });
       alert('Vendedor cadastrado com sucesso!');
     } catch (error) {
       console.error('Error adding seller:', error);
@@ -1691,6 +1832,23 @@ const SellersTab = () => {
     }
   };
 
+  const handleUpdateSeller = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSeller) return;
+    try {
+      await firebaseService.updateSeller(editingSeller.id, {
+        commissionPct: editingSeller.commissionPct,
+        pixKey: editingSeller.pixKey
+      });
+      await fetchData();
+      setEditingSeller(null);
+      alert('Vendedor atualizado com sucesso!');
+    } catch (error) {
+      console.error('Error updating seller:', error);
+      alert('Erro ao atualizar vendedor.');
+    }
+  };
+
   if (loading) return <div className="p-10 text-center text-slate-500">Carregando...</div>;
 
   return (
@@ -1707,6 +1865,68 @@ const SellersTab = () => {
           </button>
         )}
       </div>
+
+      <AnimatePresence>
+        {editingSeller && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 sm:p-8 space-y-6 shadow-2xl"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-display tracking-widest uppercase text-slate-900">Editar Vendedor</h3>
+                <button onClick={() => setEditingSeller(null)} className="text-slate-400 hover:text-slate-600 transition-all">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateSeller} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Comissão %</label>
+                  <input 
+                    type="number" 
+                    value={editingSeller.commissionPct}
+                    onChange={(e) => setEditingSeller({ ...editingSeller, commissionPct: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Chave PIX</label>
+                  <input 
+                    type="text" 
+                    value={editingSeller.pixKey || ''}
+                    onChange={(e) => setEditingSeller({ ...editingSeller, pixKey: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                    required
+                  />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button 
+                    type="submit"
+                    className="flex-1 bg-lotofacil-purple text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-lotofacil-purple/80 transition-all shadow-lg"
+                  >
+                    Salvar Alterações
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setEditingSeller(null)}
+                    className="flex-1 border border-slate-200 text-slate-400 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {isAdding && (
         <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-lotofacil-purple/30 space-y-4">
@@ -1767,6 +1987,17 @@ const SellersTab = () => {
                   required
                 />
               </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Chave PIX (Para Recebimento)</label>
+                <input 
+                  type="text" 
+                  value={newSeller.pixKey}
+                  onChange={(e) => setNewSeller({ ...newSeller, pixKey: e.target.value })}
+                  placeholder="Chave PIX (E-mail, CPF, Tel, etc)"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                  required
+                />
+              </div>
               <div className="sm:col-span-2 flex gap-2 pt-2">
                 <button 
                   type="submit"
@@ -1799,6 +2030,7 @@ const SellersTab = () => {
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Comissão %</th>
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Vendas</th>
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Total Comissão</th>
+              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Chave PIX</th>
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Ações</th>
             </tr>
           </thead>
@@ -1815,11 +2047,19 @@ const SellersTab = () => {
                   <td className="px-6 py-4 text-center text-sm text-slate-500">{s.commissionPct}%</td>
                   <td className="px-6 py-4 text-center text-sm text-slate-900 font-bold">{s.totalSales || 0}</td>
                   <td className="px-6 py-4 text-center text-sm text-lotofacil-purple font-bold">R$ {(s.totalCommission || 0).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-center text-[10px] text-slate-600 font-mono">{s.pixKey || '-'}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-center gap-2">
                       <button 
-                        onClick={() => handlePromoteToAdmin(s.userId)}
+                        onClick={() => setEditingSeller(s)}
                         className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-all"
+                        title="Editar Vendedor"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button 
+                        onClick={() => handlePromoteToAdmin(s.userId)}
+                        className="p-2 bg-slate-50 text-slate-600 hover:bg-slate-600 hover:text-white rounded-lg transition-all"
                         title="Promover a Admin"
                       >
                         <ShieldCheck size={14} />
@@ -2208,11 +2448,14 @@ const FinanceiroTab: React.FC = () => {
   const sellerStats = sellers.map(seller => {
     const sellerBets = bets.filter(b => b.sellerCode === seller.code);
     const sales = sellerBets.length;
-    const commission = sales * betPrice * (seller.commissionPct / 100);
+    const totalSalesValue = sales * betPrice;
+    const commission = totalSalesValue * (seller.commissionPct / 100);
+    const repasse = totalSalesValue - commission;
     return {
       ...seller,
       currentSales: sales,
-      currentCommission: commission
+      currentCommission: commission,
+      currentRepasse: repasse
     };
   }).filter(s => s.currentSales > 0).sort((a, b) => b.currentSales - a.currentSales);
 
@@ -2303,6 +2546,7 @@ const FinanceiroTab: React.FC = () => {
                   <th className="px-6 py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold text-center">Código</th>
                   <th className="px-6 py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold text-center">Vendas</th>
                   <th className="px-6 py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold text-right">Comissão</th>
+                  <th className="px-6 py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold text-right">Repasse</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -2322,11 +2566,16 @@ const FinanceiroTab: React.FC = () => {
                         {s.currentCommission.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </span>
                     </td>
+                    <td className="px-6 py-4 text-right">
+                      <span className="text-xs font-black text-blue-600">
+                        {s.currentRepasse.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                    </td>
                   </tr>
                 ))}
                 {sellerStats.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-6 py-10 text-center text-slate-400 italic text-sm">Nenhuma venda registrada por vendedores neste concurso.</td>
+                    <td colSpan={5} className="px-6 py-10 text-center text-slate-400 italic text-sm">Nenhuma venda registrada por vendedores neste concurso.</td>
                   </tr>
                 )}
               </tbody>

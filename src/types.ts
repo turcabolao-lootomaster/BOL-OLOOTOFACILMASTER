@@ -24,6 +24,7 @@ export interface Seller {
   commissionPct: number;
   totalSales: number;
   totalCommission: number;
+  pixKey?: string;
 }
 
 export type ContestStatus = 'aberto' | 'em_andamento' | 'encerrado';

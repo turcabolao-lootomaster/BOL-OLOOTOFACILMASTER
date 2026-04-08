@@ -33,67 +33,80 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let unsubscribeUser: (() => void) | undefined;
+    let unsubscribeAuth: (() => void) | undefined;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'No user');
-      if (firebaseUser) {
-        try {
-          const userDocRef = doc(db, 'users', firebaseUser.uid);
-          const userDoc = await getDoc(userDocRef);
-          console.log('User doc exists:', userDoc.exists());
+    const initAuth = async () => {
+      // Force sign out on initial load to always show login screen as requested
+      // This ensures that even if a session exists, the user must log in again
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.error('Error in initial signOut:', error);
+      }
 
-          if (userDoc.exists()) {
-            unsubscribeUser = onSnapshot(userDocRef, (doc) => {
-              if (doc.exists()) {
-                const data = doc.data() as User;
-                setUser({ id: doc.id, ...data });
-              }
-              setLoading(false);
-            });
-          } else {
-            const q = query(collection(db, 'users'), where('uid', '==', firebaseUser.uid));
-            const snapshot = await getDocs(q);
+      unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+        console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'No user');
+        if (firebaseUser) {
+          try {
+            const userDocRef = doc(db, 'users', firebaseUser.uid);
+            const userDoc = await getDoc(userDocRef);
+            console.log('User doc exists:', userDoc.exists());
 
-            if (!snapshot.empty) {
-              const docId = snapshot.docs[0].id;
-              unsubscribeUser = onSnapshot(doc(db, 'users', docId), (doc) => {
+            if (userDoc.exists()) {
+              unsubscribeUser = onSnapshot(userDocRef, (doc) => {
                 if (doc.exists()) {
                   const data = doc.data() as User;
                   setUser({ id: doc.id, ...data });
                 }
                 setLoading(false);
               });
-            } else if (firebaseUser.providerData.length > 0) {
-              const isMaster = firebaseUser.email === 'turcabolao@gmail.com';
-              const newUser: User = {
-                id: firebaseUser.uid,
-                uid: firebaseUser.uid,
-                name: firebaseUser.displayName || 'Usuário',
-                email: firebaseUser.email || '',
-                role: isMaster ? 'master' : 'cliente',
-                totalPoints: 0,
-                createdAt: Timestamp.now()
-              };
-              await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
-              setUser(newUser);
-              setLoading(false);
             } else {
-              setUser(null);
-              setLoading(false);
+              const q = query(collection(db, 'users'), where('uid', '==', firebaseUser.uid));
+              const snapshot = await getDocs(q);
+
+              if (!snapshot.empty) {
+                const docId = snapshot.docs[0].id;
+                unsubscribeUser = onSnapshot(doc(db, 'users', docId), (doc) => {
+                  if (doc.exists()) {
+                    const data = doc.data() as User;
+                    setUser({ id: doc.id, ...data });
+                  }
+                  setLoading(false);
+                });
+              } else if (firebaseUser.providerData.length > 0) {
+                const isMaster = firebaseUser.email === 'turcabolao@gmail.com';
+                const newUser: User = {
+                  id: firebaseUser.uid,
+                  uid: firebaseUser.uid,
+                  name: firebaseUser.displayName || 'Usuário',
+                  email: firebaseUser.email || '',
+                  role: isMaster ? 'master' : 'cliente',
+                  totalPoints: 0,
+                  createdAt: Timestamp.now()
+                };
+                await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
+                setUser(newUser);
+                setLoading(false);
+              } else {
+                setUser(null);
+                setLoading(false);
+              }
             }
+          } catch (error) {
+            console.error('Error in AuthProvider:', error);
+            setLoading(false);
           }
-        } catch (error) {
-          console.error('Error in AuthProvider:', error);
+        } else {
+          setUser(null);
           setLoading(false);
         }
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
-    });
+      });
+    };
+
+    initAuth();
 
     return () => {
-      unsubscribeAuth();
+      if (unsubscribeAuth) unsubscribeAuth();
       if (unsubscribeUser) unsubscribeUser();
     };
   }, []);
