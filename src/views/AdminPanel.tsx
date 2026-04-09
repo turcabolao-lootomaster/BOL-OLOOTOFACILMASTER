@@ -1831,6 +1831,7 @@ const SellersTab = () => {
   const [newSeller, setNewSeller] = useState({
     userId: '',
     code: '',
+    password: '',
     commissionPct: 15,
     pixKey: ''
   });
@@ -1867,12 +1868,15 @@ const SellersTab = () => {
 
   const handleAddSeller = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSeller.userId || !newSeller.code) return;
+    if (!newSeller.userId || !newSeller.code || !newSeller.password) {
+      alert('Por favor, preencha todos os campos, incluindo a senha.');
+      return;
+    }
     
     try {
       await firebaseService.createSeller(newSeller);
       setIsAdding(false);
-      setNewSeller({ userId: '', code: '', commissionPct: 15, pixKey: '' });
+      setNewSeller({ userId: '', code: '', password: '', commissionPct: 15, pixKey: '' });
       alert('Vendedor cadastrado com sucesso!');
     } catch (error) {
       console.error('Error adding seller:', error);
@@ -1906,7 +1910,8 @@ const SellersTab = () => {
     try {
       await firebaseService.updateSeller(editingSeller.id, {
         commissionPct: editingSeller.commissionPct,
-        pixKey: editingSeller.pixKey
+        pixKey: editingSeller.pixKey,
+        password: editingSeller.password
       });
       setEditingSeller(null);
       alert('Vendedor atualizado com sucesso!');
@@ -1971,6 +1976,17 @@ const SellersTab = () => {
                     value={editingSeller.pixKey || ''}
                     onChange={(e) => setEditingSeller({ ...editingSeller, pixKey: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Senha de Acesso</label>
+                  <input 
+                    type="text" 
+                    value={editingSeller.password || ''}
+                    onChange={(e) => setEditingSeller({ ...editingSeller, password: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                    placeholder="Defina uma nova senha"
                     required
                   />
                 </div>
@@ -2061,6 +2077,17 @@ const SellersTab = () => {
                   value={newSeller.pixKey}
                   onChange={(e) => setNewSeller({ ...newSeller, pixKey: e.target.value })}
                   placeholder="Chave PIX (E-mail, CPF, Tel, etc)"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Senha de Acesso</label>
+                <input 
+                  type="text" 
+                  value={newSeller.password}
+                  onChange={(e) => setNewSeller({ ...newSeller, password: e.target.value })}
+                  placeholder="Senha para o vendedor logar"
                   className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
                   required
                 />

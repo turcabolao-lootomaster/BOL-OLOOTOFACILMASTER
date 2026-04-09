@@ -776,28 +776,60 @@ export const firebaseService = {
     }
   },
 
-  async checkBetNameAvailability(betName: string, sellerCode: string, userId: string): Promise<{ available: boolean, message?: string }> {
-    if (!betName || !sellerCode) return { available: true };
+  async checkBetNameAvailability(betName: string, userId: string): Promise<{ available: boolean, message?: string }> {
+    if (!betName) return { available: true };
     
-    const key = `${betName.toUpperCase()}_${sellerCode.toUpperCase()}`.replace(/[^a-zA-Z0-9_]/g, '');
-    const path = `rankings/${key}`;
+    const normalizedNick = betName.trim().toUpperCase();
+    if (!normalizedNick) return { available: true };
+
+    const key = normalizedNick.replace(/[^a-zA-Z0-9_]/g, '');
+    const path = `nick_reservations/${key}`;
+    
     try {
-      const rankingRef = doc(db, 'rankings', key);
-      const rankingSnap = await getDoc(rankingRef);
+      const reservationRef = doc(db, 'nick_reservations', key);
+      const reservationSnap = await getDoc(reservationRef);
       
-      if (rankingSnap.exists()) {
-        const data = rankingSnap.data();
+      if (reservationSnap.exists()) {
+        const data = reservationSnap.data();
         if (data.ownerId && data.ownerId !== userId) {
           return { 
             available: false, 
-            message: 'Este nome já está sendo usado por outro participante neste vendedor. Por favor, escolha outro nome ou fale com seu vendedor.' 
+            message: `O nome "${normalizedNick}" já está sendo usado por outro participante. Por favor, escolha um nome diferente para garantir que seus pontos sejam computados corretamente.` 
           };
         }
       }
       return { available: true };
     } catch (error) {
-      handleFirestoreError(error, OperationType.GET, path);
+      // If it's just a "not found" or similar, it's available
       return { available: true };
+    }
+  },
+
+  async reserveNick(betName: string, userId: string): Promise<void> {
+    if (!betName || !userId) return;
+    
+    const normalizedNick = betName.trim().toUpperCase();
+    const key = normalizedNick.replace(/[^a-zA-Z0-9_]/g, '');
+    
+    try {
+      const reservationRef = doc(db, 'nick_reservations', key);
+      const reservationSnap = await getDoc(reservationRef);
+      
+      if (!reservationSnap.exists()) {
+        await setDoc(reservationRef, {
+          nick: normalizedNick,
+          ownerId: userId,
+          createdAt: serverTimestamp(),
+          lastUsed: serverTimestamp()
+        });
+      } else {
+        // Update last used
+        await updateDoc(reservationRef, {
+          lastUsed: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao reservar nick:', error);
     }
   },
 
@@ -874,9 +906,9 @@ export const firebaseService = {
           const totalHits = hits.reduce((a, b) => a + b, 0);
           const betName = (betData.betName || betData.userName || 'Participante').trim().toUpperCase();
           const sellerCode = (betData.sellerCode || '').trim().toUpperCase();
-          const key = `${betName}_${sellerCode}`;
+          const key = betName; // Use only betName as key for global ranking
           
-          if (!key || key === '_') continue;
+          if (!key) continue;
 
           if (!contestBestScores[key] || totalHits > contestBestScores[key].score) {
             contestBestScores[key] = { betName, sellerCode, score: totalHits, userId: betData.userId, numbers: betData.numbers };

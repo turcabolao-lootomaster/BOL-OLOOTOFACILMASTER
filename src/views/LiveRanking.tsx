@@ -660,7 +660,7 @@ const LiveRanking: React.FC = () => {
       </div>
 
       {/* 10 PTS Prizes Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {[1, 2, 3].map(num => (
           <PrizeCard 
             key={num}
@@ -678,7 +678,7 @@ const LiveRanking: React.FC = () => {
       </div>
 
       {/* Main Prizes Row (Rapidinha, 1st, 2nd) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <PrizeCard 
           title="RAPIDINHA" 
           value={prizes.rapidinha} 
@@ -1561,64 +1561,42 @@ const PrizeCard: React.FC<PrizeCardProps> = ({
         </div>
       </div>
     ) : (
-      <div className="flex items-start gap-3 sm:gap-6 relative z-10">
+      <div className="flex items-center gap-1.5 sm:gap-4 relative z-10">
         <div className={cn(
-          "rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-110",
-          compact ? "w-8 h-8 sm:w-12 sm:h-12" : "w-14 h-14 sm:w-20 sm:h-20",
+          "rounded-[0.75rem] sm:rounded-[1.25rem] flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105",
+          "w-8 h-8 sm:w-16 sm:h-16",
           bg
         )}>
-          <Icon className={color} size={compact ? 14 : 28} />
+          <Icon className={cn(color, "sm:w-6 sm:h-6")} size={14} />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-col">
-            <p className={cn(
-              "uppercase tracking-widest text-black font-bold text-right",
-              compact ? "text-[7px] sm:text-[9px]" : "text-[7px] sm:text-[10px]"
-            )}>
-              Estimativa
-            </p>
-            <p className={cn(
-              "font-black tracking-tight text-right",
-              compact ? "text-[10px] sm:text-xl" : "text-lg sm:text-3xl",
-              color
-            )}>
-              {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </p>
-          </div>
-          
-          <div className={cn(
-            "mt-1 sm:mt-3",
-            compact ? "space-y-0.5" : "space-y-1"
+        <div className="flex-1 min-w-0 text-right">
+          <p className="uppercase tracking-[0.1em] sm:tracking-[0.2em] text-slate-400 font-black text-[5px] sm:text-[9px] mb-0.5">
+            Estimativa
+          </p>
+          <p className={cn(
+            "font-black tracking-tighter leading-none",
+            "text-[9px] sm:text-2xl",
+            color
           )}>
-            <p className={cn(
-              "font-bold uppercase tracking-widest truncate text-slate-900",
-              compact ? "text-[6px] sm:text-[10px]" : "text-[9px] sm:text-xs"
-            )}>
-              {isFinished ? `${title} (${count || 0} Ganhadores)` : title}
-            </p>
-            
+            {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </p>
+          <p className="font-bold uppercase tracking-widest truncate text-slate-900 text-[6px] sm:text-[11px] mt-0.5 sm:mt-1">
+            {title}
+          </p>
+          
+          <div className="mt-0.5 sm:mt-1.5 flex items-center justify-end gap-1 sm:gap-1.5">
             {leader ? (
-              <div className="flex items-center gap-1">
-                <div className="w-1 h-1 rounded-full bg-green-500 shrink-0" />
-                <p className={cn(
-                  "font-medium truncate uppercase",
-                  compact ? "text-[5px] sm:text-[8px]" : "text-[7px] sm:text-[10px]",
-                  "text-slate-500"
-                )}>{leader} no momento</p>
-              </div>
-            ) : (count !== undefined && !isFinished) ? (
-              <p className={cn(
-                "font-medium uppercase tracking-widest truncate text-slate-500",
-                compact ? "text-[5px] sm:text-[8px]" : "text-[7px] sm:text-[10px]"
-              )}>
-                {count} ganhador(es) no momento
+              <>
+                <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <p className="text-[5px] sm:text-[9px] font-bold text-slate-500 uppercase truncate max-w-[60px] sm:max-w-[120px]">
+                  {leader} NO MOMEN...
+                </p>
+              </>
+            ) : (
+              <p className="text-[5px] sm:text-[9px] font-bold text-slate-400 uppercase">
+                {count || 0} GANHADOR(ES) NO...
               </p>
-            ) : !isFinished ? (
-              <p className={cn(
-                "italic truncate text-slate-400",
-                compact ? "text-[5px] sm:text-[8px]" : "text-[7px] sm:text-[10px]"
-              )}>Calculando...</p>
-            ) : null}
+            )}
           </div>
         </div>
       </div>

@@ -10,18 +10,20 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../utils';
 
 const Login: React.FC = () => {
-  const { signInWithGoogle, signInWithWhatsApp, signInWithCode } = useAuth();
-  const [activeTab, setActiveTab] = useState<'google' | 'whatsapp' | 'code'>('google');
+  const { signInWithGoogle, signInWithWhatsApp, signInWithSellerCode, signInWithClientCode } = useAuth();
+  const [activeTab, setActiveTab] = useState<'whatsapp' | 'google' | 'code'>('whatsapp');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
   // WhatsApp state
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [waName, setWaName] = useState('');
   const [sellerCode, setSellerCode] = useState('');
   
-  // Code state
-  const [name, setName] = useState('');
+  // Code state (Client or Seller)
+  const [accessName, setAccessName] = useState('');
   const [accessCode, setAccessCode] = useState('');
+  const [sellerPassword, setSellerPassword] = useState('');
 
   const handleGoogleLogin = async () => {
     setError('');
@@ -55,7 +57,7 @@ const Login: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      await signInWithWhatsApp(cleanPhone, sellerCode);
+      await signInWithWhatsApp(cleanPhone, waName, sellerCode);
     } catch (err: any) {
       setError(err.message || 'Erro ao fazer login com WhatsApp');
     } finally {
@@ -65,15 +67,26 @@ const Login: React.FC = () => {
 
   const handleCodeLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || accessCode.length !== 4) {
-      setError('Por favor, preencha o nome e o código de 4 letras.');
+    if (!accessCode) {
+      setError('Por favor, insira o código do vendedor.');
       return;
     }
     
     setError('');
     setLoading(true);
     try {
-      await signInWithCode(name, accessCode, sellerCode);
+      if (accessName.trim()) {
+        // Client login with Name + Seller Code
+        await signInWithClientCode(accessName.trim(), accessCode);
+      } else {
+        // Seller login with Code + Password
+        if (!sellerPassword) {
+          setError('Vendedores precisam de senha para acessar o painel.');
+          setLoading(false);
+          return;
+        }
+        await signInWithSellerCode(accessCode, sellerPassword);
+      }
     } catch (err: any) {
       setError(err.message || 'Erro ao fazer login com Código');
     } finally {
@@ -82,7 +95,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative overflow-hidden">
+    <div className="min-h-screen flex items-start justify-center p-4 bg-slate-50 relative overflow-hidden pt-10 sm:pt-20">
       {/* Background Orbs */}
       <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-lotofacil-purple/5 rounded-full blur-[100px]" />
       <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-lotofacil-purple/5 rounded-full blur-[100px]" />
@@ -102,15 +115,6 @@ const Login: React.FC = () => {
 
         <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200 mb-6 sm:mb-8">
           <button 
-            onClick={() => setActiveTab('google')}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all",
-              activeTab === 'google' ? "bg-white text-lotofacil-purple shadow-sm" : "text-slate-400 hover:text-slate-600"
-            )}
-          >
-            Google
-          </button>
-          <button 
             onClick={() => setActiveTab('whatsapp')}
             className={cn(
               "flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all",
@@ -118,6 +122,15 @@ const Login: React.FC = () => {
             )}
           >
             WhatsApp
+          </button>
+          <button 
+            onClick={() => setActiveTab('google')}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all",
+              activeTab === 'google' ? "bg-white text-lotofacil-purple shadow-sm" : "text-slate-400 hover:text-slate-600"
+            )}
+          >
+            Google
           </button>
           <button 
             onClick={() => setActiveTab('code')}
@@ -185,38 +198,54 @@ const Login: React.FC = () => {
               >
                 <form onSubmit={handleWhatsAppLogin} className="space-y-4">
                   <p className="text-center text-slate-500 text-[11px] sm:text-sm leading-relaxed mb-4 sm:mb-6">
-                    Seu número de WhatsApp será sua chave única de acesso.
+                    Seu WhatsApp e Nome serão sua chave única de acesso.
                   </p>
-                  <div>
-                    <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Número do WhatsApp</label>
-                    <div className="relative">
-                      <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                      <input 
-                        type="tel" 
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="xx9xxxx-xxxx"
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
-                        autoFocus
-                      />
+                  <div className="space-y-3 sm:space-y-4">
+                    <div>
+                      <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Seu Nome</label>
+                      <div className="relative">
+                        <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                        <input 
+                          type="text" 
+                          value={waName}
+                          onChange={(e) => setWaName(e.target.value)}
+                          placeholder="Ex: João Silva"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Código do Vendedor (Opcional)</label>
-                    <div className="relative">
-                      <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                      <input 
-                        type="text" 
-                        value={sellerCode}
-                        onChange={(e) => setSellerCode(e.target.value.toUpperCase())}
-                        placeholder="Ex: REF123"
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
-                      />
+                    <div>
+                      <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Número do WhatsApp</label>
+                      <div className="relative">
+                        <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                        <input 
+                          type="tel" 
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          placeholder="xx9xxxx-xxxx"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Código do Vendedor (Opcional)</label>
+                      <div className="relative">
+                        <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                        <input 
+                          type="text" 
+                          value={sellerCode}
+                          onChange={(e) => setSellerCode(e.target.value.toUpperCase())}
+                          placeholder="Ex: REF123"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
+                        />
+                      </div>
                     </div>
                   </div>
                   <button 
                     type="submit"
-                    disabled={loading || !phoneNumber}
+                    disabled={loading || !phoneNumber || !waName}
                     className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white py-3 sm:py-4 rounded-xl flex items-center justify-center gap-3 font-bold uppercase tracking-widest text-[10px] sm:text-xs transition-all shadow-[0_4px_15px_rgba(37,211,102,0.2)] disabled:opacity-50"
                   >
                     {loading ? 'PROCESSANDO...' : 'ENTRAR COM WHATSAPP'}
@@ -234,57 +263,67 @@ const Login: React.FC = () => {
               >
                 <form onSubmit={handleCodeLogin} className="space-y-4">
                   <p className="text-center text-slate-500 text-[11px] sm:text-sm leading-relaxed mb-4 sm:mb-6">
-                    Escolha um nome e um código de 4 letras para acessar.
+                    Acesse via convite de vendedor ou entre no painel administrativo.
                   </p>
                   <div className="space-y-3 sm:space-y-4">
                     <div>
-                      <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Seu Nome</label>
+                      <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Seu Nome (Para Clientes)</label>
                       <div className="relative">
                         <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
                         <input 
                           type="text" 
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
+                          value={accessName}
+                          onChange={(e) => setAccessName(e.target.value)}
                           placeholder="Ex: João Silva"
                           className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Código (4 Letras)</label>
+                      <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Código do Vendedor</label>
                       <div className="relative">
                         <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
                         <input 
                           type="text" 
                           value={accessCode}
-                          onChange={(e) => setAccessCode(e.target.value.toUpperCase().slice(0, 4))}
-                          placeholder="Ex: ABCD"
-                          maxLength={4}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900 font-mono tracking-widest"
+                          onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+                          placeholder="Ex: REF123"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900 font-bold tracking-widest"
+                          required
                         />
                       </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Código do Vendedor (Opcional)</label>
-                    <div className="relative">
-                      <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                      <input 
-                        type="text" 
-                        value={sellerCode}
-                        onChange={(e) => setSellerCode(e.target.value.toUpperCase())}
-                        placeholder="Ex: REF123"
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
-                      />
-                    </div>
+                    {!accessName.trim() && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                      >
+                        <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Senha do Vendedor</label>
+                        <div className="relative">
+                          <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                          <input 
+                            type="password" 
+                            value={sellerPassword}
+                            onChange={(e) => setSellerPassword(e.target.value)}
+                            placeholder="Sua senha de acesso"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
+                            required={!accessName.trim()}
+                          />
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
                   <button 
                     type="submit"
-                    disabled={loading || !name || accessCode.length !== 4}
+                    disabled={loading || !accessCode || (!accessName.trim() && !sellerPassword)}
                     className="w-full bg-lotofacil-purple hover:bg-lotofacil-purple/80 text-white py-3 sm:py-4 rounded-xl flex items-center justify-center gap-3 font-bold uppercase tracking-widest text-[10px] sm:text-xs transition-all shadow-[0_4px_15px_rgba(107,33,168,0.3)] disabled:opacity-50"
                   >
-                    {loading ? 'PROCESSANDO...' : 'ENTRAR COM CÓDIGO'}
+                    {loading ? 'PROCESSANDO...' : accessName ? 'ENTRAR COMO CONVIDADO' : 'ENTRAR NO PAINEL'}
                   </button>
+                  <p className="text-center text-[9px] text-slate-400 uppercase tracking-widest mt-2">
+                    Dica: Preencha o nome para entrar como cliente ou deixe vazio para entrar como vendedor.
+                  </p>
                 </form>
               </motion.div>
             )}

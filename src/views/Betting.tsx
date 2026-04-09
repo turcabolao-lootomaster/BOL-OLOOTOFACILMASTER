@@ -146,11 +146,9 @@ const Betting: React.FC = () => {
 
     try {
       // 1. Check name availability
-      if (sellerCode) {
-        const availability = await firebaseService.checkBetNameAvailability(betName, sellerCode, userId);
-        if (!availability.available) {
-          throw new Error(availability.message);
-        }
+      const availability = await firebaseService.checkBetNameAvailability(betName, userId);
+      if (!availability.available) {
+        throw new Error(availability.message);
       }
 
       const activeContest = await firebaseService.getActiveContest();
@@ -186,7 +184,11 @@ const Betting: React.FC = () => {
           betName: betName || '',
           sellerCode: sellerCode || '', // Fix: Use empty string instead of undefined
         });
-        if (id) ids.push(id);
+        if (id) {
+          ids.push(id);
+          // Reserve the nick for this user
+          await firebaseService.reserveNick(betName, userId);
+        }
       }
       
       setLastBetIds(ids);

@@ -20,8 +20,9 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInWithWhatsApp: (phone: string, sellerCode?: string) => Promise<void>;
-  signInWithCode: (name: string, code: string, sellerCode?: string) => Promise<void>;
+  signInWithWhatsApp: (phone: string, name?: string, sellerCode?: string) => Promise<void>;
+  signInWithSellerCode: (code: string, password: string) => Promise<void>;
+  signInWithClientCode: (name: string, sellerCode: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -115,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithWhatsApp = async (phone: string, sellerCode?: string) => {
+  const signInWithWhatsApp = async (phone: string, name?: string, sellerCode?: string) => {
     try {
       // 1. Sign in anonymously to interact with Firestore
       const { user: firebaseUser } = await signInAnonymously(auth);
@@ -130,6 +131,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userData = userDoc.data() as User;
         const updates: any = { uid: firebaseUser.uid };
         
+        // Update name if current is generic and a new one was provided
+        if (name && (!userData.name || userData.name.startsWith('User '))) {
+          updates.name = name;
+        }
+
         // If user doesn't have a linked seller but one was provided, link it
         if (!userData.linkedSellerCode && sellerCode) {
           updates.linkedSellerCode = sellerCode.toUpperCase();
@@ -142,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const newUser: User = {
           id: userId,
           uid: firebaseUser.uid,
-          name: `User ${phone.slice(-4)}`,
+          name: name || `User ${phone.slice(-4)}`,
           email: '',
           whatsapp: phone,
           role: 'cliente',
@@ -158,46 +164,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithCode = async (name: string, code: string, sellerCode?: string) => {
+  const signInWithSellerCode = async (code: string, password: string) => {
     try {
       const { user: firebaseUser } = await signInAnonymously(auth);
       
-      // Search for existing user with this name and code
-      const q = query(
+      // 1. Search for seller with this code
+      const qSeller = query(collection(db, 'sellers'), where('code', '==', code.toUpperCase()));
+      const sellerSnap = await getDocs(qSeller);
+      
+      if (sellerSnap.empty) {
+        throw new Error('Código de vendedor inválido.');
+      }
+
+      const sellerData = sellerSnap.docs[0].data();
+      
+      // 2. Validate Password
+      if (!sellerData.password || sellerData.password !== password) {
+        throw new Error('Senha de vendedor incorreta.');
+      }
+
+      const sellerUserId = sellerData.userId;
+
+      // 3. Get the user document for this seller
+      const userDocRef = doc(db, 'users', sellerUserId);
+      const userSnap = await getDoc(userDocRef);
+
+      if (!userSnap.exists()) {
+        throw new Error('Usuário do vendedor não encontrado.');
+      }
+
+      // 4. Link the anonymous UID to this seller user
+      await updateDoc(userDocRef, { uid: firebaseUser.uid });
+      
+    } catch (error) {
+      console.error('Erro no login com código de vendedor:', error);
+      throw error;
+    }
+  };
+
+  const signInWithClientCode = async (name: string, sellerCode: string) => {
+    try {
+      const { user: firebaseUser } = await signInAnonymously(auth);
+      
+      // 1. Validate Seller Code
+      const qSeller = query(collection(db, 'sellers'), where('code', '==', sellerCode.toUpperCase()));
+      const sellerSnap = await getDocs(qSeller);
+      
+      if (sellerSnap.empty) {
+        throw new Error('Código de vendedor inválido. Peça o código correto ao seu vendedor.');
+      }
+
+      // 2. Search for existing client with this name under this seller
+      const qClient = query(
         collection(db, 'users'), 
         where('name', '==', name),
-        where('accessCode', '==', code.toUpperCase())
+        where('linkedSellerCode', '==', sellerCode.toUpperCase())
       );
-      const snapshot = await getDocs(q);
+      const clientSnap = await getDocs(qClient);
       
-      if (!snapshot.empty) {
-        const userDoc = snapshot.docs[0];
-        const userData = userDoc.data() as User;
-        const updates: any = { uid: firebaseUser.uid };
-        
-        // If user doesn't have a linked seller but one was provided, link it
-        if (!userData.linkedSellerCode && sellerCode) {
-          updates.linkedSellerCode = sellerCode.toUpperCase();
-        }
-        
-        await updateDoc(doc(db, 'users', userDoc.id), updates);
+      if (!clientSnap.empty) {
+        // Update existing user
+        const userDoc = clientSnap.docs[0];
+        await updateDoc(doc(db, 'users', userDoc.id), { uid: firebaseUser.uid });
       } else {
-        const userId = `code_${name.replace(/\s+/g, '_')}_${code.toUpperCase()}`;
+        // Create new client user
+        const userId = `client_${name.replace(/\s+/g, '_')}_${sellerCode.toUpperCase()}`;
         const newUser: User = {
           id: userId,
           uid: firebaseUser.uid,
           name: name,
           email: '',
-          accessCode: code.toUpperCase(),
           role: 'cliente',
           totalPoints: 0,
-          linkedSellerCode: sellerCode?.toUpperCase() || '',
+          linkedSellerCode: sellerCode.toUpperCase(),
           createdAt: Timestamp.now()
         };
         await setDoc(doc(db, 'users', userId), newUser);
       }
     } catch (error) {
-      console.error('Erro no login com Código:', error);
+      console.error('Erro no login por código de cliente:', error);
       throw error;
     }
   };
@@ -211,7 +256,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithWhatsApp, signInWithCode, logout }}>
+    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithWhatsApp, signInWithSellerCode, signInWithClientCode, logout }}>
       {children}
     </AuthContext.Provider>
   );

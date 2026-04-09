@@ -74,12 +74,27 @@ const Dashboard: React.FC = () => {
     e.preventDefault();
     const userId = user?.id || user?.uid;
     if (!userId) return;
+    
     setSavingProfile(true);
     try {
+      // Check if the new name is available
+      if (profileData.name !== user?.name) {
+        const availability = await firebaseService.checkBetNameAvailability(profileData.name, userId);
+        if (!availability.available) {
+          alert(availability.message);
+          setSavingProfile(false);
+          return;
+        }
+        
+        // Reserve the new nick
+        await firebaseService.reserveNick(profileData.name, userId);
+      }
+      
       await firebaseService.updateUserProfile(userId, profileData);
       setIsEditingProfile(false);
     } catch (error) {
       console.error("Error updating profile:", error);
+      alert("Erro ao atualizar perfil. Tente novamente.");
     } finally {
       setSavingProfile(false);
     }

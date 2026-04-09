@@ -22,6 +22,7 @@ export interface Seller {
   id: string;
   userId: string;
   code: string;
+  password?: string;
   commissionPct: number;
   totalSales: number;
   totalCommission: number;
