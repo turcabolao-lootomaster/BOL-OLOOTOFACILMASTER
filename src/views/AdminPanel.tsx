@@ -1809,7 +1809,7 @@ const ContestsTab = () => {
                     title="Finalizar Concurso"
                   >
                     <CheckCircle size={12} />
-                    FIM
+                    FINALIZAR
                   </button>
                 </>
               )}

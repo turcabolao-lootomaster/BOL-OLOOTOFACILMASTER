@@ -17,6 +17,7 @@ const Login: React.FC = () => {
   
   // WhatsApp state
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [sellerCode, setSellerCode] = useState('');
   
   // Code state
   const [name, setName] = useState('');
@@ -54,7 +55,7 @@ const Login: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      await signInWithWhatsApp(cleanPhone);
+      await signInWithWhatsApp(cleanPhone, sellerCode);
     } catch (err: any) {
       setError(err.message || 'Erro ao fazer login com WhatsApp');
     } finally {
@@ -72,7 +73,7 @@ const Login: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      await signInWithCode(name, accessCode);
+      await signInWithCode(name, accessCode, sellerCode);
     } catch (err: any) {
       setError(err.message || 'Erro ao fazer login com Código');
     } finally {
@@ -200,6 +201,19 @@ const Login: React.FC = () => {
                       />
                     </div>
                   </div>
+                  <div>
+                    <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Código do Vendedor (Opcional)</label>
+                    <div className="relative">
+                      <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                      <input 
+                        type="text" 
+                        value={sellerCode}
+                        onChange={(e) => setSellerCode(e.target.value.toUpperCase())}
+                        placeholder="Ex: REF123"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
+                      />
+                    </div>
+                  </div>
                   <button 
                     type="submit"
                     disabled={loading || !phoneNumber}
@@ -251,6 +265,19 @@ const Login: React.FC = () => {
                       </div>
                     </div>
                   </div>
+                  <div>
+                    <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Código do Vendedor (Opcional)</label>
+                    <div className="relative">
+                      <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                      <input 
+                        type="text" 
+                        value={sellerCode}
+                        onChange={(e) => setSellerCode(e.target.value.toUpperCase())}
+                        placeholder="Ex: REF123"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
+                      />
+                    </div>
+                  </div>
                   <button 
                     type="submit"
                     disabled={loading || !name || accessCode.length !== 4}
@@ -264,10 +291,21 @@ const Login: React.FC = () => {
           </AnimatePresence>
         </div>
 
-        <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-slate-100 text-center">
+        <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-slate-100 text-center space-y-4">
           <p className="text-slate-300 text-[9px] uppercase tracking-widest">
             Ao entrar você concorda com nossos termos de uso.
           </p>
+          <div className="flex justify-center">
+            <a 
+              href="https://wa.me/5511978193552" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-[#25D366] hover:text-[#128C7E] transition-colors"
+            >
+              <Smartphone size={14} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Suporte WhatsApp: 11 97819-3552</span>
+            </a>
+          </div>
         </div>
       </motion.div>
     </div>

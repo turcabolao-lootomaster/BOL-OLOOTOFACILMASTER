@@ -727,6 +727,15 @@ export const firebaseService = {
     }
   },
 
+  async linkUserToSeller(userId: string, sellerCode: string): Promise<void> {
+    const path = `users/${userId}`;
+    try {
+      await updateDoc(doc(db, 'users', userId), { linkedSellerCode: sellerCode.toUpperCase() });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
   async updateContestPrizes(contestId: string, prizes: Contest['prizes']): Promise<void> {
     const path = `contests/${contestId}`;
     try {

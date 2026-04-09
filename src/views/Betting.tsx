@@ -29,19 +29,41 @@ const Betting: React.FC = () => {
   const [lastBetName, setLastBetName] = useState('');
   const [surpresinhaCount, setSurpresinhaCount] = useState(1);
   const [activeContest, setActiveContest] = React.useState<Contest | null>(null);
+  const [feedback, setFeedback] = useState<{ message: string, type: 'success' | 'info' } | null>(null);
   const [whatsappNumber, setWhatsappNumber] = useState('5511999999999');
   const [sellerWhatsApp, setSellerWhatsApp] = useState<string | null>(null);
   const [sellerPixKey, setSellerPixKey] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (feedback) {
+      const timer = setTimeout(() => setFeedback(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
 
   React.useEffect(() => {
     const fetchData = async () => {
       // Check for seller ref in URL
       const params = new URLSearchParams(window.location.search);
       const ref = params.get('ref');
+      
+      let finalSellerCode = '';
+      
       if (ref) {
-        setSellerCode(ref.toUpperCase());
+        finalSellerCode = ref.toUpperCase();
         setIsSellerLink(true);
-        const seller = await firebaseService.getSellerByCode(ref);
+        // Link user to seller if not already linked
+        if (user && !user.linkedSellerCode) {
+          firebaseService.linkUserToSeller(user.id, finalSellerCode);
+        }
+      } else if (user?.linkedSellerCode) {
+        finalSellerCode = user.linkedSellerCode.toUpperCase();
+        setIsSellerLink(true);
+      }
+
+      if (finalSellerCode) {
+        setSellerCode(finalSellerCode);
+        const seller = await firebaseService.getSellerByCode(finalSellerCode);
         if (seller) {
           const ws = await firebaseService.getSellerWhatsApp(seller.userId);
           if (ws) setSellerWhatsApp(ws);
@@ -86,12 +108,17 @@ const Betting: React.FC = () => {
       newBets.push(generateRandomNumbers());
     }
     setPendingBets([...pendingBets, ...newBets]);
+    setFeedback({ 
+      message: surpresinhaCount === 1 ? 'Surpresinha gerada com sucesso!' : `${surpresinhaCount} Surpresinhas geradas com sucesso!`, 
+      type: 'success' 
+    });
   };
 
   const registerBet = () => {
     if (selectedNumbers.length === 10) {
       setPendingBets([...pendingBets, [...selectedNumbers]]);
       setSelectedNumbers([]);
+      setFeedback({ message: 'Aposta registrada com sucesso!', type: 'success' });
     }
   };
 
@@ -197,6 +224,25 @@ const Betting: React.FC = () => {
 
   return (
     <div className="mobile-p lg:p-10 max-w-[900px] mx-auto space-y-4 sm:space-y-10">
+      <AnimatePresence>
+        {feedback && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 20 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-0 left-0 right-0 z-[100] flex justify-center pointer-events-none"
+          >
+            <div className={cn(
+              "px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 pointer-events-auto",
+              feedback.type === 'success' ? "bg-green-500 text-white" : "bg-lotofacil-purple text-white"
+            )}>
+              {feedback.type === 'success' ? <Check size={18} /> : <Info size={18} />}
+              <span className="text-sm font-bold uppercase tracking-widest">{feedback.message}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {activeContest && activeContest.status !== 'aberto' && (
         <div className="bg-lotofacil-yellow/10 border border-lotofacil-yellow/20 p-3 rounded-xl flex items-center gap-3">
           <AlertCircle className="text-lotofacil-yellow shrink-0" size={18} />

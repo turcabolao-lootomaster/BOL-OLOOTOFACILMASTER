@@ -16,7 +16,8 @@ import {
   Store,
   BookOpen,
   Menu,
-  X
+  X,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../utils';
@@ -124,6 +125,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
           )}
           
           <div className="space-y-2">
+            <a 
+              href="https://wa.me/5511978193552" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[#25D366] hover:bg-[#25D366]/5 transition-all text-[10px] font-bold uppercase tracking-widest border border-[#25D366]/20 mb-2"
+            >
+              <MessageCircle size={18} />
+              <span>Suporte WhatsApp</span>
+            </a>
+
             {user ? (
               <button 
                 onClick={logout}

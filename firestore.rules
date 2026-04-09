@@ -106,7 +106,8 @@ service cloud.firestore {
              data.number is number &&
              data.status in ['aberto', 'em_andamento', 'encerrado'] &&
              data.draws is list &&
-             (!('prizes' in data) || data.prizes is map);
+             (!('prizes' in data) || data.prizes is map) &&
+             (!('prizeConfig' in data) || data.prizeConfig is map);
     }
 
     // ===============================================================

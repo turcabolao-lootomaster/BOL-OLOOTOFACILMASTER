@@ -25,7 +25,8 @@ import {
   ChevronRight,
   FileText,
   Pencil,
-  Trash2
+  Trash2,
+  AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ExcelJS from 'exceljs';
@@ -51,6 +52,31 @@ const LiveRanking: React.FC = () => {
   const [editBetName, setEditBetName] = useState('');
   const [editBetNumbers, setEditBetNumbers] = useState<number[]>([]);
   const [isUpdatingBet, setIsUpdatingBet] = useState(false);
+  const [showPrizeEditModal, setShowPrizeEditModal] = useState(false);
+  const [editingPrizeConfig, setEditingPrizeConfig] = useState<NonNullable<Contest['prizeConfig']>>({
+    fixed10PtsDraw1: 500,
+    fixed10PtsDraw2: 500,
+    fixed10PtsDraw3: 500,
+    fixed25PlusTotal: 2000,
+    fixed27PlusTotal: 5000,
+    pctRapidinha: 0.10,
+    pctChampion: 0.45,
+    pctVice: 0.15,
+    pctSeller: 0.15,
+    pctAdmin: 0.10,
+    pctReserve: 0.05
+  });
+  const [editingPrizes, setEditingPrizes] = useState<NonNullable<Contest['prizes']>>({
+    draw1: '10 PTS',
+    draw2: '10 PTS',
+    draw3: '10 PTS',
+    rapidinha1: '1° LUGAR',
+    rapidinha2: '2° LUGAR',
+    rankeada: 'LOTOMASTER'
+  });
+  const [isUpdatingPrizes, setIsUpdatingPrizes] = useState(false);
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
 
   useEffect(() => {
     let unsubscribeContest: (() => void) | undefined;
@@ -60,6 +86,9 @@ const LiveRanking: React.FC = () => {
       unsubscribeContest = firebaseService.subscribeToActiveContest((contest) => {
         setActiveContest(contest);
         if (contest) {
+          if (contest.prizeConfig) setEditingPrizeConfig(contest.prizeConfig);
+          if (contest.prizes) setEditingPrizes(contest.prizes);
+          
           if (unsubscribeBets) unsubscribeBets();
           unsubscribeBets = firebaseService.subscribeToContestBets(contest.id, (contestBets) => {
             setBets(contestBets);
@@ -515,6 +544,39 @@ const LiveRanking: React.FC = () => {
     );
   };
 
+  const handleUpdatePrizes = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeContest) return;
+
+    setIsUpdatingPrizes(true);
+    try {
+      await firebaseService.updateContestPrizes(activeContest.id, editingPrizes);
+      await firebaseService.updateContestPrizeConfig(activeContest.id, editingPrizeConfig);
+      setShowPrizeEditModal(false);
+      alert('Premiações atualizadas com sucesso!');
+    } catch (error) {
+      console.error('Erro ao atualizar premiações:', error);
+      alert('Erro ao atualizar premiações.');
+    } finally {
+      setIsUpdatingPrizes(false);
+    }
+  };
+
+  const handleFinalizeContest = async () => {
+    if (!activeContest) return;
+    setIsFinalizing(true);
+    try {
+      await firebaseService.updateContestStatus(activeContest.id, 'encerrado');
+      setShowFinalizeConfirm(false);
+      alert('Concurso finalizado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao finalizar concurso:', error);
+      alert('Erro ao finalizar concurso.');
+    } finally {
+      setIsFinalizing(false);
+    }
+  };
+
   const isAdmin = user?.role === 'admin' || user?.role === 'master';
 
   const filteredRanking = rankingWithRanks.filter(b => 
@@ -537,6 +599,25 @@ const LiveRanking: React.FC = () => {
           <p className="text-[10px] sm:text-sm text-slate-600 mt-1">
             Concurso #{activeContest.number} • {bets.length} Apostas Validadas
           </p>
+          
+          {isAdmin && (
+            <div className="flex flex-wrap items-center gap-2 mt-4">
+              <button 
+                onClick={() => setShowPrizeEditModal(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-lotofacil-purple/10 text-lotofacil-purple rounded-lg hover:bg-lotofacil-purple/20 transition-all text-[10px] font-bold uppercase tracking-widest border border-lotofacil-purple/20"
+              >
+                <Trophy size={14} />
+                Editar Premiações
+              </button>
+              <button 
+                onClick={() => setShowFinalizeConfirm(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all text-[10px] font-bold uppercase tracking-widest border border-red-100"
+              >
+                <X size={14} />
+                Finalizar Concurso
+              </button>
+            </div>
+          )}
         </div>
         
         <div className="flex flex-col gap-4">
@@ -579,7 +660,7 @@ const LiveRanking: React.FC = () => {
       </div>
 
       {/* 10 PTS Prizes Row */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
         {[1, 2, 3].map(num => (
           <PrizeCard 
             key={num}
@@ -597,7 +678,7 @@ const LiveRanking: React.FC = () => {
       </div>
 
       {/* Main Prizes Row (Rapidinha, 1st, 2nd) */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
         <PrizeCard 
           title="RAPIDINHA" 
           value={prizes.rapidinha} 
@@ -1248,6 +1329,156 @@ const LiveRanking: React.FC = () => {
               </div>
             </motion.div>
           </div>
+        )}
+
+        {showPrizeEditModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-lotofacil-purple/10 text-lotofacil-purple flex items-center justify-center">
+                    <Trophy size={20} />
+                  </div>
+                  <h3 className="text-lg font-display tracking-widest text-slate-900 uppercase">Configurar Premiações</h3>
+                </div>
+                <button 
+                  onClick={() => setShowPrizeEditModal(false)}
+                  className="w-10 h-10 rounded-xl hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all flex items-center justify-center"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-8 custom-scrollbar">
+                <form id="prizes-form-live" onSubmit={handleUpdatePrizes} className="space-y-8">
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-lotofacil-purple" />
+                      Descrições dos Prêmios (Textos)
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { label: '1° Sorteio', key: 'draw1' },
+                        { label: '2° Sorteio', key: 'draw2' },
+                        { label: '3° Sorteio', key: 'draw3' },
+                      ].map(item => (
+                        <div key={item.key} className="space-y-1.5">
+                          <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">{item.label}</label>
+                          <input 
+                            type="text" 
+                            value={(editingPrizes as any)[item.key]}
+                            onChange={(e) => setEditingPrizes({...editingPrizes, [item.key]: e.target.value})}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50 transition-all"
+                            required
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pt-6 border-t border-slate-100">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                      Valores dos Prêmios Fixos (R$)
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {[
+                        { label: '10 Pts (S1)', key: 'fixed10PtsDraw1' },
+                        { label: '10 Pts (S2)', key: 'fixed10PtsDraw2' },
+                        { label: '10 Pts (S3)', key: 'fixed10PtsDraw3' },
+                        { label: 'Bônus 25 Pts', key: 'fixed25PlusTotal' },
+                        { label: 'Super 27 Pts', key: 'fixed27PlusTotal' },
+                      ].map(item => (
+                        <div key={item.key} className="space-y-1.5">
+                          <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">{item.label}</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">R$</span>
+                            <input 
+                              type="number" 
+                              value={(editingPrizeConfig as any)[item.key] || 0}
+                              onChange={(e) => setEditingPrizeConfig({
+                                ...editingPrizeConfig, 
+                                [item.key]: parseFloat(e.target.value) || 0
+                              })}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm font-bold text-slate-900 focus:outline-none focus:border-emerald-500/50 transition-all"
+                              required
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setShowPrizeEditModal(false)}
+                  className="flex-1 py-4 bg-white border border-slate-200 rounded-2xl text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit"
+                  form="prizes-form-live"
+                  disabled={isUpdatingPrizes}
+                  className="flex-1 py-4 bg-lotofacil-purple text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-lotofacil-purple/90 transition-all shadow-lg disabled:opacity-50"
+                >
+                  {isUpdatingPrizes ? 'SALVANDO...' : 'SALVAR ALTERAÇÕES'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {showFinalizeConfirm && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-8 space-y-6 text-center shadow-2xl"
+            >
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-600">
+                <AlertCircle size={32} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">Finalizar Concurso?</h3>
+                <p className="text-slate-600 text-sm">
+                  Deseja realmente encerrar o Concurso #{activeContest.number}? Isso impedirá novas alterações e moverá o concurso para o histórico.
+                </p>
+              </div>
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setShowFinalizeConfirm(false)}
+                  className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleFinalizeContest}
+                  disabled={isFinalizing}
+                  className="flex-1 py-3 bg-red-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition-all disabled:opacity-50 shadow-lg"
+                >
+                  {isFinalizing ? 'ENCERRANDO...' : 'SIM, FINALIZAR'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

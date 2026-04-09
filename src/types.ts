@@ -14,6 +14,7 @@ export interface User {
   accessCode?: string;
   role: UserRole;
   totalPoints: number;
+  linkedSellerCode?: string;
   createdAt: any;
 }
 

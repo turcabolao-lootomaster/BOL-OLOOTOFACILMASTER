@@ -20,8 +20,8 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInWithWhatsApp: (phone: string) => Promise<void>;
-  signInWithCode: (name: string, code: string) => Promise<void>;
+  signInWithWhatsApp: (phone: string, sellerCode?: string) => Promise<void>;
+  signInWithCode: (name: string, code: string, sellerCode?: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -115,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithWhatsApp = async (phone: string) => {
+  const signInWithWhatsApp = async (phone: string, sellerCode?: string) => {
     try {
       // 1. Sign in anonymously to interact with Firestore
       const { user: firebaseUser } = await signInAnonymously(auth);
@@ -127,7 +127,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!snapshot.empty) {
         // Update existing user with new UID
         const userDoc = snapshot.docs[0];
-        await updateDoc(doc(db, 'users', userDoc.id), { uid: firebaseUser.uid });
+        const userData = userDoc.data() as User;
+        const updates: any = { uid: firebaseUser.uid };
+        
+        // If user doesn't have a linked seller but one was provided, link it
+        if (!userData.linkedSellerCode && sellerCode) {
+          updates.linkedSellerCode = sellerCode.toUpperCase();
+        }
+        
+        await updateDoc(doc(db, 'users', userDoc.id), updates);
       } else {
         // Create new user
         const userId = `wa_${phone}`;
@@ -139,6 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           whatsapp: phone,
           role: 'cliente',
           totalPoints: 0,
+          linkedSellerCode: sellerCode?.toUpperCase() || '',
           createdAt: Timestamp.now()
         };
         await setDoc(doc(db, 'users', userId), newUser);
@@ -149,7 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithCode = async (name: string, code: string) => {
+  const signInWithCode = async (name: string, code: string, sellerCode?: string) => {
     try {
       const { user: firebaseUser } = await signInAnonymously(auth);
       
@@ -163,7 +172,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (!snapshot.empty) {
         const userDoc = snapshot.docs[0];
-        await updateDoc(doc(db, 'users', userDoc.id), { uid: firebaseUser.uid });
+        const userData = userDoc.data() as User;
+        const updates: any = { uid: firebaseUser.uid };
+        
+        // If user doesn't have a linked seller but one was provided, link it
+        if (!userData.linkedSellerCode && sellerCode) {
+          updates.linkedSellerCode = sellerCode.toUpperCase();
+        }
+        
+        await updateDoc(doc(db, 'users', userDoc.id), updates);
       } else {
         const userId = `code_${name.replace(/\s+/g, '_')}_${code.toUpperCase()}`;
         const newUser: User = {
@@ -174,6 +191,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           accessCode: code.toUpperCase(),
           role: 'cliente',
           totalPoints: 0,
+          linkedSellerCode: sellerCode?.toUpperCase() || '',
           createdAt: Timestamp.now()
         };
         await setDoc(doc(db, 'users', userId), newUser);
