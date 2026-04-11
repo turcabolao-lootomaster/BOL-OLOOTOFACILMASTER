@@ -21,7 +21,12 @@
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
   }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
   --animate-spin-slow: spin-slow 3s linear infinite;
+  --animate-blink: blink 1s ease-in-out infinite;
 }
 
 @layer base {

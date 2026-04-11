@@ -313,42 +313,148 @@ const Participants: React.FC = () => {
     setPassword('');
     
     const doc = new jsPDF({ orientation: 'landscape' });
+    const pageWidth = doc.internal.pageSize.getWidth();
 
-    // Header - Main Title (Green like the example)
-    doc.setFillColor(16, 128, 64); // Dark Green
-    doc.rect(0, 0, 297, 25, 'F');
-    doc.setFontSize(22);
+    // Header - Main Title
+    doc.setFillColor(107, 33, 168); // lotofacil-purple
+    doc.rect(0, 0, pageWidth, 45, 'F');
+    doc.setFontSize(24);
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.text(`BOLÃO SURPRESINHA LOTOFÁCIL`, 148.5, 15, { align: 'center' });
-
-    // Subheader Info
-    doc.setFontSize(10);
-    doc.setTextColor(30, 41, 59);
-    doc.text(`RANKING DE ACERTOS - CONCURSO #${contest?.number || '...'}`, 14, 35);
+    doc.text(`BOLÃO LOTOFÁCIL PRÊMIADA`, pageWidth / 2, 18, { align: 'center' });
     
-    // Results in Header (Like the example)
-    const allResults = contest?.draws?.flatMap(d => d.results) || [];
-    const sortedResults = [...allResults].sort((a, b) => a - b);
-    doc.setFontSize(11);
-    doc.setTextColor(16, 128, 64);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`SORTEADOS: ${sortedResults.join(' - ')}`, 148.5, 45, { align: 'center' });
-
-    // Prize Info (Compact)
-    doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Rapidinha: ${prizes.rapidinha.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} | Campeão: ${prizes.champion.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} | Vice: ${prizes.vice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 14, 55);
+    doc.text(`Para acompanhar atualizações e mais detalhes, acesse: lotofacilpremiada.online`, pageWidth / 2, 26, { align: 'center' });
+    
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`Ranking atualizado automaticamente a cada concurso`, pageWidth / 2, 33, { align: 'center' });
+    doc.text(`Sistema exclusivo de pontuação acumulada`, pageWidth / 2, 38, { align: 'center' });
+    doc.text(`Acompanhe sua evolução a cada rodada`, pageWidth / 2, 43, { align: 'center' });
+
+    // Prize Cards in Header (Grid Layout matching the app)
+    const prizeCards = [
+      { label: '1º SORTEIO 10 PTS', value: contest?.prizeConfig?.fixed10PtsDraw1 || 500, color: [255, 247, 237], textColor: [234, 88, 12] },
+      { label: '2º SORTEIO 10 PTS', value: contest?.prizeConfig?.fixed10PtsDraw2 || 500, color: [255, 247, 237], textColor: [234, 88, 12] },
+      { label: '3º SORTEIO 10 PTS', value: contest?.prizeConfig?.fixed10PtsDraw3 || 500, color: [255, 247, 237], textColor: [234, 88, 12] },
+      { label: 'RAPIDINHA', value: prizes.rapidinha, color: [255, 251, 235], textColor: [217, 119, 6] },
+      { label: '1º LUGAR', value: prizes.champion, color: [245, 243, 255], textColor: [124, 58, 237] },
+      { label: '2º LUGAR', value: prizes.vice, color: [239, 246, 255], textColor: [37, 99, 235] }
+    ];
+
+    const bonusCards = [
+      { label: 'BÔNUS 25', value: contest?.prizeConfig?.fixed25PlusTotal || 2000, color: [16, 185, 129], sub: '25 PTS NA SOMA TOTAL' },
+      { label: 'SUPER BÔNUS 27', value: contest?.prizeConfig?.fixed27PlusTotal || 5000, color: [15, 23, 42], sub: '27 PTS NA SOMA TOTAL' }
+    ];
+
+    const cardWidth = (pageWidth - 40) / 3;
+    const cardHeight = 22;
+    const startX = 15;
+    const startY = 50;
+
+    prizeCards.forEach((card, i) => {
+      const row = Math.floor(i / 3);
+      const col = i % 3;
+      const x = startX + (cardWidth + 5) * col;
+      const y = startY + (cardHeight + 5) * row;
+
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'FD');
+      
+      // Icon placeholder
+      doc.setFillColor(card.color[0], card.color[1], card.color[2]);
+      doc.roundedRect(x + 4, y + 4, 12, 14, 2, 2, 'F');
+      
+      doc.setFontSize(5);
+      doc.setTextColor(148, 163, 184);
+      doc.text('ESTIMATIVA', x + cardWidth - 5, y + 6, { align: 'right' });
+      
+      doc.setFontSize(10);
+      doc.setTextColor(card.textColor[0], card.textColor[1], card.textColor[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.text(card.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), x + cardWidth - 5, y + 12, { align: 'right' });
+      
+      doc.setFontSize(6);
+      doc.setTextColor(30, 41, 59);
+      doc.text(card.label, x + cardWidth - 5, y + 17, { align: 'right' });
+      
+      doc.setFontSize(4);
+      doc.setTextColor(148, 163, 184);
+      doc.text('0 GANHADOR(ES) NO...', x + cardWidth - 5, y + 20, { align: 'right' });
+    });
+
+    // Bonus Cards
+    bonusCards.forEach((card, i) => {
+      const y = startY + (cardHeight + 5) * 2 + (16 + 3) * i;
+      doc.setFillColor(card.color[0], card.color[1], card.color[2]);
+      doc.roundedRect(startX, y, pageWidth - 30, 16, 3, 3, 'F');
+      
+      doc.setFontSize(10);
+      doc.setTextColor(255, 255, 255);
+      doc.text(card.label, startX + 25, y + 7);
+      
+      doc.setFontSize(6);
+      doc.setTextColor(255, 255, 255);
+      doc.text(card.sub, startX + 25, y + 12);
+      
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
+      doc.text(card.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), pageWidth - 20, y + 10, { align: 'right' });
+    });
+
+    // Subheader Info - Centralized
+    doc.setFontSize(11);
+    doc.setTextColor(30, 41, 59);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`CLASSIFICAÇÃO | CONCURSO #${contest?.number || '...'} | INICIO: 10/04/2026`, pageWidth / 2, 150, { align: 'center' });
+    
+    // Draw Results Section (3 Lines) - Centralized with Balls
+    const ballRadius = 2.5;
+    const ballGap = 1.2;
+    const totalDrawWidth = (ballRadius * 2 * 15) + (ballGap * 14);
+    
+    contest?.draws?.forEach((draw, idx) => {
+      const yPos = 160 + (idx * 8);
+      doc.setFontSize(8);
+      doc.setTextColor(71, 85, 105);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${idx + 1}º SORTEIO:`, pageWidth / 2 - totalDrawWidth / 2 - 25, yPos + 1);
+
+      const sortedRes = [...draw.results].sort((a, b) => a - b);
+      if (sortedRes.length > 0) {
+        sortedRes.forEach((num, nIdx) => {
+          const xPos = pageWidth / 2 - totalDrawWidth / 2 + (ballRadius * 2 + ballGap) * nIdx;
+          doc.setFillColor(107, 33, 168); // Purple ball
+          doc.circle(xPos, yPos, ballRadius, 'F');
+          doc.setFontSize(6);
+          doc.setTextColor(255, 255, 255);
+          doc.text(num.toString().padStart(2, '0'), xPos, yPos + 0.8, { align: 'center' });
+        });
+      } else {
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'italic');
+        doc.text('Aguardando sorteio...', pageWidth / 2, yPos + 1, { align: 'center' });
+      }
+    });
 
     // Info Row
-    doc.setFontSize(8);
-    doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')} | Total de Apostas: ${bets.length}`, 14, 65);
+    doc.setFontSize(9);
+    doc.setTextColor(71, 85, 105);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')} | Total de Apostas: ${bets.length}`, pageWidth / 2, 185, { align: 'center' });
+    doc.text(`Relatório automatizado — Bolão Lotofácil Premiada`, pageWidth / 2, 193, { align: 'center' });
+    doc.text(`Atualizações disponíveis na plataforma online`, pageWidth / 2, 198, { align: 'center' });
 
-    // Table Headers (Matching the example)
+    // Table starts on 2nd page
+    doc.addPage();
+
+    // Table Headers - Reordered: S1, S2, S3, SOMA at the end
     const headers = [
-      'POS', 'CLIENTE', 'VENDEDOR', 'S1', 'S2', 'S3', 'SOMA', 
-      'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10'
+      'POS', 'CLIENTE', 'VENDEDOR', 
+      'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10',
+      'S1', 'S2', 'S3', 'SOMA'
     ];
 
     const data = filteredBets.map((b: any, index: number) => {
@@ -363,38 +469,58 @@ const Participants: React.FC = () => {
         `${index + 1}º`,
         (b.betName || b.userName).toUpperCase(),
         b.sellerCode || '-',
+        ...numCols,
         hits[0],
         hits[1],
         hits[2],
-        total,
-        ...numCols
+        total
       ];
     });
+
+    // For Participants list, we highlight all hits from all draws
+    const allResults = contest?.draws?.flatMap(d => d.results) || [];
 
     autoTable(doc, {
       head: [headers],
       body: data,
-      startY: 70,
+      startY: 15,
       theme: 'grid',
-      styles: { fontSize: 6, halign: 'center', cellPadding: 1, font: 'helvetica' },
-      headStyles: { fillColor: [71, 85, 105], textColor: 255, fontStyle: 'bold' }, // Dark Slate for header
+      margin: { left: 49.5 }, // Centering the table (297 - 198) / 2
+      styles: { fontSize: 7, halign: 'center', cellPadding: 1.2, font: 'helvetica' },
+      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' },
       columnStyles: {
         0: { fillColor: [241, 245, 249], fontStyle: 'bold', cellWidth: 10 }, // POS
-        1: { halign: 'left', cellWidth: 'auto' }, // CLIENTE
-        2: { cellWidth: 15 }, // VENDEDOR
-        3: { cellWidth: 8 }, // S1
-        4: { cellWidth: 8 }, // S2
-        5: { cellWidth: 8 }, // S3
-        6: { fillColor: [30, 58, 138], textColor: 255, fontStyle: 'bold', cellWidth: 12 }, // SOMA (Blue)
+        1: { halign: 'left', cellWidth: 60 }, // CLIENTE (Increased width)
+        2: { cellWidth: 20 }, // VENDEDOR
+        3: { cellWidth: 7 }, 4: { cellWidth: 7 }, 5: { cellWidth: 7 }, 6: { cellWidth: 7 }, 7: { cellWidth: 7 },
+        8: { cellWidth: 7 }, 9: { cellWidth: 7 }, 10: { cellWidth: 7 }, 11: { cellWidth: 7 }, 12: { cellWidth: 7 },
+        13: { fillColor: [219, 234, 254], textColor: [30, 58, 138], fontStyle: 'bold', cellWidth: 8 }, // S1
+        14: { fillColor: [255, 237, 213], textColor: [154, 52, 18], fontStyle: 'bold', cellWidth: 8 }, // S2
+        15: { fillColor: [243, 232, 255], textColor: [107, 33, 168], fontStyle: 'bold', cellWidth: 8 }, // S3
+        16: { fillColor: [30, 58, 138], textColor: [255, 215, 0], fontStyle: 'bold', fontSize: 9, cellWidth: 14 } // SOMA
       },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
+      alternateRowStyles: { fillColor: [252, 252, 252] },
       didParseCell: (data) => {
         if (data.section === 'body') {
-          // Highlight hit numbers (N1 to N10 are now at indices 7 to 16)
-          if (data.column.index >= 7 && data.column.index <= 16) {
+          const betId = filteredBets[data.row.index].id;
+          
+          // Check if winner to highlight row
+          const isWinner = winners.rapidinha.includes(betId) || 
+                           winners.champion.includes(betId) || 
+                           winners.vice.includes(betId) || 
+                           winners.total25.includes(betId) || 
+                           winners.total27.includes(betId) ||
+                           winners.draws10.some(d => d.includes(betId));
+
+          if (isWinner && data.column.index <= 2) {
+            data.cell.styles.fillColor = [254, 243, 199]; // Light Gold
+          }
+
+          // Highlight hit numbers
+          if (data.column.index >= 3 && data.column.index <= 12) {
             const num = data.cell.raw;
             if (typeof num === 'number' && allResults.includes(num)) {
-              data.cell.styles.fillColor = [16, 128, 64]; // Green like example
+              data.cell.styles.fillColor = [107, 33, 168]; // Purple highlight
               data.cell.styles.textColor = 255;
               data.cell.styles.fontStyle = 'bold';
             }
@@ -403,7 +529,7 @@ const Participants: React.FC = () => {
       }
     });
 
-    doc.save(`Participantes_Bolao_Concurso_${contest?.number || '...'}.pdf`);
+    doc.save(`Participantes_Bolao_Premiada_Conc_${contest?.number || '...'}.pdf`);
   };
 
   const handleEditBet = (bet: Bet) => {
@@ -754,22 +880,25 @@ const Participants: React.FC = () => {
                       <DrawScore score={hits[0]} isWinner={hits[0] >= 10} isExpanded={isExpanded} />
                       <DrawScore score={hits[1]} isWinner={hits[1] >= 10} isExpanded={isExpanded} />
                       <DrawScore score={hits[2]} isWinner={hits[2] >= 10} isExpanded={isExpanded} />
-                      <td className="px-1 sm:px-6 py-4 text-center">
+                      <td className={cn(
+                        "px-1 sm:px-6 py-4 text-center transition-all",
+                        isExpanded ? "bg-white/10" : "bg-[#1e3a8a] border-x border-white/10"
+                      )}>
                         <div className={cn(
                           "inline-flex flex-col items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded-xl border transition-all shadow-sm",
                           isExpanded ? "bg-white/10 border-white/20" :
                           total >= 27 ? "bg-slate-900 border-slate-900 shadow-lg scale-110" :
-                          idx < 3 ? "bg-white border-lotofacil-purple/30" : "bg-slate-50 border-slate-200"
+                          idx < 3 ? "bg-white border-lotofacil-purple/30" : "bg-white border-white/10"
                         )}>
                           <span className={cn(
                             "text-xs sm:text-lg font-display tracking-tighter leading-none",
-                            isExpanded ? "text-white" : total >= 27 ? "text-white" : "text-lotofacil-purple"
+                            isExpanded ? "text-white" : total >= 27 ? "text-white" : "text-[#ffd700]"
                           )}>
                             {total.toString().padStart(2, '0')}
                           </span>
                           <span className={cn(
                             "text-[5px] sm:text-[7px] font-black uppercase tracking-tighter mt-0.5",
-                            isExpanded ? "text-white/40" : "text-slate-400"
+                            isExpanded ? "text-white/40" : "text-white/60"
                           )}>
                             PTS
                           </span>
@@ -1055,11 +1184,16 @@ const PrizeCard = ({ title, value, winnersCount, icon, color }: { title: string,
         </p>
       </div>
     </div>
-    <div>
-      <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{title}</p>
-      <p className="text-[9px] text-slate-400 mt-1">
-        {winnersCount > 0 ? `${winnersCount} ganhador(es) no momento` : 'Aguardando resultados'}
-      </p>
+    <div className="flex items-end justify-between gap-4">
+      <div>
+        <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{title}</p>
+      </div>
+      <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded-full border border-slate-100 shadow-sm">
+        <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+        <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">
+          {winnersCount || 0} GANHADORES
+        </p>
+      </div>
     </div>
   </div>
 );

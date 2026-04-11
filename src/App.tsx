@@ -95,7 +95,7 @@ const AppContent: React.FC = () => {
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setIsSidebarOpen(true)} 
-              className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors"
+              className="lg:hidden p-2 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl transition-all shadow-lg shadow-emerald-500/20 animate-blink"
             >
               <Menu size={20} />
             </button>

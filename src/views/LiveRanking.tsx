@@ -195,8 +195,8 @@ const LiveRanking: React.FC = () => {
 
   const rapidinhaWinnersCount = bets.filter(b => (b.hits?.[0] || 0) === maxS1Hits && maxS1Hits > 0).length;
 
-  const winners27Plus = bets.filter(b => (b.hits || [0, 0, 0]).reduce((sum, h) => sum + h, 0) >= 27);
-  const winners25Plus = bets.filter(b => (b.hits || [0, 0, 0]).reduce((sum, h) => sum + h, 0) >= 25);
+  const winners27Plus = rankingWithRanks.filter(b => b.totalHits >= 27);
+  const winners25Plus = rankingWithRanks.filter(b => b.totalHits >= 25);
 
   const isDraw1Finished = activeContest.draws?.[0]?.status === 'concluido';
   const isDraw2Finished = activeContest.draws?.[1]?.status === 'concluido';
@@ -397,42 +397,148 @@ const LiveRanking: React.FC = () => {
     setPassword('');
     
     const doc = new jsPDF({ orientation: 'landscape' });
+    const pageWidth = doc.internal.pageSize.getWidth();
 
-    // Header - Main Title (Green like the example)
-    doc.setFillColor(16, 128, 64); // Dark Green
-    doc.rect(0, 0, 297, 25, 'F');
-    doc.setFontSize(22);
+    // Header - Main Title
+    doc.setFillColor(107, 33, 168); // lotofacil-purple
+    doc.rect(0, 0, pageWidth, 45, 'F');
+    doc.setFontSize(24);
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.text(`BOLÃO SURPRESINHA LOTOFÁCIL`, 148.5, 15, { align: 'center' });
-
-    // Subheader Info
-    doc.setFontSize(10);
-    doc.setTextColor(30, 41, 59);
-    doc.text(`RANKING DE ACERTOS - CONCURSO #${activeContest.number}`, 14, 35);
+    doc.text(`BOLÃO LOTOFÁCIL PRÊMIADA`, pageWidth / 2, 18, { align: 'center' });
     
-    // Results in Header (Like the example)
-    const allResults = activeContest.draws.flatMap(d => d.results);
-    const sortedResults = [...allResults].sort((a, b) => a - b);
-    doc.setFontSize(11);
-    doc.setTextColor(16, 128, 64);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`SORTEADOS: ${sortedResults.join(' - ')}`, 148.5, 45, { align: 'center' });
-
-    // Prize Info (Compact)
-    doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Rapidinha: ${prizes.rapidinha.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} | Campeão: ${prizes.campeao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} | Vice: ${prizes.vice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 14, 55);
+    doc.text(`Para acompanhar atualizações e mais detalhes, acesse: lotofacilpremiada.online`, pageWidth / 2, 26, { align: 'center' });
+    
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`Ranking atualizado automaticamente a cada concurso`, pageWidth / 2, 33, { align: 'center' });
+    doc.text(`Sistema exclusivo de pontuação acumulada`, pageWidth / 2, 38, { align: 'center' });
+    doc.text(`Acompanhe sua evolução a cada rodada`, pageWidth / 2, 43, { align: 'center' });
+
+    // Prize Cards in Header (Grid Layout matching the app)
+    const prizeCards = [
+      { label: '1º SORTEIO 10 PTS', value: prizes.fixed10PtsDraw1, color: [255, 247, 237], textColor: [234, 88, 12] },
+      { label: '2º SORTEIO 10 PTS', value: prizes.fixed10PtsDraw2, color: [255, 247, 237], textColor: [234, 88, 12] },
+      { label: '3º SORTEIO 10 PTS', value: prizes.fixed10PtsDraw3, color: [255, 247, 237], textColor: [234, 88, 12] },
+      { label: 'RAPIDINHA', value: prizes.rapidinha, color: [255, 251, 235], textColor: [217, 119, 6] },
+      { label: '1º LUGAR', value: prizes.campeao, color: [245, 243, 255], textColor: [124, 58, 237] },
+      { label: '2º LUGAR', value: prizes.vice, color: [239, 246, 255], textColor: [37, 99, 235] }
+    ];
+
+    const bonusCards = [
+      { label: 'BÔNUS 25', value: prizes.fixed25Plus, color: [16, 185, 129], sub: '25 PTS NA SOMA TOTAL' },
+      { label: 'SUPER BÔNUS 27', value: prizes.fixed27Plus, color: [15, 23, 42], sub: '27 PTS NA SOMA TOTAL' }
+    ];
+
+    const cardWidth = (pageWidth - 40) / 3;
+    const cardHeight = 22;
+    const startX = 15;
+    const startY = 50;
+
+    prizeCards.forEach((card, i) => {
+      const row = Math.floor(i / 3);
+      const col = i % 3;
+      const x = startX + (cardWidth + 5) * col;
+      const y = startY + (cardHeight + 5) * row;
+
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'FD');
+      
+      // Icon placeholder
+      doc.setFillColor(card.color[0], card.color[1], card.color[2]);
+      doc.roundedRect(x + 4, y + 4, 12, 14, 2, 2, 'F');
+      
+      doc.setFontSize(5);
+      doc.setTextColor(148, 163, 184);
+      doc.text('ESTIMATIVA', x + cardWidth - 5, y + 6, { align: 'right' });
+      
+      doc.setFontSize(10);
+      doc.setTextColor(card.textColor[0], card.textColor[1], card.textColor[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.text(card.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), x + cardWidth - 5, y + 12, { align: 'right' });
+      
+      doc.setFontSize(6);
+      doc.setTextColor(30, 41, 59);
+      doc.text(card.label, x + cardWidth - 5, y + 17, { align: 'right' });
+      
+      doc.setFontSize(4);
+      doc.setTextColor(148, 163, 184);
+      doc.text('0 GANHADOR(ES) NO...', x + cardWidth - 5, y + 20, { align: 'right' });
+    });
+
+    // Bonus Cards
+    bonusCards.forEach((card, i) => {
+      const y = startY + (cardHeight + 5) * 2 + (16 + 3) * i;
+      doc.setFillColor(card.color[0], card.color[1], card.color[2]);
+      doc.roundedRect(startX, y, pageWidth - 30, 16, 3, 3, 'F');
+      
+      doc.setFontSize(10);
+      doc.setTextColor(255, 255, 255);
+      doc.text(card.label, startX + 25, y + 7);
+      
+      doc.setFontSize(6);
+      doc.setTextColor(255, 255, 255);
+      doc.text(card.sub, startX + 25, y + 12);
+      
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
+      doc.text(card.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), pageWidth - 20, y + 10, { align: 'right' });
+    });
+
+    // Subheader Info - Centralized
+    doc.setFontSize(11);
+    doc.setTextColor(30, 41, 59);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`CLASSIFICAÇÃO | CONCURSO #${activeContest.number} | INICIO: 10/04/2026`, pageWidth / 2, 150, { align: 'center' });
+    
+    // Draw Results Section (3 Lines) - Centralized with Balls
+    const ballRadius = 2.5;
+    const ballGap = 1.2;
+    const totalDrawWidth = (ballRadius * 2 * 15) + (ballGap * 14);
+    
+    activeContest.draws.forEach((draw, idx) => {
+      const yPos = 160 + (idx * 8);
+      doc.setFontSize(8);
+      doc.setTextColor(71, 85, 105);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${idx + 1}º SORTEIO:`, pageWidth / 2 - totalDrawWidth / 2 - 25, yPos + 1);
+
+      const sortedRes = [...draw.results].sort((a, b) => a - b);
+      if (sortedRes.length > 0) {
+        sortedRes.forEach((num, nIdx) => {
+          const xPos = pageWidth / 2 - totalDrawWidth / 2 + (ballRadius * 2 + ballGap) * nIdx;
+          doc.setFillColor(107, 33, 168); // Purple ball
+          doc.circle(xPos, yPos, ballRadius, 'F');
+          doc.setFontSize(6);
+          doc.setTextColor(255, 255, 255);
+          doc.text(num.toString().padStart(2, '0'), xPos, yPos + 0.8, { align: 'center' });
+        });
+      } else {
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'italic');
+        doc.text('Aguardando sorteio...', pageWidth / 2, yPos + 1, { align: 'center' });
+      }
+    });
 
     // Info Row
-    doc.setFontSize(8);
-    doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')} | Total de Apostas: ${bets.length}`, 14, 65);
+    doc.setFontSize(9);
+    doc.setTextColor(71, 85, 105);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')} | Total de Apostas: ${bets.length}`, pageWidth / 2, 185, { align: 'center' });
+    doc.text(`Relatório automatizado — Bolão Lotofácil Premiada`, pageWidth / 2, 193, { align: 'center' });
+    doc.text(`Atualizações disponíveis na plataforma online`, pageWidth / 2, 198, { align: 'center' });
 
-    // Table Headers (Matching the example)
+    // Table starts on 2nd page
+    doc.addPage();
+
+    // Table Headers - Reordered: S1, S2, S3, SOMA at the end
     const headers = [
-      'POS', 'CLIENTE', 'VENDEDOR', 'S1', 'S2', 'S3', 'SOMA', 
-      'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10'
+      'POS', 'CLIENTE', 'VENDEDOR', 
+      'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10',
+      'S1', 'S2', 'S3', 'SOMA'
     ];
 
     const data = rankingWithRanks.map((b: any) => {
@@ -447,38 +553,58 @@ const LiveRanking: React.FC = () => {
         `${b.rank}º`,
         (b.betName || b.userName).toUpperCase(),
         b.sellerCode || '-',
+        ...numCols,
         hits[0],
         hits[1],
         hits[2],
-        total,
-        ...numCols
+        total
       ];
     });
+
+    // Use results of the selected draw for highlighting
+    const currentDrawResults = activeContest.draws[selectedDraw]?.results || [];
 
     autoTable(doc, {
       head: [headers],
       body: data,
-      startY: 70,
+      startY: 15,
       theme: 'grid',
-      styles: { fontSize: 6, halign: 'center', cellPadding: 1, font: 'helvetica' },
-      headStyles: { fillColor: [71, 85, 105], textColor: 255, fontStyle: 'bold' }, // Dark Slate for header
+      margin: { left: 49.5 }, // Centering the table (297 - 198) / 2
+      styles: { fontSize: 7, halign: 'center', cellPadding: 1.2, font: 'helvetica' },
+      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' },
       columnStyles: {
         0: { fillColor: [241, 245, 249], fontStyle: 'bold', cellWidth: 10 }, // POS
-        1: { halign: 'left', cellWidth: 'auto' }, // CLIENTE
-        2: { cellWidth: 15 }, // VENDEDOR
-        3: { cellWidth: 8 }, // S1
-        4: { cellWidth: 8 }, // S2
-        5: { cellWidth: 8 }, // S3
-        6: { fillColor: [30, 58, 138], textColor: 255, fontStyle: 'bold', cellWidth: 12 }, // SOMA (Blue)
+        1: { halign: 'left', cellWidth: 60 }, // CLIENTE (Increased width)
+        2: { cellWidth: 20 }, // VENDEDOR
+        3: { cellWidth: 7 }, 4: { cellWidth: 7 }, 5: { cellWidth: 7 }, 6: { cellWidth: 7 }, 7: { cellWidth: 7 },
+        8: { cellWidth: 7 }, 9: { cellWidth: 7 }, 10: { cellWidth: 7 }, 11: { cellWidth: 7 }, 12: { cellWidth: 7 },
+        13: { fillColor: [219, 234, 254], textColor: [30, 58, 138], fontStyle: 'bold', cellWidth: 8 }, // S1
+        14: { fillColor: [255, 237, 213], textColor: [154, 52, 18], fontStyle: 'bold', cellWidth: 8 }, // S2
+        15: { fillColor: [243, 232, 255], textColor: [107, 33, 168], fontStyle: 'bold', cellWidth: 8 }, // S3
+        16: { fillColor: [30, 58, 138], textColor: [255, 215, 0], fontStyle: 'bold', fontSize: 9, cellWidth: 14 } // SOMA
       },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
+      alternateRowStyles: { fillColor: [252, 252, 252] },
       didParseCell: (data) => {
         if (data.section === 'body') {
-          // Highlight hit numbers (N1 to N10 are now at indices 7 to 16)
-          if (data.column.index >= 7 && data.column.index <= 16) {
+          const betId = rankingWithRanks[data.row.index].id;
+          
+          // Check if winner to highlight row
+          const isWinner = winners10Pts.some(w => w.some(wb => wb.id === betId)) || 
+                           rapidinhaLeader?.id === betId || 
+                           champion?.id === betId || 
+                           vice?.id === betId || 
+                           winners25Plus.some(w => w.id === betId) || 
+                           winners27Plus.some(w => w.id === betId);
+
+          if (isWinner && data.column.index <= 2) {
+            data.cell.styles.fillColor = [254, 243, 199]; // Light Gold
+          }
+
+          // Highlight hit numbers for the SELECTED draw only
+          if (data.column.index >= 3 && data.column.index <= 12) {
             const num = data.cell.raw;
-            if (typeof num === 'number' && allResults.includes(num)) {
-              data.cell.styles.fillColor = [16, 128, 64]; // Green like example
+            if (typeof num === 'number' && currentDrawResults.includes(num)) {
+              data.cell.styles.fillColor = [107, 33, 168]; // Purple highlight
               data.cell.styles.textColor = 255;
               data.cell.styles.fontStyle = 'bold';
             }
@@ -487,7 +613,7 @@ const LiveRanking: React.FC = () => {
       }
     });
 
-    doc.save(`Ranking_Bolao_Concurso_${activeContest.number}.pdf`);
+    doc.save(`Ranking_Bolao_Premiada_S${selectedDraw + 1}_Conc_${activeContest.number}.pdf`);
   };
 
   const handleEditBet = (bet: Bet) => {
@@ -682,7 +808,6 @@ const LiveRanking: React.FC = () => {
         <PrizeCard 
           title="RAPIDINHA" 
           value={prizes.rapidinha} 
-          leader={rapidinhaLeader?.userName}
           count={rapidinhaWinnersCount}
           icon={Zap}
           color="text-yellow-500"
@@ -694,8 +819,7 @@ const LiveRanking: React.FC = () => {
         <PrizeCard 
           title="1º LUGAR" 
           value={prizes.campeao} 
-          leader={champion?.userName}
-          count={bets.filter(b => b.totalHits === maxTotalHits && maxTotalHits > 0).length}
+          count={rankingWithRanks.filter(b => b.totalHits === maxTotalHits && maxTotalHits > 0).length}
           icon={Crown}
           color="text-lotofacil-purple"
           bg="bg-lotofacil-purple/5"
@@ -706,8 +830,7 @@ const LiveRanking: React.FC = () => {
         <PrizeCard 
           title="2º LUGAR" 
           value={prizes.vice} 
-          leader={vice?.userName}
-          count={bets.filter(b => b.totalHits === secondMaxTotalHits && secondMaxTotalHits > 0).length}
+          count={rankingWithRanks.filter(b => b.totalHits === secondMaxTotalHits && secondMaxTotalHits > 0).length}
           icon={Award}
           color="text-blue-500"
           bg="bg-blue-50"
@@ -1053,18 +1176,20 @@ const LiveRanking: React.FC = () => {
                           {hits[2]}
                         </span>
                       </td>
-                      <td className="px-0.5 py-3 text-center">
+                      <td className={cn(
+                        "px-0.5 py-3 text-center transition-all",
+                        isExpanded ? "bg-white/10" : "bg-[#1e3a8a] border-x border-white/10"
+                      )}>
                         <div className="flex flex-col items-center">
                           <span className={cn(
                             "text-xs sm:text-sm font-black",
-                            isExpanded ? "text-white" : "text-lotofacil-purple"
+                            isExpanded ? "text-white" : "text-[#ffd700]"
                           )}>
                             {totalHits}
                           </span>
                           {totalHits >= 27 && (
                             <span className={cn(
-                              "text-[6px] font-bold px-1 rounded",
-                              isExpanded ? "bg-white text-slate-900" : "bg-lotofacil-purple text-white"
+                              "text-[6px] font-bold px-1 rounded bg-white text-[#1e3a8a]"
                             )}>
                               PREMIADO
                             </span>
@@ -1488,7 +1613,6 @@ const LiveRanking: React.FC = () => {
 interface PrizeCardProps {
   title: string;
   value: number;
-  leader?: string;
   count?: number;
   icon: any;
   color: string;
@@ -1502,7 +1626,7 @@ interface PrizeCardProps {
 }
 
 const PrizeCard: React.FC<PrizeCardProps> = ({ 
-  title, value, leader, count, icon: Icon, color, bg, border, compact, fullWidth, pointsLabel, variant = 'default', isFinished
+  title, value, count, icon: Icon, color, bg, border, compact, fullWidth, pointsLabel, variant = 'default', isFinished
 }) => (
   <div className={cn(
     "glass-card border transition-all relative overflow-hidden group",
@@ -1584,19 +1708,13 @@ const PrizeCard: React.FC<PrizeCardProps> = ({
             {title}
           </p>
           
-          <div className="mt-0.5 sm:mt-1.5 flex items-center justify-end gap-1 sm:gap-1.5">
-            {leader ? (
-              <>
-                <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <p className="text-[5px] sm:text-[9px] font-bold text-slate-500 uppercase truncate max-w-[60px] sm:max-w-[120px]">
-                  {leader} NO MOMEN...
-                </p>
-              </>
-            ) : (
-              <p className="text-[5px] sm:text-[9px] font-bold text-slate-400 uppercase">
-                {count || 0} GANHADOR(ES) NO...
+          <div className="mt-1 sm:mt-2 flex items-center justify-end">
+            <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 bg-slate-100 rounded-full border border-slate-200 shadow-sm">
+              <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+              <p className="text-[6px] sm:text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                {count || 0} GANHADORES
               </p>
-            )}
+            </div>
           </div>
         </div>
       </div>
