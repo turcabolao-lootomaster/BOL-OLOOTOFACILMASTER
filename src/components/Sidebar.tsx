@@ -17,7 +17,8 @@ import {
   BookOpen,
   Menu,
   X,
-  MessageCircle
+  MessageCircle,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../utils';
@@ -31,6 +32,39 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOpen }) => {
   const { user, logout, loginWithGoogle } = useAuth();
+  const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
+  const [isInstallable, setIsInstallable] = React.useState(false);
+
+  React.useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevenir o mini-infobar do Chrome no mobile
+      e.preventDefault();
+      // Guardar o evento para ser disparado depois
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    });
+
+    window.addEventListener('appinstalled', () => {
+      setIsInstallable(false);
+      setDeferredPrompt(null);
+      console.log('App instalado com sucesso!');
+    });
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    
+    // Mostrar o prompt de instalação
+    deferredPrompt.prompt();
+    
+    // Esperar pela escolha do usuário
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`Usuário escolheu: ${outcome}`);
+    
+    // Limpar o prompt
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
 
   const menuItems = [
     { id: 'dashboard', label: 'Início', icon: LayoutDashboard, roles: ['master', 'admin', 'vendedor', 'cliente'] },
@@ -125,6 +159,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
           )}
           
           <div className="space-y-2">
+            {isInstallable && (
+              <button 
+                onClick={handleInstallClick}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-lotofacil-purple/10 text-lotofacil-purple hover:bg-lotofacil-purple/20 transition-all text-[10px] font-bold uppercase tracking-widest border border-lotofacil-purple/20 mb-2 animate-pulse"
+              >
+                <Download size={18} />
+                <span>Instalar Aplicativo</span>
+              </button>
+            )}
+
             <a 
               href="https://wa.me/5511978193552" 
               target="_blank" 

@@ -78,6 +78,15 @@ const MyBets: React.FC = () => {
       const selectedBets = bets.filter(b => selectedBetIds.includes(b.id));
       let successCount = 0;
 
+      // Determine the current seller code for this user
+      let currentSellerCode = '';
+      if (user?.role === 'vendedor') {
+        const seller = await firebaseService.getSellerByUserId(user.id);
+        if (seller) currentSellerCode = seller.code.toUpperCase();
+      } else if (user?.linkedSellerCode) {
+        currentSellerCode = user.linkedSellerCode.toUpperCase();
+      }
+
       for (const bet of selectedBets) {
         try {
           await firebaseService.createBet({
@@ -87,7 +96,7 @@ const MyBets: React.FC = () => {
             contestNumber: activeContest.number,
             numbers: [...bet.numbers],
             betName: bet.betName || '',
-            sellerCode: bet.sellerCode || '',
+            sellerCode: currentSellerCode || bet.sellerCode || '',
           });
           successCount++;
         } catch (err) {
@@ -232,13 +241,40 @@ const MyBets: React.FC = () => {
         </div>
         
         {!loading && bets.length > 0 && (
-          <button 
-            onClick={toggleSelectAll}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all text-[10px] font-bold uppercase tracking-widest"
-          >
-            {selectedBetIds.length === bets.length ? <CheckSquare size={14} className="text-lotofacil-purple" /> : <Square size={14} />}
-            <span>{selectedBetIds.length === bets.length ? 'Desmarcar Tudo' : 'Selecionar Tudo'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {selectedBetIds.length > 0 && (
+              <div className="flex items-center gap-2 mr-2 pr-2 border-r border-slate-200">
+                <motion.button 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  disabled={isProcessing}
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition-all text-[10px] font-bold uppercase tracking-widest disabled:opacity-50"
+                  title="Excluir selecionadas"
+                >
+                  <Trash2 size={14} />
+                  <span className="hidden md:inline">Excluir</span>
+                </motion.button>
+                <motion.button 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  disabled={isProcessing || !activeContest || activeContest.status !== 'aberto'}
+                  onClick={() => setShowRepeatConfirm(true)}
+                  className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-lotofacil-purple text-white hover:bg-lotofacil-purple/90 transition-all text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-lotofacil-purple/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCcw size={14} className={cn(isProcessing && "animate-spin")} />
+                  <span>Repetir ({selectedBetIds.length})</span>
+                </motion.button>
+              </div>
+            )}
+            <button 
+              onClick={toggleSelectAll}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all text-[10px] font-bold uppercase tracking-widest"
+            >
+              {selectedBetIds.length === bets.length ? <CheckSquare size={14} className="text-lotofacil-purple" /> : <Square size={14} />}
+              <span>{selectedBetIds.length === bets.length ? 'Desmarcar Tudo' : 'Selecionar Tudo'}</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -417,56 +453,6 @@ const MyBets: React.FC = () => {
           </motion.div>
         ))}
       </div>
-
-      {/* Bulk Actions Bar */}
-      <AnimatePresence>
-        {selectedBetIds.length > 0 && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-6 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-xl z-50"
-          >
-            <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-slate-800 flex items-center justify-between gap-4">
-              <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400">Selecionadas</span>
-                <span className="text-lg font-display tracking-widest">{selectedBetIds.length.toString().padStart(2, '0')}</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <button
-                  disabled={isProcessing}
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all text-xs font-bold uppercase tracking-widest disabled:opacity-50"
-                >
-                  <Trash2 size={16} />
-                  <span className="hidden sm:inline">Excluir</span>
-                </button>
-                
-                <button
-                  disabled={isProcessing || !activeContest || activeContest.status !== 'aberto'}
-                  onClick={() => setShowRepeatConfirm(true)}
-                  className="flex items-center gap-2 px-6 py-2 rounded-xl bg-lotofacil-purple text-white hover:bg-lotofacil-purple/90 transition-all text-xs font-bold uppercase tracking-widest shadow-lg shadow-lotofacil-purple/20 disabled:opacity-50"
-                >
-                  {isProcessing ? (
-                    <RefreshCcw size={16} className="animate-spin" />
-                  ) : (
-                    <Copy size={16} />
-                  )}
-                  <span>Repetir {activeContest ? `#${activeContest.number}` : ''}</span>
-                </button>
-              </div>
-              
-              <button 
-                onClick={() => setSelectedBetIds([])}
-                className="p-2 text-slate-400 hover:text-white transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Custom Confirmation Modals */}
       <AnimatePresence>

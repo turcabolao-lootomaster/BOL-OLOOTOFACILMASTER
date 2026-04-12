@@ -660,6 +660,10 @@ const DrawsTab = () => {
   const [loadingBets, setLoadingBets] = useState(false);
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [showRecalculateConfirm, setShowRecalculateConfirm] = useState(false);
+  const [showSaveDrawConfirm, setShowSaveDrawConfirm] = useState(false);
+  const [drawToSave, setDrawToSave] = useState<number | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successModalConfig, setSuccessModalConfig] = useState({ title: '', message: '' });
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
 
@@ -688,6 +692,11 @@ const DrawsTab = () => {
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
+  const showSuccessConfirmed = (title: string, message: string) => {
+    setSuccessModalConfig({ title, message });
+    setShowSuccessModal(true);
+  };
+
   const handleSaveDraw = async (drawNumber: number) => {
     if (!contest) return;
     const results = drawResults[drawNumber - 1]
@@ -713,7 +722,7 @@ const DrawsTab = () => {
 
     try {
       await firebaseService.updateDrawResult(contest.id, drawNumber, results);
-      showSuccess(`Sorteio #${drawNumber} validado com sucesso!`);
+      showSuccessConfirmed('SORTEIO VALIDADO', `Os resultados do Sorteio #${drawNumber} foram salvos e os acertos de todas as apostas foram calculados com sucesso!`);
       fetchContest();
     } catch (error) {
       console.error('Erro ao salvar sorteio:', error);
@@ -725,7 +734,7 @@ const DrawsTab = () => {
     try {
       setIsFinalizing(true);
       await firebaseService.updateContestStatus(contest.id, 'encerrado');
-      showSuccess('Concurso finalizado com sucesso!');
+      showSuccessConfirmed('CONCURSO ENCERRADO', 'O concurso foi finalizado com sucesso e todos os resultados foram consolidados.');
       await fetchContest();
       setShowFinalizeConfirm(false);
     } catch (error) {
@@ -744,7 +753,7 @@ const DrawsTab = () => {
       console.log('Calling firebaseService.recalculateGeneralRanking()...');
       await firebaseService.recalculateGeneralRanking();
       console.log('Recalculate ranking success');
-      showSuccess('Corrida 150 PTS recalculada com sucesso!');
+      showSuccessConfirmed('RANKING RECALCULADO', 'A Corrida 150 PTS foi reconstruída com sucesso com base em todos os concursos encerrados.');
     } catch (error) {
       console.error('Error recalculating ranking:', error);
       alert('Erro ao recalcular ranking.');
@@ -811,6 +820,81 @@ const DrawsTab = () => {
           )}
         </div>
       </div>
+
+      {/* Save Draw Confirmation Modal */}
+      <AnimatePresence>
+        {showSaveDrawConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6"
+            >
+              <div className="w-16 h-16 bg-lotofacil-purple/10 rounded-full flex items-center justify-center mx-auto text-lotofacil-purple">
+                <Save size={32} />
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">SALVAR <span className="text-lotofacil-purple uppercase">SORTEIO #{drawToSave}</span></h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Deseja realmente salvar e validar os resultados do Sorteio #{drawToSave}? Isso irá atualizar os acertos de todas as apostas deste concurso.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    setShowSaveDrawConfirm(false);
+                    setDrawToSave(null);
+                  }}
+                  className="flex-1 px-6 py-3 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-200 transition-all"
+                >
+                  CANCELAR
+                </button>
+                <button 
+                  onClick={() => {
+                    if (drawToSave) handleSaveDraw(drawToSave);
+                    setShowSaveDrawConfirm(false);
+                    setDrawToSave(null);
+                  }}
+                  className="flex-1 px-6 py-3 bg-lotofacil-purple text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-lotofacil-purple/80 transition-all shadow-lg"
+                >
+                  CONFIRMAR
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Success Confirmation Modal */}
+      <AnimatePresence>
+        {showSuccessModal && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6 text-center"
+            >
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600">
+                <CheckCircle size={32} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">{successModalConfig.title}</h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  {successModalConfig.message}
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full px-6 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg"
+              >
+                ENTENDIDO / OK
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Recalculate Ranking Confirmation Modal */}
       <AnimatePresence>
@@ -958,7 +1042,10 @@ const DrawsTab = () => {
                 </div>
 
                 <button 
-                  onClick={() => handleSaveDraw(num)}
+                  onClick={() => {
+                    setDrawToSave(num);
+                    setShowSaveDrawConfirm(true);
+                  }}
                   className="w-full py-2.5 bg-lotofacil-purple/10 text-lotofacil-purple border border-lotofacil-purple/20 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-lotofacil-purple hover:text-white transition-all flex items-center justify-center gap-2 shadow-sm"
                 >
                   <Save size={14} />
@@ -2239,11 +2326,12 @@ const UsersTab = () => {
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Nome / E-mail</th>
-              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Cargo Atual</th>
-              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Ações</th>
-            </tr>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Nome / E-mail</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Vendedor Vinculado</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Cargo Atual</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Ações</th>
+              </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filteredUsers.map(u => (
@@ -2251,6 +2339,34 @@ const UsersTab = () => {
                 <td className="px-6 py-4">
                   <p className="text-sm font-bold text-slate-900">{u.name || 'Sem Nome'}</p>
                   <p className="text-[10px] text-slate-600 uppercase tracking-widest">{u.email}</p>
+                </td>
+                <td className="px-6 py-4 text-center">
+                  <div className="flex flex-col items-center gap-1">
+                    {u.linkedSellerCode ? (
+                      <span className="text-[10px] font-black text-lotofacil-purple bg-lotofacil-purple/5 px-2 py-1 rounded border border-lotofacil-purple/20 uppercase tracking-widest">
+                        {u.linkedSellerCode}
+                      </span>
+                    ) : (
+                      <span className="text-[9px] text-slate-400 italic uppercase tracking-widest">Nenhum</span>
+                    )}
+                    <button 
+                      onClick={async () => {
+                        const newCode = window.prompt('Digite o novo código do vendedor para este usuário:', u.linkedSellerCode || '');
+                        if (newCode !== null) {
+                          try {
+                            await firebaseService.linkUserToSeller(u.id, newCode.toUpperCase());
+                            alert('Vendedor vinculado com sucesso!');
+                          } catch (error) {
+                            console.error('Error linking seller:', error);
+                            alert('Erro ao vincular vendedor.');
+                          }
+                        }
+                      }}
+                      className="text-[8px] font-bold text-lotofacil-purple hover:underline uppercase tracking-tighter"
+                    >
+                      {u.linkedSellerCode ? 'Alterar' : 'Vincular'}
+                    </button>
+                  </div>
                 </td>
                 <td className="px-6 py-4 text-center">
                   <span className={cn(

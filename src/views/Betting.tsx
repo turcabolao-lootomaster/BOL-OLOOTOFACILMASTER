@@ -49,7 +49,13 @@ const Betting: React.FC = () => {
       
       let finalSellerCode = '';
       
-      if (ref) {
+      if (user?.role === 'vendedor') {
+        const seller = await firebaseService.getSellerByUserId(user.id);
+        if (seller) {
+          finalSellerCode = seller.code.toUpperCase();
+          setIsSellerLink(true);
+        }
+      } else if (ref) {
         finalSellerCode = ref.toUpperCase();
         setIsSellerLink(true);
         // Link user to seller if not already linked
@@ -404,12 +410,12 @@ const Betting: React.FC = () => {
                   <input 
                     type="text" 
                     value={sellerCode}
-                    onChange={(e) => !isSellerLink && setSellerCode(e.target.value)}
-                    readOnly={isSellerLink}
+                    onChange={(e) => (!isSellerLink || user?.role === 'admin' || user?.role === 'master') && setSellerCode(e.target.value)}
+                    readOnly={isSellerLink && user?.role !== 'admin' && user?.role !== 'master'}
                     placeholder="Ex: REF123"
                     className={cn(
                       "w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 sm:py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs text-slate-900",
-                      isSellerLink && "bg-slate-100 text-slate-400 cursor-not-allowed border-dashed"
+                      isSellerLink && user?.role !== 'admin' && user?.role !== 'master' && "bg-slate-100 text-slate-400 cursor-not-allowed border-dashed"
                     )}
                   />
                 </div>

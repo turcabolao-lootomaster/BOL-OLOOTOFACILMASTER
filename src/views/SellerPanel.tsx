@@ -19,14 +19,15 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../utils';
-import { Seller, Bet } from '../types';
+import { Seller, Bet, User } from '../types';
 
 const SellerPanel: React.FC = () => {
   const { user } = useAuth();
   const [seller, setSeller] = useState<Seller | null>(null);
   const [recentSales, setRecentSales] = useState<Bet[]>([]);
+  const [linkedUsers, setLinkedUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'sales' | 'finance'>('sales');
+  const [activeTab, setActiveTab] = useState<'sales' | 'finance' | 'clients'>('sales');
 
   useEffect(() => {
     const userId = user?.id || user?.uid;
@@ -36,7 +37,7 @@ const SellerPanel: React.FC = () => {
     let isMounted = true;
 
     // Subscribe to seller data
-    const unsubscribeSeller = firebaseService.subscribeToSellerData(userId, (sellerData) => {
+    const unsubscribeSeller = firebaseService.subscribeToSellerData(userId, async (sellerData) => {
       if (!isMounted) return;
       setSeller(sellerData);
       
@@ -53,6 +54,10 @@ const SellerPanel: React.FC = () => {
           setRecentSales(sales);
           setLoading(false);
         });
+
+        // Fetch linked users
+        const users = await firebaseService.getUsersBySellerCode(sellerData.code);
+        if (isMounted) setLinkedUsers(users);
       } else {
         setLoading(false);
       }
@@ -148,6 +153,15 @@ const SellerPanel: React.FC = () => {
           )}
         >
           Financeiro
+        </button>
+        <button 
+          onClick={() => setActiveTab('clients')}
+          className={cn(
+            "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+            activeTab === 'clients' ? "bg-white text-lotofacil-purple shadow-sm" : "text-slate-400 hover:text-slate-600"
+          )}
+        >
+          Meus Clientes
         </button>
       </div>
 
@@ -286,6 +300,35 @@ const SellerPanel: React.FC = () => {
             </div>
           </div>
         </>
+      ) : activeTab === 'clients' ? (
+        <div className="glass-card p-5 sm:p-8 space-y-6 sm:space-y-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">MEUS <span className="text-slate-200">CLIENTES VINCULADOS</span></h2>
+            <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+              {linkedUsers.length} {linkedUsers.length === 1 ? 'Cliente' : 'Clientes'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {linkedUsers.length === 0 ? (
+              <div className="col-span-full py-10 text-center text-slate-400 text-xs uppercase tracking-widest italic">
+                Nenhum cliente vinculado ao seu código ainda.
+              </div>
+            ) : (
+              linkedUsers.map(u => (
+                <div key={u.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-lotofacil-purple/10 flex items-center justify-center text-lotofacil-purple font-bold">
+                    {u.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900 truncate">{u.name || 'Sem Nome'}</p>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{u.email}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       ) : (
         <div className="space-y-6 sm:space-y-10">
           {/* Stats Grid */}

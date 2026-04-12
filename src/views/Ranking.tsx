@@ -6,11 +6,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { firebaseService } from '../services/firebaseService';
-import { Trophy, Medal, TrendingUp, Search, Share2, Crown } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Trophy, Medal, TrendingUp, Search, Share2, Crown, FileText, Lock } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../utils';
 import { RANKING_GOAL } from '../utils';
 import { UserRanking, ContestStatus, Bet } from '../types';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const Ranking: React.FC = () => {
   const { user } = useAuth();
@@ -18,6 +20,100 @@ const Ranking: React.FC = () => {
   const [activeBetKeys, setActiveBetKeys] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
+
+  const handleDownloadPDF = () => {
+    if (password !== 'Baixarok') {
+      setPasswordError(true);
+      return;
+    }
+
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header Background
+    doc.setFillColor(30, 41, 59); // Slate 900
+    doc.rect(0, 0, pageWidth, 45, 'F');
+    
+    // Title
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CORRIDA DOS CAMPEÕES', pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(14);
+    doc.text('RUMO AOS 150 PONTOS', pageWidth / 2, 30, { align: 'center' });
+
+    // Meta Info
+    doc.setFillColor(147, 51, 234); // Purple 600
+    doc.roundedRect(pageWidth / 2 - 60, 35, 120, 8, 2, 2, 'F');
+    doc.setFontSize(10);
+    doc.text('META: 150 PONTOS | PRÊMIO: R$ 1.000,00', pageWidth / 2, 40.5, { align: 'center' });
+
+    // Footer Info
+    doc.setTextColor(71, 85, 105);
+    doc.setFontSize(9);
+    doc.text('Para acompanhar atualizações e mais detalhes, acesse: lotofacilpremiada.online', pageWidth / 2, 55, { align: 'center' });
+    doc.text('Ranking atualizado automaticamente a cada concurso', pageWidth / 2, 62, { align: 'center' });
+    doc.text('Sistema exclusivo de pontuação acumulada', pageWidth / 2, 67, { align: 'center' });
+    doc.text('Acompanhe sua evolução a cada rodada', pageWidth / 2, 72, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')} | Total de Participantes: ${ranking.length}`, pageWidth / 2, 85, { align: 'center' });
+    doc.text('Relatório automatizado — Bolão Lotofácil Premiada', pageWidth / 2, 92, { align: 'center' });
+    doc.text('Atualizações disponíveis na plataforma online', pageWidth / 2, 97, { align: 'center' });
+
+    // Table
+    const headers = ['POS', 'PARTICIPANTE', 'VENDEDOR', 'NÚMEROS DA APOSTA', 'PONTOS ATUAIS', 'PROGRESSO (%)'];
+    const data = ranking.map(p => {
+      const progress = Math.min((p.points / RANKING_GOAL) * 100, 100).toFixed(1);
+      return [
+        `#${p.position}`,
+        p.userName.toUpperCase(),
+        p.sellerCode || '-',
+        p.numbers?.join(' ') || '-',
+        `${p.points} PTS`,
+        `${progress}%`
+      ];
+    });
+
+    autoTable(doc, {
+      head: [headers],
+      body: data,
+      startY: 105,
+      theme: 'grid',
+      styles: { fontSize: 8, halign: 'center', cellPadding: 2 },
+      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 15, fontStyle: 'bold' },
+        1: { halign: 'left', cellWidth: 60, fontStyle: 'bold' },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 60 },
+        4: { fillColor: [243, 232, 255], textColor: [107, 33, 168], fontStyle: 'bold', cellWidth: 30 },
+        5: { cellWidth: 30 }
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 4) {
+          const points = parseInt(data.cell.raw as string);
+          if (points >= 150) {
+            data.cell.styles.fillColor = [30, 58, 138]; // Dark Blue
+            data.cell.styles.textColor = [255, 215, 0]; // Gold
+          }
+        }
+      }
+    });
+
+    doc.save(`Corrida_dos_Campeoes_Bolao_Premiada_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '_')}.pdf`);
+    setShowPasswordModal(false);
+    setPassword('');
+  };
 
   useEffect(() => {
     const unsubscribeRanking = firebaseService.subscribeToRanking((data) => {
@@ -77,13 +173,23 @@ const Ranking: React.FC = () => {
               CORRIDA DOS CAMPEÕES
               <span className="text-lotofacil-purple"> - 150 PTS</span>
             </h1>
-            <button 
-              onClick={handleShare}
-              className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-lotofacil-purple transition-all border border-slate-200"
-              title="Copiar Link Público"
-            >
-              <Share2 size={20} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setShowPasswordModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-xl text-white transition-all shadow-lg shadow-red-200 text-xs font-bold uppercase tracking-widest"
+                title="Baixar PDF"
+              >
+                <FileText size={16} />
+                <span className="hidden sm:inline">PDF</span>
+              </button>
+              <button 
+                onClick={handleShare}
+                className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-lotofacil-purple transition-all border border-slate-200"
+                title="Copiar Link Público"
+              >
+                <Share2 size={20} />
+              </button>
+            </div>
           </div>
           <p className="text-xs sm:text-sm text-slate-600 mt-1 sm:mt-2">
             Acompanhe a corrida rumo aos 150 pontos!
@@ -309,6 +415,85 @@ const Ranking: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Password Modal */}
+      <AnimatePresence>
+        {showPasswordModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowPasswordModal(false);
+                setPassword('');
+                setPasswordError(false);
+              }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 p-8"
+            >
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center text-red-600">
+                  <Lock size={32} />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Acesso Restrito</h3>
+                  <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Insira a senha para baixar o PDF</p>
+                </div>
+                
+                <div className="w-full space-y-4 pt-4">
+                  <div className="relative">
+                    <input 
+                      type="password" 
+                      placeholder="Senha de acesso"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setPasswordError(false);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleDownloadPDF();
+                      }}
+                      className={cn(
+                        "w-full bg-slate-50 border rounded-2xl py-4 px-6 focus:outline-none transition-all text-center font-black tracking-[0.3em]",
+                        passwordError ? "border-red-500 text-red-500" : "border-slate-200 focus:border-red-500"
+                      )}
+                      autoFocus
+                    />
+                    {passwordError && (
+                      <p className="text-[10px] text-red-500 font-black uppercase mt-2 tracking-widest">Senha incorreta!</p>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => {
+                        setShowPasswordModal(false);
+                        setPassword('');
+                        setPasswordError(false);
+                      }}
+                      className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-600 font-black uppercase tracking-widest text-xs hover:bg-slate-200 transition-all"
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      onClick={handleDownloadPDF}
+                      className="flex-1 py-4 rounded-2xl bg-red-600 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-red-200 hover:bg-red-700 transition-all"
+                    >
+                      Confirmar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

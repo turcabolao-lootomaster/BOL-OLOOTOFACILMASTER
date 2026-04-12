@@ -20,13 +20,43 @@ import SellerPanel from './views/SellerPanel';
 import AdminPanel from './views/AdminPanel';
 import { Menu, LogOut } from 'lucide-react';
 import { cn } from './utils';
+import { firebaseService } from './services/firebaseService';
 
 const AppContent: React.FC = () => {
   const { user, loading, logout } = useAuth();
   const [currentView, setView] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [lastCompletedDraws, setLastCompletedDraws] = useState<number>(0);
 
   const publicViews = ['participants', 'current-contest', 'ranking', 'instructions'];
+
+  // Monitorar sorteios para atualizar a bolinha (badge)
+  React.useEffect(() => {
+    const unsubscribe = firebaseService.subscribeToActiveContest((contest) => {
+      if (contest) {
+        const completedCount = contest.draws.filter(d => d.status === 'concluido').length;
+        
+        // Se o número de sorteios concluídos aumentou, mostramos a bolinha
+        if (completedCount > lastCompletedDraws && lastCompletedDraws !== 0) {
+          if ('setAppBadge' in navigator) {
+            (navigator as any).setAppBadge(completedCount).catch(console.error);
+          }
+        }
+        setLastCompletedDraws(completedCount);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [lastCompletedDraws]);
+
+  // Limpar a bolinha quando o usuário navega para visualizações relevantes
+  React.useEffect(() => {
+    if (currentView === 'dashboard' || currentView === 'current-contest') {
+      if ('clearAppBadge' in navigator) {
+        (navigator as any).clearAppBadge().catch(console.error);
+      }
+    }
+  }, [currentView]);
 
   React.useEffect(() => {
     document.title = "Bolão Lotofácil";

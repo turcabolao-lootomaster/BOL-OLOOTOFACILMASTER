@@ -464,10 +464,21 @@ const Participants: React.FC = () => {
       
       const numCols = Array(10).fill('');
       sortedNumbers.forEach((n, i) => { if (i < 10) numCols[i] = n; });
+
+      // Prize Logic for PDF Labels
+      const prizeLabels = [];
+      if (winners.champion.includes(b.id)) prizeLabels.push('[1º LUGAR]');
+      if (winners.vice.includes(b.id)) prizeLabels.push('[2º LUGAR]');
+      if (winners.rapidinha.includes(b.id)) prizeLabels.push('[RAPIDINHA]');
+      if (winners.draws10.some(d => d.includes(b.id))) prizeLabels.push('[10 PONTOS]');
+      if (winners.total27.includes(b.id)) prizeLabels.push('[27+ PONTOS]');
+      else if (winners.total25.includes(b.id)) prizeLabels.push('[25 PONTOS]');
+
+      const nameWithPrizes = `${(b.betName || b.userName).toUpperCase()} ${prizeLabels.join(' ')}`.trim();
       
       return [
         `${index + 1}º`,
-        (b.betName || b.userName).toUpperCase(),
+        nameWithPrizes,
         b.sellerCode || '-',
         ...numCols,
         hits[0],
@@ -777,8 +788,9 @@ const Participants: React.FC = () => {
                       className={cn(
                         "transition-all duration-300 cursor-pointer relative",
                         isExpanded ? "bg-slate-900 text-white shadow-2xl z-30 scale-[1.02] rounded-xl" : 
-                        isCurrentUser ? "bg-lotofacil-purple/5" : "hover:bg-slate-50",
-                        idx === 0 && !isExpanded && "bg-gradient-to-r from-lotofacil-yellow/5 to-transparent"
+                        isChampion ? "bg-gradient-to-r from-amber-50 via-amber-100 to-amber-50 hover:from-amber-100 hover:via-amber-200 hover:to-amber-100 border-y border-amber-200 shadow-sm" : 
+                        isVice ? "bg-gradient-to-r from-slate-50 via-slate-100 to-slate-50 hover:from-slate-100 hover:via-slate-200 hover:to-slate-100 border-y border-slate-200 shadow-sm" :
+                        isCurrentUser ? "bg-lotofacil-purple/5" : "hover:bg-slate-50"
                       )}
                     >
                       <td className="px-1 sm:px-6 py-4">
@@ -807,10 +819,14 @@ const Participants: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <span className={cn(
                               "text-[11px] sm:text-sm font-bold truncate max-w-[110px] sm:max-w-none",
-                              isExpanded ? "text-white" : "text-slate-900"
+                              isExpanded ? "text-white" : 
+                              isChampion ? "text-amber-900" :
+                              isVice ? "text-slate-900" : "text-slate-900"
                             )}>
                               {b.betName || b.userName}
                             </span>
+                            {isChampion && <Trophy size={12} className={isExpanded ? "text-white" : "text-amber-600 animate-bounce-slow"} />}
+                            {isVice && <Medal size={12} className={isExpanded ? "text-white" : "text-slate-500"} />}
                             <ChevronRight 
                               size={12} 
                               className={cn(

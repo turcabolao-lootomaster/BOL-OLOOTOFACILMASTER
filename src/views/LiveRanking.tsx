@@ -548,10 +548,26 @@ const LiveRanking: React.FC = () => {
       
       const numCols = Array(10).fill('');
       sortedNumbers.forEach((n, i) => { if (i < 10) numCols[i] = n; });
+
+      // Prize Logic for PDF Labels
+      const isChampion = b.totalHits === maxTotalHits && maxTotalHits > 0;
+      const isVice = b.totalHits === secondMaxTotalHits && secondMaxTotalHits > 0;
+      const isRapidinha = hits[0] === maxS1Hits && maxS1Hits > 0;
+      const has10Pts = hits[0] >= 10 || hits[1] >= 10 || hits[2] >= 10;
+      const has27Plus = b.totalHits >= 27;
+
+      const prizeLabels = [];
+      if (isChampion) prizeLabels.push('[1º LUGAR]');
+      if (isVice) prizeLabels.push('[2º LUGAR]');
+      if (isRapidinha) prizeLabels.push('[RAPIDINHA]');
+      if (has10Pts) prizeLabels.push('[10 PONTOS]');
+      if (has27Plus) prizeLabels.push('[27+ PONTOS]');
+
+      const nameWithPrizes = `${(b.betName || b.userName).toUpperCase()} ${prizeLabels.join(' ')}`.trim();
       
       return [
         `${b.rank}º`,
-        (b.betName || b.userName).toUpperCase(),
+        nameWithPrizes,
         b.sellerCode || '-',
         ...numCols,
         hits[0],
@@ -1035,9 +1051,9 @@ const LiveRanking: React.FC = () => {
                       className={cn(
                         "transition-all duration-300 cursor-pointer relative",
                         isExpanded ? "bg-slate-900 text-white shadow-2xl z-30 scale-[1.02] rounded-xl" : 
+                        isChampion ? "bg-gradient-to-r from-amber-50 via-amber-100 to-amber-50 hover:from-amber-100 hover:via-amber-200 hover:to-amber-100 border-y border-amber-200 shadow-sm" : 
+                        isVice ? "bg-gradient-to-r from-slate-50 via-slate-100 to-slate-50 hover:from-slate-100 hover:via-slate-200 hover:to-slate-100 border-y border-slate-200 shadow-sm" :
                         hits[selectedDraw] >= 10 ? "bg-orange-100 hover:bg-orange-200" :
-                        isChampion ? "bg-lotofacil-purple/10 hover:bg-lotofacil-purple/20" : 
-                        isVice ? "bg-blue-100/40 hover:bg-blue-100/60" :
                         isRapidinha ? "bg-yellow-100/40 hover:bg-yellow-100/60" :
                         isWinner ? "bg-lotofacil-purple/5 hover:bg-lotofacil-purple/10" : "hover:bg-slate-50"
                       )}
@@ -1060,11 +1076,15 @@ const LiveRanking: React.FC = () => {
                         <div className="flex items-center justify-end gap-1">
                           <p className={cn(
                             "text-[10px] sm:text-xs font-bold uppercase truncate max-w-[100px] sm:max-w-none leading-tight",
-                            isExpanded ? "text-white" : "text-slate-900"
+                            isExpanded ? "text-white" : 
+                            isChampion ? "text-amber-900" :
+                            isVice ? "text-slate-900" : "text-slate-900"
                           )}>
                             {b.betName || b.userName}
                           </p>
-                          {b.rank === 1 && <Crown size={10} className={isExpanded ? "text-white" : "text-lotofacil-purple"} />}
+                          {isChampion && <Trophy size={12} className={isExpanded ? "text-white" : "text-amber-600 animate-bounce-slow"} />}
+                          {isVice && <Medal size={12} className={isExpanded ? "text-white" : "text-slate-500"} />}
+                          {!isChampion && !isVice && b.rank === 1 && <Crown size={10} className={isExpanded ? "text-white" : "text-lotofacil-purple"} />}
                           <ChevronRight 
                             size={14} 
                             className={cn(
@@ -1710,9 +1730,9 @@ const PrizeCard: React.FC<PrizeCardProps> = ({
           
           <div className="mt-1 sm:mt-2 flex items-center justify-end">
             <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 bg-slate-100 rounded-full border border-slate-200 shadow-sm">
-              <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+              <div className={cn("w-1 h-1 rounded-full animate-pulse", isFinished ? "bg-emerald-500" : "bg-orange-400")} />
               <p className="text-[6px] sm:text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                {count || 0} GANHADORES
+                {isFinished ? `${count || 0} GANHADORES` : 'AGUARDANDO...'}
               </p>
             </div>
           </div>

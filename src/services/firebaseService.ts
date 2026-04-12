@@ -1043,5 +1043,33 @@ export const firebaseService = {
       handleFirestoreError(error, OperationType.GET, path);
       return null;
     }
+  },
+
+  async getSellerByUserId(userId: string): Promise<Seller | null> {
+    const path = 'sellers';
+    try {
+      const q = query(collection(db, 'sellers'), where('userId', '==', userId));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        return { id: doc.id, ...doc.data() } as Seller;
+      }
+      return null;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, path);
+      return null;
+    }
+  },
+
+  async getUsersBySellerCode(sellerCode: string): Promise<User[]> {
+    const path = 'users';
+    try {
+      const q = query(collection(db, 'users'), where('linkedSellerCode', '==', sellerCode.toUpperCase()));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, path);
+      return [];
+    }
   }
 };
