@@ -8,16 +8,28 @@
   "theme_color": "#6b21a8",
   "icons": [
     {
-      "src": "https://picsum.photos/seed/lottery/192/192",
+      "src": "https://cdn-icons-png.flaticon.com/512/2639/2639642.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "https://picsum.photos/seed/lottery/512/512",
+      "src": "https://cdn-icons-png.flaticon.com/512/2639/2639642.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2639/2639642.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2639/2639642.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

@@ -33,27 +33,37 @@ const AppContent: React.FC = () => {
   // Monitorar sorteios para atualizar a bolinha (badge)
   React.useEffect(() => {
     const unsubscribe = firebaseService.subscribeToActiveContest((contest) => {
-      if (contest) {
-        const completedCount = contest.draws.filter(d => d.status === 'concluido').length;
+      if (contest && Array.isArray(contest.draws)) {
+        const completedCount = contest.draws.filter(d => d && d.status === 'concluido').length;
         
         // Se o número de sorteios concluídos aumentou, mostramos a bolinha
-        if (completedCount > lastCompletedDraws && lastCompletedDraws !== 0) {
-          if ('setAppBadge' in navigator) {
-            (navigator as any).setAppBadge(completedCount).catch(console.error);
+        setLastCompletedDraws(prev => {
+          if (completedCount > prev && prev !== 0) {
+            try {
+              if ('setAppBadge' in navigator && typeof (navigator as any).setAppBadge === 'function') {
+                (navigator as any).setAppBadge(completedCount).catch((err: any) => console.error('Badge error:', err));
+              }
+            } catch (e) {
+              console.error('Failed to set badge:', e);
+            }
           }
-        }
-        setLastCompletedDraws(completedCount);
+          return completedCount;
+        });
       }
     });
 
     return () => unsubscribe();
-  }, [lastCompletedDraws]);
+  }, []); // Dependência vazia para evitar re-subscrições em loop
 
   // Limpar a bolinha quando o usuário navega para visualizações relevantes
   React.useEffect(() => {
     if (currentView === 'dashboard' || currentView === 'current-contest') {
-      if ('clearAppBadge' in navigator) {
-        (navigator as any).clearAppBadge().catch(console.error);
+      try {
+        if ('clearAppBadge' in navigator && typeof (navigator as any).clearAppBadge === 'function') {
+          (navigator as any).clearAppBadge().catch((err: any) => console.error('Clear badge error:', err));
+        }
+      } catch (e) {
+        console.error('Failed to clear badge:', e);
       }
     }
   }, [currentView]);
