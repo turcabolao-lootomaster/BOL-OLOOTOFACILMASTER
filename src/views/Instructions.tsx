@@ -25,61 +25,68 @@ const Instructions: React.FC = () => {
           <div className="glass-card p-6 border-l-4 border-lotofacil-purple">
             <div className="flex items-center gap-3 mb-3">
               <Target className="text-lotofacil-purple" size={20} />
-              <h3 className="font-bold text-slate-900 uppercase tracking-wider">Acertos por Sorteio (Prêmio Fixo)</h3>
+              <h3 className="font-bold text-slate-900 uppercase tracking-wider">Acertos por Sorteio (Prêmio Fixo R$ 300,00)</h3>
             </div>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Cada aposta tem **10 números**. São sorteados **15 números** em cada sorteio.
-              Se você acertar os **10 números** em qualquer um dos 3 sorteios (Sorteio 1, 2 ou 3), você ganha o prêmio fixo estipulado para aquele sorteio.
+              Cada concurso dura **3 dias**, com **1 sorteio por dia às 21:00** (baseado no sorteio oficial da LOTOFÁCIL).
+              Cada aposta tem **10 números**. São sorteados **15 números** em cada dia.
+              Se você acertar os **10 números** em qualquer um dos 3 dias, você ganha o **prêmio fixo de R$ 300,00** na hora!
             </p>
           </div>
 
-          {/* Bônus por Pontuação */}
-          <div className="glass-card p-6 border-l-4 border-emerald-500">
+          {/* Bônus por Pontuação - OBJETIVO PRINCIPAL */}
+          <div className="glass-card p-6 border-l-4 border-emerald-500 bg-emerald-50/10">
             <div className="flex items-center gap-3 mb-3">
               <TrendingUp className="text-emerald-500" size={20} />
-              <h3 className="font-bold text-slate-900 uppercase tracking-wider">Bônus por Pontuação Total</h3>
+              <h3 className="font-bold text-slate-900 uppercase tracking-wider">Prêmios Bônus (Objetivo Principal)</h3>
             </div>
             <div className="space-y-3">
               <p className="text-sm text-slate-600 leading-relaxed">
-                <span className="font-bold text-emerald-600">Bônus 25:</span> Se a soma dos seus acertos nos 3 sorteios for igual ou superior a **25 pontos**, você ganha um bônus extra.
+                Este é o grande objetivo! Ao somar seus acertos nos 3 dias de concurso, você concorre aos bônus:
               </p>
               <p className="text-sm text-slate-600 leading-relaxed">
-                <span className="font-bold text-emerald-600">Super Bônus 27:</span> Se a soma for igual ou superior a **27 pontos**, você ganha o prêmio máximo de pontuação.
+                <span className="font-bold text-emerald-600">Bônus 25:</span> Alcance **25 pontos** na soma dos 3 dias para ganhar este bônus.
+              </p>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                <span className="font-bold text-emerald-600">Super Bônus 27:</span> Alcance **27 pontos** na soma dos 3 dias para ganhar o prêmio máximo de bônus.
               </p>
             </div>
-          </div>
-
-          {/* Ranking Geral */}
-          <div className="glass-card p-6 border-l-4 border-blue-500">
-            <div className="flex items-center gap-3 mb-3">
-              <Trophy className="text-blue-500" size={20} />
-              <h3 className="font-bold text-slate-900 uppercase tracking-wider">Ranking Geral (Classificação)</h3>
-            </div>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              O sistema soma seus acertos nos 3 sorteios (Ex: 8 no primeiro + 7 no segundo + 9 no terceiro = 24 pontos).
-              Quem ficar no topo do ranking (maior soma de pontos) ganha o prêmio principal e secundário: **1º LUGAR** e **2º LUGAR**.
-            </p>
           </div>
 
           {/* Rapidinha */}
           <div className="glass-card p-6 border-l-4 border-orange-500">
             <div className="flex items-center gap-3 mb-3">
               <Zap className="text-orange-500" size={20} />
-              <h3 className="font-bold text-slate-900 uppercase tracking-wider">Rapidinha</h3>
+              <h3 className="font-bold text-slate-900 uppercase tracking-wider">Rapidinha (Somente 1° Dia)</h3>
             </div>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Prêmio destinado para quem fizer a **maior pontuação exclusivamente no 1° sorteio**.
+              Prêmio destinado para quem fizer a **maior pontuação exclusivamente no sorteio do 1° dia** do concurso.
             </p>
+          </div>
+
+          {/* Ranking Geral */}
+          <div className="glass-card p-6 border-l-4 border-blue-500">
+            <div className="flex items-center gap-3 mb-3">
+              <Trophy className="text-blue-500" size={20} />
+              <h3 className="font-bold text-slate-900 uppercase tracking-wider">Ranking do Concurso (Soma Total)</h3>
+            </div>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              O sistema soma seus acertos acumulados nos 3 dias. Quem ficar no topo ganha:
+            </p>
+            <ul className="text-sm text-slate-600 space-y-1 mt-2 list-disc pl-5">
+              <li><span className="font-bold">1º LUGAR:</span> Maior pontuação na soma total dos 3 dias.</li>
+              <li><span className="font-bold">2º LUGAR:</span> Segunda maior pontuação na soma total dos 3 dias.</li>
+            </ul>
           </div>
 
           {/* Corrida dos Campeões */}
           <div className="glass-card p-6 border-l-4 border-lotofacil-yellow">
             <div className="flex items-center gap-3 mb-3">
               <Flag className="text-lotofacil-yellow" size={20} />
-              <h3 className="font-bold text-slate-900 uppercase tracking-wider">Corrida dos Campeões - 150 PTS</h3>
+              <h3 className="font-bold text-slate-900 uppercase tracking-wider">Corrida dos Campeões (Constância)</h3>
             </div>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Sua pontuação de cada concurso é salva e acumulada. Quem alcançar primeiro a marca de **150 pontos** ganha este prêmio especial. O sistema soma automaticamente seus acertos de todos os concursos.
+              Prêmio voltado para a **constância do participante**. Sua participação em sequência gera pontos que são acumulados. Quem alcançar primeiro a marca de **150 pontos** no ranking geral ganha este prêmio especial.
             </p>
           </div>
         </div>
