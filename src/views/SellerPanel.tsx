@@ -27,7 +27,9 @@ const SellerPanel: React.FC = () => {
   const [recentSales, setRecentSales] = useState<Bet[]>([]);
   const [linkedUsers, setLinkedUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'sales' | 'finance' | 'clients'>('sales');
+  const [activeTab, setActiveTab] = useState<'sales' | 'finance' | 'clients' | 'config'>('sales');
+  const [newPassword, setNewPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   useEffect(() => {
     const userId = user?.id || user?.uid;
@@ -162,6 +164,15 @@ const SellerPanel: React.FC = () => {
           )}
         >
           Meus Clientes
+        </button>
+        <button 
+          onClick={() => setActiveTab('config')}
+          className={cn(
+            "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+            activeTab === 'config' ? "bg-white text-lotofacil-purple shadow-sm" : "text-slate-400 hover:text-slate-600"
+          )}
+        >
+          Configurações
         </button>
       </div>
 
@@ -327,6 +338,61 @@ const SellerPanel: React.FC = () => {
                 </div>
               ))
             )}
+          </div>
+        </div>
+      ) : activeTab === 'config' ? (
+        <div className="glass-card p-5 sm:p-8 space-y-6 sm:space-y-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">MINHAS <span className="text-slate-200">CONFIGURAÇÕES</span></h2>
+          </div>
+
+          <div className="max-w-md space-y-6">
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <p className="text-[10px] text-slate-400 uppercase font-bold">Seu Código de Vendedor:</p>
+              <p className="text-xl font-mono font-black text-lotofacil-purple">{seller.code}</p>
+              <p className="text-[10px] text-slate-500 leading-relaxed">
+                Este código é usado pelos seus clientes para vincular as apostas a você.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Alterar Senha de Acesso</h3>
+              <p className="text-xs text-slate-500">
+                Esta senha é usada para você logar no painel através do seu código de vendedor.
+              </p>
+              
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nova Senha</label>
+                <input 
+                  type="text" 
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Digite a nova senha"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                />
+              </div>
+
+              <button 
+                onClick={async () => {
+                  if (!newPassword) return;
+                  setIsUpdatingPassword(true);
+                  try {
+                    await firebaseService.updateSeller(seller.id, { password: newPassword });
+                    alert('Senha atualizada com sucesso!');
+                    setNewPassword('');
+                  } catch (error) {
+                    console.error('Erro ao atualizar senha:', error);
+                    alert('Erro ao atualizar senha.');
+                  } finally {
+                    setIsUpdatingPassword(false);
+                  }
+                }}
+                disabled={!newPassword || isUpdatingPassword}
+                className="w-full bg-lotofacil-purple text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-lotofacil-purple/80 transition-all shadow-lg disabled:opacity-50"
+              >
+                {isUpdatingPassword ? 'ATUALIZANDO...' : 'SALVAR NOVA SENHA'}
+              </button>
+            </div>
           </div>
         </div>
       ) : (

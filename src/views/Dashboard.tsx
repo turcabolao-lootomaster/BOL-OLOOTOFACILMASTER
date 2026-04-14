@@ -28,12 +28,16 @@ const Dashboard: React.FC = () => {
   const [ranking, setRanking] = useState<UserRanking[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileData, setProfileData] = useState({ name: '', whatsapp: '' });
+  const [profileData, setProfileData] = useState({ name: '', whatsapp: '', pixKey: '' });
   const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
     if (user) {
-      setProfileData({ name: user.name || '', whatsapp: user.whatsapp || '' });
+      setProfileData({ 
+        name: user.name || '', 
+        whatsapp: user.whatsapp || '',
+        pixKey: user.pixKey || ''
+      });
     }
   }, [user]);
 
@@ -118,62 +122,120 @@ const Dashboard: React.FC = () => {
   ];
 
   return (
-    <div className="mobile-p mobile-gap flex flex-col">
-      {/* Welcome Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-lg sm:text-3xl lg:text-4xl font-display tracking-widest text-slate-900 uppercase">
-            OLÁ, <span className="text-lotofacil-purple">{user?.name}</span>, <span className="text-slate-500">{user?.whatsapp || user?.email}</span>
-          </h1>
-          <p className="text-[10px] sm:text-sm text-slate-500 mt-0.5 sm:mt-2">Bem-vindo ao seu painel de controle do Bolão Lotofácil.</p>
+    <div className={cn(
+      "mobile-p mobile-gap flex flex-col min-h-screen transition-colors duration-500",
+      user?.role === 'admin' || user?.role === 'master' ? "bg-lotofacil-purple/5" : 
+      user?.role === 'vendedor' ? "bg-emerald-500/5" : "bg-dark-bg"
+    )}>
+      {/* Compact Top Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white/40 backdrop-blur-sm p-3 sm:p-4 rounded-2xl border border-white/20 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg shrink-0",
+            user?.role === 'admin' || user?.role === 'master' ? "bg-lotofacil-purple" : 
+            user?.role === 'vendedor' ? "bg-emerald-500" : "bg-slate-800"
+          )}>
+            {user?.name?.charAt(0) || 'U'}
+          </div>
+          <div>
+            <h1 className="text-sm sm:text-lg font-bold text-slate-900 leading-tight uppercase">
+              Olá, <span className={cn(
+                user?.role === 'admin' || user?.role === 'master' ? "text-lotofacil-purple" : 
+                user?.role === 'vendedor' ? "text-emerald-600" : "text-lotofacil-purple"
+              )}>{user?.name?.split(' ')[0]}</span>
+            </h1>
+            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest truncate max-w-[150px] sm:max-w-none">
+              {user?.whatsapp || user?.email}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="glass-card px-3 py-1.5 sm:px-6 sm:py-3 flex items-center gap-2 sm:gap-3">
-            <div className={cn("w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse", 
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex-1 sm:flex-none glass-card px-3 py-1.5 flex items-center gap-2 border-slate-200/50">
+            <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", 
               activeContest?.status === 'aberto' ? "bg-lotofacil-purple" : 
               activeContest?.status === 'em_andamento' ? "bg-accent-blue" :
               "bg-slate-200"
             )} />
-            <span className="text-[8px] sm:text-sm font-medium text-slate-600 uppercase tracking-widest">
-              {activeContest ? (
-                activeContest.status === 'aberto' ? `Concurso #${activeContest.number} Aberto` :
-                activeContest.status === 'em_andamento' ? `Concurso #${activeContest.number} Em Andamento` :
-                `Concurso #${activeContest.number} Encerrado`
-              ) : 'Nenhum Concurso Ativo'}
+            <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap">
+              {activeContest ? `#${activeContest.number} ${activeContest.status.replace('_', ' ')}` : 'Sem Concurso'}
             </span>
           </div>
-          {activeContest?.publicLink && (
-            <a 
-              href={activeContest.publicLink} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="glass-card px-3 py-1.5 sm:px-6 sm:py-3 flex items-center gap-2 sm:gap-3 text-blue-600 hover:text-blue-700 transition-all"
-            >
-              <ExternalLink size={14} />
-              <span className="text-[8px] sm:text-sm font-bold uppercase tracking-widest">Link do Sorteio</span>
-            </a>
-          )}
+          <button 
+            onClick={() => setIsEditingProfile(!isEditingProfile)}
+            className="glass-card px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all"
+          >
+            {isEditingProfile ? 'Fechar' : 'Perfil'}
+          </button>
         </div>
       </div>
 
-      {/* Stats Grid - Compact on mobile */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6">
+      {/* Profile Edit Overlay (Compact) */}
+      {isEditingProfile && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-4 border-lotofacil-purple/20 bg-white/80"
+        >
+          <form onSubmit={handleUpdateProfile} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <label className="text-[8px] uppercase tracking-widest text-slate-500 font-bold ml-1">Nome</label>
+              <input 
+                type="text"
+                value={profileData.name}
+                onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-lotofacil-purple/50"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[8px] uppercase tracking-widest text-slate-500 font-bold ml-1">WhatsApp</label>
+              <input 
+                type="text"
+                value={profileData.whatsapp}
+                onChange={(e) => setProfileData({ ...profileData, whatsapp: e.target.value })}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-lotofacil-purple/50"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[8px] uppercase tracking-widest text-slate-500 font-bold ml-1">Chave PIX</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text"
+                  value={profileData.pixKey}
+                  onChange={(e) => setProfileData({ ...profileData, pixKey: e.target.value })}
+                  className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-lotofacil-purple/50"
+                />
+                <button 
+                  type="submit"
+                  disabled={savingProfile}
+                  className="bg-lotofacil-purple text-white px-4 rounded-lg text-[9px] font-black uppercase tracking-widest disabled:opacity-50"
+                >
+                  {savingProfile ? '...' : 'Salvar'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </motion.div>
+      )}
+
+      {/* Stats Grid - Compact */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {stats.map((stat, idx) => (
           <motion.div 
             key={stat.label}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05 }}
-            className="glass-card p-2.5 sm:p-6 flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-6 text-center sm:text-left"
+            className="glass-card p-2 sm:p-3 flex items-center gap-2 sm:gap-3"
           >
-            <div className={`w-8 h-8 sm:w-14 sm:h-14 ${stat.bg} rounded-lg sm:rounded-2xl flex items-center justify-center shrink-0 shadow-inner`}>
-              <stat.icon className={stat.color} size={16} />
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 ${stat.bg} rounded-lg flex items-center justify-center shrink-0`}>
+              <stat.icon className={stat.color} size={14} />
             </div>
-            <div>
-              <p className="text-[7px] sm:text-xs uppercase tracking-widest text-slate-600 mb-0.5 sm:mb-1">{stat.label}</p>
-              <h3 className="text-base sm:text-2xl font-bold text-slate-900">
+            <div className="min-w-0">
+              <p className="text-[7px] sm:text-[8px] uppercase tracking-widest text-slate-500 truncate">{stat.label}</p>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
                 {stat.value}
-                {stat.label.includes('Pontos') && <span className="text-[10px] sm:text-xs ml-1 text-slate-400 font-normal">PTS</span>}
               </h3>
             </div>
           </motion.div>
@@ -185,7 +247,7 @@ const Dashboard: React.FC = () => {
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-card p-4 sm:p-6 bg-slate-900 text-white overflow-hidden relative"
+          className="glass-card p-3 sm:p-4 bg-slate-900 text-white overflow-hidden relative"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-lotofacil-purple/10 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none" />
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
@@ -213,128 +275,69 @@ const Dashboard: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
+      {/* Main Content Grid - Denser */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Ranking Progress */}
-        <div className="lg:col-span-2 glass-card p-4 sm:p-8 space-y-4 sm:space-y-8">
+        <div className="lg:col-span-2 glass-card p-4 sm:p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-base sm:text-2xl font-display tracking-widest text-slate-900">PROGRESSO NA <span className="text-lotofacil-purple uppercase">CORRIDA 150 PTS</span></h2>
-            <TrendingUp className="text-lotofacil-purple" size={18} />
+            <h2 className="text-xs sm:text-sm font-bold tracking-widest text-slate-900 uppercase">CORRIDA <span className="text-lotofacil-purple">150 PTS</span></h2>
+            <TrendingUp className="text-lotofacil-purple" size={14} />
           </div>
 
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex justify-between text-[9px] sm:text-sm uppercase tracking-widest">
-              <span className="text-slate-600">Sua Pontuação</span>
-              <span className="text-lotofacil-purple font-bold">{user?.totalPoints || 0} / {RANKING_GOAL} PTS</span>
+          <div className="space-y-2">
+            <div className="flex justify-between text-[8px] sm:text-[10px] uppercase tracking-widest font-bold">
+              <span className="text-slate-500">Progresso</span>
+              <span className="text-lotofacil-purple">{user?.totalPoints || 0} / {RANKING_GOAL} PTS</span>
             </div>
-            <div className="h-2.5 sm:h-4 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
+            <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
               <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(((user?.totalPoints || 0) / RANKING_GOAL) * 100, 100)}%` }}
-                className="h-full bg-lotofacil-purple rounded-full shadow-sm"
+                className="h-full bg-lotofacil-purple rounded-full"
               />
             </div>
-            <p className="text-[9px] text-slate-600 text-center italic">Faltam {Math.max(RANKING_GOAL - (user?.totalPoints || 0), 0)} pontos para alcançar a meta de 150 pts</p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-2">
-            <div className="bg-slate-50 p-2 sm:p-4 rounded-lg sm:rounded-2xl border border-slate-100 text-center sm:text-left">
-              <p className="text-[7px] sm:text-[10px] uppercase tracking-widest text-slate-600 mb-0.5 sm:mb-2">Meta</p>
-              <p className="text-xs sm:text-lg font-bold text-slate-900">{RANKING_GOAL} PTS</p>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-center">
+              <p className="text-[7px] uppercase tracking-widest text-slate-500 mb-0.5">Meta</p>
+              <p className="text-[10px] font-bold text-slate-900">{RANKING_GOAL} PTS</p>
             </div>
-            <div className="bg-slate-50 p-2 sm:p-4 rounded-lg sm:rounded-2xl border border-slate-100 text-center sm:text-left">
-              <p className="text-[7px] sm:text-[10px] uppercase tracking-widest text-slate-600 mb-0.5 sm:mb-2">Prêmio</p>
-              <p className="text-xs sm:text-lg font-bold text-lotofacil-purple">R$ 1K</p>
+            <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-center">
+              <p className="text-[7px] uppercase tracking-widest text-slate-500 mb-0.5">Prêmio</p>
+              <p className="text-[10px] font-bold text-lotofacil-purple">R$ 1K</p>
             </div>
-            <div className="bg-slate-50 p-2 sm:p-4 rounded-lg sm:rounded-2xl border border-slate-100 text-center sm:text-left">
-              <p className="text-[7px] sm:text-[10px] uppercase tracking-widest text-slate-600 mb-0.5 sm:mb-2">Posição</p>
-              <p className="text-xs sm:text-lg font-bold text-accent-blue">{userRank ? `#${userRank.position}º` : '...'}</p>
+            <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-center">
+              <p className="text-[7px] uppercase tracking-widest text-slate-500 mb-0.5">Posição</p>
+              <p className="text-[10px] font-bold text-accent-blue">{userRank ? `#${userRank.position}º` : '...'}</p>
             </div>
           </div>
         </div>
 
         {/* Recent Activity */}
-        <div className="space-y-4">
-          {/* Profile Card */}
-          <div className="glass-card p-4 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm sm:text-lg font-display tracking-widest text-slate-900 uppercase">MEU <span className="text-lotofacil-purple">PERFIL</span></h2>
-              <button 
-                onClick={() => setIsEditingProfile(!isEditingProfile)}
-                className="text-[10px] uppercase tracking-widest font-bold text-lotofacil-purple hover:underline"
-              >
-                {isEditingProfile ? 'Cancelar' : 'Editar'}
-              </button>
-            </div>
-            
-            {isEditingProfile ? (
-              <form onSubmit={handleUpdateProfile} className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-[9px] uppercase tracking-widest text-slate-500 ml-1">Nome Completo</label>
-                  <input 
-                    type="text"
-                    value={profileData.name}
-                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-lotofacil-purple/50"
-                    required
-                  />
+        <div className="glass-card p-4 sm:p-5 space-y-3">
+          <h2 className="text-xs sm:text-sm font-bold tracking-widest text-slate-900 uppercase">ATIVIDADE <span className="text-accent-purple">RECENTE</span></h2>
+          
+          <div className="space-y-2">
+            {userBets.slice(0, 4).map((bet) => (
+              <div key={bet.id} className="flex gap-2 items-center p-1.5 hover:bg-slate-50 rounded-lg transition-all">
+                <div className={cn("shrink-0", bet.status === 'validado' ? "text-lotofacil-purple" : bet.status === 'pendente' ? "text-lotofacil-yellow" : "text-accent-red")}>
+                  {bet.status === 'validado' ? <CheckCircle2 size={12} /> : bet.status === 'pendente' ? <Clock size={12} /> : <ArrowUpRight size={12} />}
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] uppercase tracking-widest text-slate-500 ml-1">WhatsApp</label>
-                  <input 
-                    type="text"
-                    value={profileData.whatsapp}
-                    onChange={(e) => setProfileData({ ...profileData, whatsapp: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-lotofacil-purple/50"
-                    placeholder="Ex: 5511999999999"
-                  />
-                </div>
-                <button 
-                  type="submit"
-                  disabled={savingProfile}
-                  className="w-full bg-lotofacil-purple text-white py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg disabled:opacity-50"
-                >
-                  {savingProfile ? 'Salvando...' : 'Salvar Perfil'}
-                </button>
-              </form>
-            ) : (
-              <div className="space-y-2">
-                <div>
-                  <p className="text-[8px] uppercase tracking-widest text-slate-400">Nome</p>
-                  <p className="text-xs font-bold text-slate-800">{user?.name}</p>
-                </div>
-                <div>
-                  <p className="text-[8px] uppercase tracking-widest text-slate-400">Contato</p>
-                  <p className="text-xs font-bold text-slate-800">{user?.whatsapp || user?.email || 'Não informado'}</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="glass-card p-4 sm:p-8 space-y-4">
-            <h2 className="text-base sm:text-2xl font-display tracking-widest text-slate-900">ATIVIDADE <span className="text-accent-purple">RECENTE</span></h2>
-            
-            <div className="space-y-3 sm:space-y-6">
-              {userBets.slice(0, 3).map((bet, idx) => (
-                <div key={bet.id} className="flex gap-3 sm:gap-4 items-center">
-                  <div className={cn("shrink-0", bet.status === 'validado' ? "text-lotofacil-purple" : bet.status === 'pendente' ? "text-lotofacil-yellow" : "text-accent-red")}>
-                    {bet.status === 'validado' ? <CheckCircle2 size={16} /> : bet.status === 'pendente' ? <Clock size={16} /> : <ArrowUpRight size={16} />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                      {bet.betName || `Aposta ${bet.status.charAt(0).toUpperCase() + bet.status.slice(1)}`}
-                    </p>
-                    <p className="text-[9px] sm:text-xs text-slate-600">Concurso #{bet.contestNumber || '...'}</p>
-                  </div>
-                  <p className="text-[8px] sm:text-[10px] text-slate-500 uppercase tracking-tighter whitespace-nowrap">
-                    {new Date(bet.createdAt as any).toLocaleDateString()}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-slate-900 truncate">
+                    {bet.betName || `Aposta ${bet.status}`}
                   </p>
+                  <p className="text-[8px] text-slate-500">#{bet.contestNumber || '...'}</p>
                 </div>
-              ))}
-              {userBets.length === 0 && (
-                <p className="text-center text-slate-500 py-4 sm:py-10 text-[10px]">Nenhuma atividade recente.</p>
-              )}
-            </div>
+                <p className="text-[8px] text-slate-400 font-medium">
+                  {new Date(bet.createdAt as any).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' })}
+                </p>
+              </div>
+            ))}
+            {userBets.length === 0 && (
+              <p className="text-center text-slate-500 py-4 text-[9px]">Nenhuma atividade.</p>
+            )}
           </div>
         </div>
       </div>

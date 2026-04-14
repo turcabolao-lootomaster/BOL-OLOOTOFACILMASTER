@@ -263,7 +263,8 @@ const Login: React.FC = () => {
               >
                 <form onSubmit={handleCodeLogin} className="space-y-4">
                   <p className="text-center text-slate-500 text-[11px] sm:text-sm leading-relaxed mb-4 sm:mb-6">
-                    Acesse via convite de vendedor ou entre no painel administrativo.
+                    <span className="font-bold text-slate-900">Vendedores:</span> Deixe o nome em branco e use sua senha.<br/>
+                    <span className="font-bold text-slate-900">Clientes:</span> Preencha seu nome e o código do seu vendedor.
                   </p>
                   <div className="space-y-3 sm:space-y-4">
                     <div>

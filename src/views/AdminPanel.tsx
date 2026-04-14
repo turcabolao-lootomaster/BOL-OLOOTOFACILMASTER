@@ -2210,6 +2210,7 @@ const SellersTab = () => {
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Vendedor</th>
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Comissão %</th>
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Vendas</th>
+              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Senha</th>
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Total Comissão</th>
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Chave PIX</th>
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Ações</th>
@@ -2227,6 +2228,11 @@ const SellersTab = () => {
                   </td>
                   <td className="px-6 py-4 text-center text-sm text-slate-500">{s.commissionPct}%</td>
                   <td className="px-6 py-4 text-center text-sm text-slate-900 font-bold">{s.totalSales || 0}</td>
+                  <td className="px-6 py-4 text-center">
+                    <span className="text-[10px] font-mono bg-slate-100 px-2 py-1 rounded border border-slate-200 text-slate-600">
+                      {s.password || '---'}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 text-center text-sm text-lotofacil-purple font-bold">R$ {(s.totalCommission || 0).toFixed(2)}</td>
                   <td className="px-6 py-4 text-center text-[10px] text-slate-600 font-mono">{s.pixKey || '-'}</td>
                   <td className="px-6 py-4">

@@ -1045,6 +1045,71 @@ export const firebaseService = {
     }
   },
 
+  async signInWithSellerCode(code: string, password: string): Promise<User> {
+    try {
+      const q = query(collection(db, 'sellers'), where('code', '==', code.toUpperCase()));
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        throw new Error('Código de vendedor não encontrado.');
+      }
+
+      const sellerData = snapshot.docs[0].data() as Seller;
+      
+      if (sellerData.password !== password) {
+        throw new Error('Senha incorreta para este vendedor.');
+      }
+
+      const userDoc = await getDoc(doc(db, 'users', sellerData.userId));
+      if (!userDoc.exists()) {
+        throw new Error('Usuário vinculado ao vendedor não encontrado.');
+      }
+
+      return { id: userDoc.id, ...userDoc.data() } as User;
+    } catch (error: any) {
+      console.error('Error signing in with seller code:', error);
+      throw error;
+    }
+  },
+
+  async signInWithClientCode(name: string, sellerCode: string): Promise<User> {
+    try {
+      // Check if seller exists
+      const q = query(collection(db, 'sellers'), where('code', '==', sellerCode.toUpperCase()));
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        throw new Error('Código de vendedor inválido.');
+      }
+
+      // Create or find a "code-based" user
+      const userCode = `code_${name.toLowerCase().replace(/\s+/g, '_')}_${sellerCode.toLowerCase()}`;
+      const userRef = doc(db, 'users', userCode);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        return { id: userSnap.id, ...userSnap.data() } as User;
+      }
+
+      const newUser: User = {
+        id: userCode,
+        uid: userCode,
+        name: name,
+        email: '',
+        role: 'cliente',
+        totalPoints: 0,
+        linkedSellerCode: sellerCode.toUpperCase(),
+        createdAt: Timestamp.now()
+      };
+
+      await setDoc(userRef, newUser);
+      return newUser;
+    } catch (error: any) {
+      console.error('Error signing in with client code:', error);
+      throw error;
+    }
+  },
+
   async getSellerByUserId(userId: string): Promise<Seller | null> {
     const path = 'sellers';
     try {

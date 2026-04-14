@@ -15,6 +15,7 @@ export interface User {
   role: UserRole;
   totalPoints: number;
   linkedSellerCode?: string;
+  pixKey?: string;
   createdAt: any;
 }
 

@@ -130,90 +130,121 @@ const AppContent: React.FC = () => {
       <main className="flex-1 lg:ml-72 min-h-screen flex flex-col">
         <MobileZoomHint />
         
+        {/* General Notice Banner */}
+        {user && (!user.name || !user.whatsapp || !user.pixKey) && (
+          <div className="bg-lotofacil-yellow/10 border-b border-lotofacil-yellow/20 px-4 py-1 flex items-center justify-center gap-2 animate-pulse">
+            <span className="text-[8px] sm:text-[10px] font-bold text-lotofacil-yellow uppercase tracking-widest text-center">
+              ⚠️ ATENÇÃO: COMPLETE SEU PERFIL (NOME, WHATSAPP, PIX) PARA RECEBER PRÊMIOS!
+            </span>
+          </div>
+        )}
+
         {/* Modern Header */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between">
+        <header className={cn(
+          "sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b px-4 sm:px-8 py-2 sm:py-3 flex items-center justify-between",
+          user?.role === 'admin' || user?.role === 'master' ? "border-lotofacil-purple/30 shadow-sm shadow-lotofacil-purple/5" : 
+          user?.role === 'vendedor' ? "border-emerald-500/30 shadow-sm shadow-emerald-500/5" : "border-slate-200"
+        )}>
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setIsSidebarOpen(true)} 
-              className="lg:hidden p-2 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl transition-all shadow-lg shadow-emerald-500/20 animate-blink"
+              className="lg:hidden p-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl transition-all"
             >
               <Menu size={20} />
             </button>
-            <div className="hidden sm:flex items-center gap-2">
-              <div className="w-8 h-8 bg-lotofacil-purple rounded-lg flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-lg">L</span>
+
+            {/* Logo and Title on Left */}
+            <div className="flex items-center gap-2">
+              <div className={cn(
+                "w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shadow-md",
+                user?.role === 'admin' || user?.role === 'master' ? "bg-lotofacil-purple" : 
+                user?.role === 'vendedor' ? "bg-emerald-500" : "bg-lotofacil-purple"
+              )}>
+                <span className="text-white font-bold text-sm sm:text-lg">L</span>
               </div>
-              <h1 className="text-lg font-display tracking-widest text-slate-900 uppercase">
-                BOLÃO <span className="text-lotofacil-purple">LOTOFÁCIL</span>
+              <h1 className="hidden xs:block text-sm sm:text-lg font-display tracking-widest text-slate-900 uppercase">
+                BOLÃO <span className={cn(
+                  user?.role === 'admin' || user?.role === 'master' ? "text-lotofacil-purple" : 
+                  user?.role === 'vendedor' ? "text-emerald-600" : "text-lotofacil-purple"
+                )}>LOTOFÁCIL</span>
               </h1>
-            </div>
-            <div className="sm:hidden flex items-center gap-2">
-              <div className="w-7 h-7 bg-lotofacil-purple rounded flex items-center justify-center">
-                <span className="text-white font-bold text-sm">L</span>
-              </div>
-              <span className="text-sm font-display tracking-widest text-slate-900 uppercase">BOLÃO</span>
             </div>
           </div>
 
-          {/* Quick Access Desktop Buttons */}
-          <div className="hidden lg:flex items-center gap-2">
-            <button 
-              onClick={() => setView('dashboard')}
-              className={cn(
-                "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
-                currentView === 'dashboard' ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" : "text-slate-500 hover:bg-slate-50"
-              )}
-            >
-              Início
-            </button>
-            <button 
-              onClick={() => setView('bet')}
-              className={cn(
-                "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
-                currentView === 'bet' ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" : "text-slate-500 hover:bg-slate-50"
-              )}
-            >
-              Apostar
-            </button>
-            {user && (user.role === 'admin' || user.role === 'master') && (
+          {/* Right Side: Navigation + Profile */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Quick Access Desktop Buttons */}
+            <div className="hidden lg:flex items-center gap-2">
               <button 
-                onClick={() => setView('admin')}
+                onClick={() => setView('dashboard')}
                 className={cn(
                   "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
-                  currentView === 'admin' ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" : "text-slate-900 bg-lotofacil-yellow/20 hover:bg-lotofacil-yellow/30"
+                  currentView === 'dashboard' ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" : "text-slate-500 hover:bg-slate-50"
                 )}
               >
-                Painel Admin
+                Início
+              </button>
+              <button 
+                onClick={() => setView('bet')}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
+                  currentView === 'bet' ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" : "text-slate-500 hover:bg-slate-50"
+                )}
+              >
+                Apostar
+              </button>
+              {user && (user.role === 'admin' || user.role === 'master') && (
+                <button 
+                  onClick={() => setView('admin')}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
+                    currentView === 'admin' ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" : "text-slate-900 bg-lotofacil-yellow/20 hover:bg-lotofacil-yellow/30"
+                  )}
+                >
+                  Painel Admin
+                </button>
+              )}
+            </div>
+
+            {/* User Profile Relocated to Top Right */}
+            {user ? (
+              <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 border-l border-slate-100">
+                <div className="hidden sm:block text-right">
+                  <p className="text-[10px] font-bold text-slate-900 leading-none uppercase truncate max-w-[120px]">
+                    {user.name || 'Usuário'}
+                  </p>
+                  <p className={cn(
+                    "text-[8px] font-bold uppercase tracking-widest mt-0.5",
+                    user.role === 'admin' || user.role === 'master' ? "text-lotofacil-purple" : 
+                    user.role === 'vendedor' ? "text-emerald-600" : "text-slate-400"
+                  )}>
+                    {user.role}
+                  </p>
+                </div>
+                <div className={cn(
+                  "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-md cursor-pointer hover:scale-105 transition-all",
+                  user.role === 'admin' || user.role === 'master' ? "bg-lotofacil-purple" : 
+                  user.role === 'vendedor' ? "bg-emerald-500" : "bg-slate-400"
+                )} onClick={() => setView('dashboard')}>
+                  {user.name?.charAt(0) || 'U'}
+                </div>
+                <button 
+                  onClick={logout}
+                  className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                  title="Sair da Conta"
+                >
+                  <LogOut size={18} />
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setView('login')}
+                className="px-4 py-2 bg-lotofacil-purple text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-lotofacil-purple/20"
+              >
+                Entrar
               </button>
             )}
           </div>
-
-          {/* User Profile Quick View */}
-          {user ? (
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="hidden sm:block text-right">
-                <p className="text-[10px] font-bold text-slate-900 leading-none uppercase">{user.name || 'Usuário'}</p>
-                <p className="text-[8px] text-lotofacil-purple font-bold uppercase tracking-widest mt-0.5">{user.role}</p>
-              </div>
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs sm:text-sm">
-                {user.name?.charAt(0) || 'U'}
-              </div>
-              <button 
-                onClick={logout}
-                className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                title="Sair da Conta"
-              >
-                <LogOut size={18} />
-              </button>
-            </div>
-          ) : (
-            <button 
-              onClick={() => setView('login')}
-              className="px-4 py-2 bg-lotofacil-purple text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-lotofacil-purple/20"
-            >
-              Entrar
-            </button>
-          )}
         </header>
 
         <div className="flex-1 pb-24">

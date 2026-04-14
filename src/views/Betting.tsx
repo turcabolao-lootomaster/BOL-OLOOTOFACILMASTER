@@ -231,7 +231,7 @@ const Betting: React.FC = () => {
   };
 
   return (
-    <div className="mobile-p lg:p-10 max-w-[900px] mx-auto space-y-4 sm:space-y-10">
+    <div className="mobile-p lg:p-6 max-w-[850px] mx-auto space-y-3 sm:space-y-6">
       <AnimatePresence>
         {feedback && (
           <motion.div
@@ -262,8 +262,8 @@ const Betting: React.FC = () => {
 
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-lg sm:text-4xl font-display tracking-widest text-slate-900">FAZER <span className="text-lotofacil-purple uppercase">APOSTA</span></h1>
-          <p className="text-[10px] sm:text-sm text-slate-600 mt-1">Selecione exatamente 10 números entre 01 e 25.</p>
+          <h1 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900">FAZER <span className="text-lotofacil-purple uppercase">APOSTA</span></h1>
+          <p className="text-[9px] sm:text-xs text-slate-600 mt-0.5">Selecione exatamente 10 números entre 01 e 25.</p>
         </div>
         <div className="glass-card px-4 py-2 flex items-center gap-3 bg-lotofacil-purple/5 border-lotofacil-purple/20 self-start sm:self-auto">
           <Ticket className="text-lotofacil-purple" size={16} />
@@ -273,27 +273,27 @@ const Betting: React.FC = () => {
 
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 justify-center items-start">
         {/* Number Grid Column */}
-        <div className="w-full lg:w-[380px] space-y-4 sm:space-y-8 shrink-0">
+        <div className="w-full lg:w-[320px] space-y-3 sm:space-y-6 shrink-0">
           {/* Bet Name Input - Moved inside column for alignment */}
-          <div className="space-y-2">
-            <label className="block text-[10px] sm:text-xs uppercase tracking-widest text-lotofacil-purple font-black ml-1">
+          <div className="space-y-1.5">
+            <label className="block text-[9px] sm:text-[10px] uppercase tracking-widest text-lotofacil-purple font-black ml-1">
               NOME NA APOSTA (NICK)
             </label>
             <div className="relative">
-              <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-lotofacil-purple/40" size={18} />
+              <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-lotofacil-purple/40" size={16} />
               <input 
                 type="text" 
                 value={betName}
                 onChange={handleBetNameChange}
                 placeholder="EX: JOÃO SILVA (AMIGO 1)"
                 required
-                className="w-full bg-white border-2 border-lotofacil-purple/20 rounded-2xl py-3 sm:py-4 pl-12 pr-4 focus:outline-none focus:border-lotofacil-purple focus:ring-4 focus:ring-lotofacil-purple/10 transition-all text-sm sm:text-base font-bold text-slate-900 placeholder:text-slate-300 uppercase shadow-sm"
+                className="w-full bg-white border-2 border-lotofacil-purple/20 rounded-xl py-2 sm:py-3 pl-10 pr-4 focus:outline-none focus:border-lotofacil-purple focus:ring-4 focus:ring-lotofacil-purple/10 transition-all text-xs sm:text-sm font-bold text-slate-900 placeholder:text-slate-300 uppercase shadow-sm"
               />
             </div>
-            <p className="text-[9px] text-slate-500 ml-1 italic">* Use nomes diferentes para amigos aparecerem separadamente no ranking.</p>
+            <p className="text-[8px] text-slate-500 ml-1 italic">* Use nomes diferentes para amigos aparecerem separadamente no ranking.</p>
           </div>
 
-          <div className="grid grid-cols-5 gap-1.5 sm:gap-2 w-full">
+          <div className="grid grid-cols-5 gap-1 sm:gap-1.5 w-full">
             {Array.from({ length: 25 }, (_, i) => i + 1).map(num => (
               <motion.button
                 key={num}
@@ -301,7 +301,7 @@ const Betting: React.FC = () => {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => toggleNumber(num)}
                 className={cn(
-                  "aspect-square rounded-lg sm:rounded-xl transition-all flex items-center justify-center border-2 text-xs sm:text-lg font-bold",
+                  "aspect-square rounded-lg transition-all flex items-center justify-center border-2 text-xs sm:text-base font-bold",
                   selectedNumbers.includes(num)
                     ? "bg-lotofacil-purple border-lotofacil-purple text-white shadow-md"
                     : "bg-slate-50 border-slate-200 text-blue-600 hover:border-blue-300"
@@ -313,33 +313,33 @@ const Betting: React.FC = () => {
           </div>
 
           {/* Action Buttons below grid */}
-          <div className="flex items-center gap-2 w-full">
+          <div className="flex items-center gap-1.5 w-full">
             <button 
               onClick={registerBet}
               disabled={selectedNumbers.length !== 10}
-              className="flex-[1.2] bg-gradient-to-r from-slate-900 to-slate-800 text-white h-10 sm:h-12 flex items-center justify-center gap-1 text-[9px] sm:text-xs font-bold uppercase tracking-widest disabled:opacity-50 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.6)] hover:brightness-125 active:scale-95 transition-all border-2 border-white/10 relative overflow-hidden group"
+              className="flex-[1.2] bg-gradient-to-r from-slate-900 to-slate-800 text-white h-9 sm:h-10 flex items-center justify-center gap-1 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 rounded-lg shadow-lg hover:brightness-125 active:scale-95 transition-all border border-white/10 relative overflow-hidden group"
             >
               <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-              <Plus size={14} className="text-lotofacil-yellow" />
-              <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400">REGISTRAR APOSTA</span>
+              <Plus size={12} className="text-lotofacil-yellow" />
+              <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400">REGISTRAR</span>
             </button>
             
-            <div className="flex-[1.8] flex gap-1 items-center h-10 sm:h-12">
-              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-1.5 h-full">
+            <div className="flex-[1.8] flex gap-1 items-center h-9 sm:h-10">
+              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-1 h-full">
                 <button 
                   onClick={() => setSurpresinhaCount(Math.max(1, surpresinhaCount - 1))} 
-                  className="text-slate-400 hover:text-slate-900 p-1"
+                  className="text-slate-400 hover:text-slate-900 p-0.5"
                 >
-                  <Minus size={12} />
+                  <Minus size={10} />
                 </button>
-                <span className="text-[10px] sm:text-xs font-bold text-slate-900 w-4 text-center">{surpresinhaCount}</span>
-                <button onClick={() => setSurpresinhaCount(Math.min(30, surpresinhaCount + 1))} className="text-slate-400 hover:text-slate-900 p-1"><Plus size={12} /></button>
+                <span className="text-[9px] sm:text-[10px] font-bold text-slate-900 w-3 text-center">{surpresinhaCount}</span>
+                <button onClick={() => setSurpresinhaCount(Math.min(30, surpresinhaCount + 1))} className="text-slate-400 hover:text-slate-900 p-0.5"><Plus size={10} /></button>
               </div>
               <button 
                 onClick={handleAddSurpresinha}
-                className="flex-1 h-full bg-orange-500 border border-orange-600 rounded-xl text-white text-[9px] sm:text-xs font-bold uppercase tracking-widest hover:bg-orange-600 transition-all flex items-center justify-center gap-1 shadow-md"
+                className="flex-1 h-full bg-orange-500 border border-orange-600 rounded-lg text-white text-[8px] sm:text-[10px] font-bold uppercase tracking-widest hover:bg-orange-600 transition-all flex items-center justify-center gap-1 shadow-md"
               >
-                <Sparkles size={12} />
+                <Sparkles size={10} />
                 SURPRESINHA
               </button>
             </div>
@@ -353,20 +353,20 @@ const Betting: React.FC = () => {
         </div>
 
         {/* Bet Summary Sidebar */}
-        <div className="w-full lg:w-[420px] space-y-4">
-          <div className="glass-card p-4 sm:p-8 space-y-4 sm:space-y-8 lg:sticky lg:top-10 w-full shadow-2xl border-slate-200">
-            <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">RESUMO DO <span className="text-lotofacil-purple">BOLÃO</span></h2>
+        <div className="w-full lg:w-[360px] space-y-3">
+          <div className="glass-card p-4 sm:p-5 space-y-4 sm:space-y-5 lg:sticky lg:top-10 w-full shadow-xl border-slate-200">
+            <h2 className="text-base sm:text-xl font-display tracking-widest text-slate-900 uppercase">RESUMO DO <span className="text-lotofacil-purple">BOLÃO</span></h2>
             
             {/* List of Registered Bets */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] sm:text-xs uppercase tracking-widest text-slate-600">Apostas Registradas ({pendingBets.length})</p>
+                <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-600">Apostas Registradas ({pendingBets.length})</p>
                 {pendingBets.length > 0 && (
-                  <button onClick={() => setPendingBets([])} className="text-[8px] sm:text-[10px] text-accent-red uppercase tracking-widest hover:underline">Limpar Tudo</button>
+                  <button onClick={() => setPendingBets([])} className="text-[8px] sm:text-[9px] text-accent-red uppercase tracking-widest hover:underline">Limpar Tudo</button>
                 )}
               </div>
               
-              <div className="space-y-2 max-h-[150px] sm:max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
+              <div className="space-y-1.5 max-h-[120px] sm:max-h-[250px] overflow-y-auto pr-2 no-scrollbar">
                 <AnimatePresence initial={false}>
                   {pendingBets.map((bet, idx) => (
                     <motion.div

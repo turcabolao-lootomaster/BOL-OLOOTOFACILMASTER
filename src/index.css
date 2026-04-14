@@ -64,11 +64,11 @@
 }
 
 .mobile-p {
-  @apply p-2 sm:p-6 lg:p-10;
+  @apply p-1.5 sm:p-6 lg:p-8;
 }
 
 .mobile-gap {
-  @apply gap-2 sm:gap-6 lg:gap-10;
+  @apply gap-1.5 sm:gap-6 lg:gap-8;
 }
 
 /* Mobile-specific table adjustments */
