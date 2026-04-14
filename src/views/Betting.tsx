@@ -287,7 +287,7 @@ const Betting: React.FC = () => {
                 onChange={handleBetNameChange}
                 placeholder="EX: JOÃO SILVA (AMIGO 1)"
                 required
-                className="w-full bg-white border-2 border-lotofacil-purple/20 rounded-xl py-2 sm:py-3 pl-10 pr-4 focus:outline-none focus:border-lotofacil-purple focus:ring-4 focus:ring-lotofacil-purple/10 transition-all text-xs sm:text-sm font-bold text-slate-900 placeholder:text-slate-300 uppercase shadow-sm"
+                className="w-full bg-white border-2 border-dark-border rounded-xl py-2 sm:py-3 pl-10 pr-4 focus:outline-none focus:border-lotofacil-purple focus:ring-4 focus:ring-lotofacil-purple/10 transition-all text-xs sm:text-sm font-bold text-slate-900 placeholder:text-slate-300 uppercase shadow-sm"
               />
             </div>
             <p className="text-[8px] text-slate-500 ml-1 italic">* Use nomes diferentes para amigos aparecerem separadamente no ranking.</p>
@@ -304,7 +304,7 @@ const Betting: React.FC = () => {
                   "aspect-square rounded-lg transition-all flex items-center justify-center border-2 text-xs sm:text-base font-bold",
                   selectedNumbers.includes(num)
                     ? "bg-lotofacil-purple border-lotofacil-purple text-white shadow-md"
-                    : "bg-slate-50 border-slate-200 text-blue-600 hover:border-blue-300"
+                    : "bg-slate-50 border-dark-border text-blue-600 hover:border-lotofacil-purple/40"
                 )}
               >
                 {num.toString().padStart(2, '0')}

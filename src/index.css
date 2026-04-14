@@ -16,6 +16,7 @@
   --color-accent-red: #DC2626;
   --color-gold: #D97706;
   --color-silver: #94A3B8;
+  --color-dark-border: #29016f;
 
   @keyframes spin-slow {
     from { transform: rotate(0deg); }
@@ -40,7 +41,7 @@
 }
 
 .glass-card {
-  @apply bg-white shadow-sm border border-slate-200 rounded-xl sm:rounded-2xl;
+  @apply bg-white shadow-sm border border-dark-border/30 rounded-xl sm:rounded-2xl;
 }
 
 .neon-border {

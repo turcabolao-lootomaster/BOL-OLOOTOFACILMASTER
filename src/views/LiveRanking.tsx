@@ -924,7 +924,7 @@ const LiveRanking: React.FC = () => {
                 placeholder="Buscar participante..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-4 text-xs focus:outline-none focus:border-lotofacil-purple/50 transition-all"
+                className="w-full bg-slate-50 border border-dark-border/40 rounded-xl py-2 pl-9 pr-4 text-xs focus:outline-none focus:border-lotofacil-purple/50 transition-all"
               />
             </div>
           </div>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bolao-v1';
+const CACHE_NAME = 'bolao-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -14,8 +14,8 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
     })
   );
 });

@@ -37,65 +37,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let unsubscribeAuth: (() => void) | undefined;
 
     const initAuth = async () => {
-      unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-        console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'No user');
-        if (firebaseUser) {
-          try {
-            // Always search for user by UID field first to find wa_ or code_ docs
-            const q = query(collection(db, 'users'), where('uid', '==', firebaseUser.uid));
-            const snapshot = await getDocs(q);
-            
-            let userDocRef = doc(db, 'users', firebaseUser.uid);
-            let foundDoc = false;
-
-            if (!snapshot.empty) {
-              // If multiple docs found, prefer the one that is NOT just the UID (wa_ or code_)
-              const bestDoc = snapshot.docs.find(d => d.id !== firebaseUser.uid) || snapshot.docs[0];
-              userDocRef = doc(db, 'users', bestDoc.id);
-              foundDoc = true;
-            } else {
-              // Check if a doc with UID as ID exists
-              const directDoc = await getDoc(userDocRef);
-              if (directDoc.exists()) {
-                foundDoc = true;
-              }
-            }
-
-            if (foundDoc) {
-              unsubscribeUser = onSnapshot(userDocRef, (doc) => {
-                if (doc.exists()) {
-                  const data = doc.data() as User;
-                  setUser({ id: doc.id, ...data });
-                }
-                setLoading(false);
-              });
-            } else {
-              // If user is authenticated but has no document, create a default one
-              // This fulfills "PRECISO QUE TODO USUARIO SEJA REGISTRADO NO SISTEMA"
-              const isMaster = firebaseUser.email === 'turcabolao@gmail.com';
-              const newUser: User = {
-                id: firebaseUser.uid,
-                uid: firebaseUser.uid,
-                name: firebaseUser.displayName || (firebaseUser.isAnonymous ? 'Visitante' : 'Usuário'),
-                email: firebaseUser.email || '',
-                role: isMaster ? 'master' : 'cliente',
-                totalPoints: 0,
-                createdAt: Timestamp.now()
-              };
+      try {
+        unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+          console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'No user');
+          if (firebaseUser) {
+            try {
+              // Always search for user by UID field first to find wa_ or code_ docs
+              const q = query(collection(db, 'users'), where('uid', '==', firebaseUser.uid));
+              const snapshot = await getDocs(q);
               
-              await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
-              setUser(newUser);
+              let userDocRef = doc(db, 'users', firebaseUser.uid);
+              let foundDoc = false;
+
+              if (!snapshot.empty) {
+                // If multiple docs found, prefer the one that is NOT just the UID (wa_ or code_)
+                const bestDoc = snapshot.docs.find(d => d.id !== firebaseUser.uid) || snapshot.docs[0];
+                userDocRef = doc(db, 'users', bestDoc.id);
+                foundDoc = true;
+              } else {
+                // Check if a doc with UID as ID exists
+                const directDoc = await getDoc(userDocRef);
+                if (directDoc.exists()) {
+                  foundDoc = true;
+                }
+              }
+
+              if (foundDoc) {
+                if (unsubscribeUser) unsubscribeUser();
+                unsubscribeUser = onSnapshot(userDocRef, (doc) => {
+                  if (doc.exists()) {
+                    const data = doc.data() as User;
+                    setUser({ id: doc.id, ...data });
+                  }
+                  setLoading(false);
+                }, (error) => {
+                  console.error('Error in user snapshot:', error);
+                  setLoading(false);
+                });
+              } else {
+                // If user is authenticated but has no document, create a default one
+                const isMaster = firebaseUser.email === 'turcabolao@gmail.com';
+                const newUser: User = {
+                  id: firebaseUser.uid,
+                  uid: firebaseUser.uid,
+                  name: firebaseUser.displayName || (firebaseUser.isAnonymous ? 'Visitante' : 'Usuário'),
+                  email: firebaseUser.email || '',
+                  role: isMaster ? 'master' : 'cliente',
+                  totalPoints: 0,
+                  createdAt: Timestamp.now()
+                };
+                
+                await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
+                setUser(newUser);
+                setLoading(false);
+              }
+            } catch (error) {
+              console.error('Error in AuthProvider inner:', error);
               setLoading(false);
             }
-          } catch (error) {
-            console.error('Error in AuthProvider:', error);
+          } else {
+            setUser(null);
             setLoading(false);
           }
-        } else {
-          setUser(null);
+        }, (error) => {
+          console.error('onAuthStateChanged error:', error);
           setLoading(false);
-        }
-      });
+        });
+      } catch (error) {
+        console.error('initAuth error:', error);
+        setLoading(false);
+      }
     };
 
     initAuth();

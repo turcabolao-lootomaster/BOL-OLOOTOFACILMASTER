@@ -72,7 +72,7 @@ const AdminPanel: React.FC = () => {
           <p className="text-[10px] sm:text-sm text-slate-600 mt-1">Gestão completa do sistema, sorteios e relatórios.</p>
         </div>
         
-        <div className="flex flex-wrap items-center justify-center gap-1.5 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 w-full max-w-5xl mx-auto">
+        <div className="flex flex-wrap items-center justify-center gap-1.5 bg-slate-50 p-1.5 rounded-2xl border border-dark-border/40 w-full max-w-5xl mx-auto">
           {tabs.map(tab => (
             <button
               key={tab.id}
@@ -1223,6 +1223,11 @@ const ContestsTab = () => {
         rankeada: 'LOTOMASTER'
       });
       setNewPrizeConfig({
+        fixed10PtsDraw1: 500,
+        fixed10PtsDraw2: 500,
+        fixed10PtsDraw3: 500,
+        fixed25PlusTotal: 2000,
+        fixed27PlusTotal: 5000,
         pctRapidinha: 0.10,
         pctChampion: 0.45,
         pctVice: 0.15,

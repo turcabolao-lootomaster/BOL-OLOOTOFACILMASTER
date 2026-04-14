@@ -184,7 +184,7 @@ const Dashboard: React.FC = () => {
                 type="text"
                 value={profileData.name}
                 onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-lotofacil-purple/50"
+                className="w-full bg-white border border-dark-border/40 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-lotofacil-purple/50"
                 required
               />
             </div>
@@ -194,7 +194,7 @@ const Dashboard: React.FC = () => {
                 type="text"
                 value={profileData.whatsapp}
                 onChange={(e) => setProfileData({ ...profileData, whatsapp: e.target.value })}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-lotofacil-purple/50"
+                className="w-full bg-white border border-dark-border/40 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-lotofacil-purple/50"
               />
             </div>
             <div className="space-y-1">
@@ -204,7 +204,7 @@ const Dashboard: React.FC = () => {
                   type="text"
                   value={profileData.pixKey}
                   onChange={(e) => setProfileData({ ...profileData, pixKey: e.target.value })}
-                  className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-lotofacil-purple/50"
+                  className="flex-1 bg-white border border-dark-border/40 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-lotofacil-purple/50"
                 />
                 <button 
                   type="submit"

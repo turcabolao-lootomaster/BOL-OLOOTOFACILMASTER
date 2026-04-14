@@ -946,7 +946,8 @@ const Participants: React.FC = () => {
                                 
                                 <div className="grid grid-cols-5 sm:grid-cols-15 gap-2 sm:gap-3">
                                   {b.numbers.map(num => {
-                                    const isHit = contest?.results?.some(r => r.includes(num));
+                                    const allResults = contest?.draws?.flatMap(d => d.results || []) || [];
+                                    const isHit = allResults.includes(num);
                                     return (
                                       <div 
                                         key={num}

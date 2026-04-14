@@ -94,7 +94,7 @@ const CurrentContest: React.FC = () => {
         <div className="flex items-center gap-3">
           <button 
             onClick={handleShare}
-            className="p-2 bg-white hover:bg-slate-50 rounded-xl text-lotofacil-purple transition-all border border-slate-200 shadow-sm"
+            className="p-2 bg-white hover:bg-slate-50 rounded-xl text-lotofacil-purple transition-all border border-dark-border/40 shadow-sm"
             title="Copiar Link Público"
           >
             <Share2 size={16} />

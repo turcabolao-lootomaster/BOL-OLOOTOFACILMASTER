@@ -335,7 +335,7 @@ const Login: React.FC = () => {
           <p className="text-slate-300 text-[9px] uppercase tracking-widest">
             Ao entrar você concorda com nossos termos de uso.
           </p>
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-3">
             <a 
               href="https://wa.me/5511978193552" 
               target="_blank" 
@@ -345,6 +345,17 @@ const Login: React.FC = () => {
               <Smartphone size={14} />
               <span className="text-[10px] font-bold uppercase tracking-widest">Suporte WhatsApp: 11 97819-3552</span>
             </a>
+            
+            <button 
+              onClick={() => {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.reload();
+              }}
+              className="text-[9px] text-slate-400 hover:text-lotofacil-purple uppercase tracking-widest underline decoration-dotted underline-offset-4"
+            >
+              Problemas ao carregar? Limpar Cache e Recarregar
+            </button>
           </div>
         </div>
       </motion.div>

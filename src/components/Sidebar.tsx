@@ -31,7 +31,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOpen }) => {
-  const { user, logout, loginWithGoogle } = useAuth();
+  const { user, logout, signInWithGoogle } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
   const [isInstallable, setIsInstallable] = React.useState(false);
 

@@ -243,7 +243,7 @@ const MyBets: React.FC = () => {
         {!loading && bets.length > 0 && (
           <div className="flex items-center gap-2">
             {selectedBetIds.length > 0 && (
-              <div className="flex items-center gap-2 mr-2 pr-2 border-r border-slate-200">
+              <div className="flex items-center gap-2 mr-2 pr-2 border-r border-dark-border/30">
                 <motion.button 
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -269,7 +269,7 @@ const MyBets: React.FC = () => {
             )}
             <button 
               onClick={toggleSelectAll}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all text-[10px] font-bold uppercase tracking-widest"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dark-border/40 bg-white text-slate-600 hover:bg-slate-50 transition-all text-[10px] font-bold uppercase tracking-widest"
             >
               {selectedBetIds.length === bets.length ? <CheckSquare size={14} className="text-lotofacil-purple" /> : <Square size={14} />}
               <span>{selectedBetIds.length === bets.length ? 'Desmarcar Tudo' : 'Selecionar Tudo'}</span>
