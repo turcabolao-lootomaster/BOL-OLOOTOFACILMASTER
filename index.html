@@ -6,6 +6,9 @@
     <title>Bolão Lotofácil</title>
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#6b21a8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Bolão" />
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2639/2639642.png" />
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2639/2639642.png" />
   </head>
@@ -40,7 +43,25 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('SW registrado!', reg))
+            .then(reg => {
+              console.log('SW registrado!', reg);
+              
+              // Verificar atualizações
+              reg.onupdatefound = () => {
+                const installingWorker = reg.installing;
+                if (installingWorker) {
+                  installingWorker.onstatechange = () => {
+                    if (installingWorker.state === 'installed') {
+                      if (navigator.serviceWorker.controller) {
+                        console.log('Nova versão disponível! Recarregando...');
+                        // Opcional: mostrar um aviso ao usuário antes de recarregar
+                        // window.location.reload();
+                      }
+                    }
+                  };
+                }
+              };
+            })
             .catch(err => console.log('Erro no SW:', err));
         });
       }

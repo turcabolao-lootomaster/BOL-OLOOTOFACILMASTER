@@ -13,6 +13,46 @@ const Instructions: React.FC = () => {
         <p className="text-slate-600 max-w-2xl mx-auto text-sm sm:text-base">Tudo o que você precisa saber sobre o funcionamento e premiações do Bolão Lotofácil.</p>
       </div>
 
+      {/* Installation Section */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-3 border-l-4 border-lotofacil-purple pl-4">
+          <Smartphone className="text-lotofacil-purple" size={24} />
+          <h2 className="text-xl sm:text-2xl font-display tracking-widest text-slate-900 uppercase">COMO INSTALAR O <span className="text-lotofacil-purple">APLICATIVO</span></h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="glass-card p-6 border-t-4 border-blue-500">
+            <h3 className="font-bold text-slate-900 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.523 15.3414C17.039 15.3414 16.647 14.9494 16.647 14.4654C16.647 13.9814 17.039 13.5894 17.523 13.5894C18.007 13.5894 18.399 13.9814 18.399 14.4654C18.399 14.9494 18.007 15.3414 17.523 15.3414ZM6.477 15.3414C5.993 15.3414 5.601 14.9494 5.601 14.4654C5.601 13.9814 5.993 13.5894 6.477 13.5894C6.961 13.5894 7.353 13.9814 7.353 14.4654C7.353 14.9494 6.961 15.3414 6.477 15.3414ZM17.915 11.2314L19.782 7.99741C19.89 7.81041 19.826 7.57041 19.639 7.46241C19.452 7.35441 19.212 7.41841 19.104 7.60541L17.215 10.8764C15.716 10.1934 14.018 9.81741 12.235 9.81741C10.452 9.81741 8.754 10.1934 7.255 10.8764L5.366 7.60541C5.258 7.41841 5.018 7.35441 4.831 7.46241C4.644 7.57041 4.58 7.81041 4.688 7.99741L6.555 11.2314C3.388 13.0484 1.235 16.3414 1.235 20.1704H23.235C23.235 16.3414 21.082 13.0484 17.915 11.2314Z"/>
+              </svg>
+              Android (Chrome)
+            </h3>
+            <ul className="text-xs text-slate-600 space-y-2 list-decimal pl-4">
+              <li>Abra o site no navegador <b>Chrome</b>.</li>
+              <li>Clique nos <b>três pontinhos</b> no canto superior direito.</li>
+              <li>Selecione a opção <b>"Instalar aplicativo"</b> ou "Adicionar à tela inicial".</li>
+              <li>Confirme e o ícone aparecerá na sua tela de apps.</li>
+            </ul>
+          </div>
+
+          <div className="glass-card p-6 border-t-4 border-slate-400">
+            <h3 className="font-bold text-slate-900 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <svg className="w-5 h-5 text-slate-600" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.79 22.05 6.8 20.68 5.96 19.47C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/>
+              </svg>
+              iPhone (Safari)
+            </h3>
+            <ul className="text-xs text-slate-600 space-y-2 list-decimal pl-4">
+              <li>Abra o site no navegador <b>Safari</b>.</li>
+              <li>Clique no botão de <b>Compartilhar</b> (ícone de quadrado com seta para cima).</li>
+              <li>Role para baixo e clique em <b>"Adicionar à Tela de Início"</b>.</li>
+              <li>Clique em "Adicionar" no canto superior direito.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* Rules Section */}
       <section className="space-y-6">
         <div className="flex items-center gap-3 border-l-4 border-lotofacil-yellow pl-4">
