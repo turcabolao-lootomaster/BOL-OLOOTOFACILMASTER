@@ -155,12 +155,8 @@ const AppContent: React.FC = () => {
 
             {/* Logo and Title on Left */}
             <div className="flex items-center gap-2">
-              <div className={cn(
-                "w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shadow-md",
-                user?.role === 'admin' || user?.role === 'master' ? "bg-lotofacil-purple" : 
-                user?.role === 'vendedor' ? "bg-emerald-500" : "bg-lotofacil-purple"
-              )}>
-                <span className="text-white font-bold text-sm sm:text-lg">L</span>
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center overflow-hidden shadow-md">
+                <img src="https://cdn-icons-png.flaticon.com/512/3112/3112946.png" alt="Logo" className="w-full h-full object-cover p-1" />
               </div>
               <h1 className="hidden xs:block text-sm sm:text-lg font-display tracking-widest text-slate-900 uppercase">
                 BOLÃO <span className={cn(

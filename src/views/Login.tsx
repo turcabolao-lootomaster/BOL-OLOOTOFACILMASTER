@@ -106,8 +106,8 @@ const Login: React.FC = () => {
         className="w-full max-w-md bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl relative z-10 shadow-xl"
       >
         <div className="flex flex-col items-center mb-6 sm:mb-8">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-lotofacil-purple rounded-2xl flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(107,33,168,0.3)]">
-            <Ticket className="text-white" size={28} />
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center mb-4 overflow-hidden shadow-[0_0_20px_rgba(107,33,168,0.2)]">
+            <img src="https://cdn-icons-png.flaticon.com/512/3112/3112946.png" alt="Logo" className="w-full h-full object-cover p-2" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-display tracking-widest text-slate-900 uppercase">BOLÃO <span className="text-lotofacil-purple">LOTOFÁCIL</span></h1>
           <p className="text-slate-400 text-xs sm:text-sm mt-1 sm:mt-2">Gestão Completa de Bolões</p>

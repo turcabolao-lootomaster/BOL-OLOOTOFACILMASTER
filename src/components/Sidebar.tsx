@@ -102,8 +102,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
       )}>
         <div className="p-6 flex items-center justify-between shrink-0 border-b border-slate-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-lotofacil-purple rounded-xl flex items-center justify-center shadow-lg shadow-lotofacil-purple/20">
-              <span className="text-white font-bold text-2xl">L</span>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shadow-lg shadow-lotofacil-purple/20">
+              <img src="https://cdn-icons-png.flaticon.com/512/3112/3112946.png" alt="Logo" className="w-full h-full object-cover p-1" />
             </div>
             <div>
               <h1 className="text-lg font-display tracking-widest text-slate-900 leading-none">BOLÃO</h1>
