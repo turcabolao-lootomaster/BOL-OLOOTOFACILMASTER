@@ -266,8 +266,8 @@ const Login: React.FC = () => {
               >
                 <form onSubmit={handleCodeLogin} className="space-y-4">
                   <p className="text-center text-slate-500 text-[11px] sm:text-sm leading-relaxed mb-4 sm:mb-6">
-                    <span className="font-bold text-slate-900">Vendedores:</span> Deixe o nome em branco e use sua senha.<br/>
-                    <span className="font-bold text-slate-900">Clientes:</span> Preencha seu nome e o código do seu vendedor.
+                    <span className="font-bold text-slate-900">Vendedores:</span> Código e Senha.<br/>
+                    <span className="font-bold text-slate-900">Clientes:</span> Seu nome e Código do Vendedor.
                   </p>
                   <div className="space-y-3 sm:space-y-4">
                     <div>
@@ -321,9 +321,14 @@ const Login: React.FC = () => {
                   <button 
                     type="submit"
                     disabled={loading || !accessCode || (!accessName.trim() && !sellerPassword)}
-                    className="w-full bg-lotofacil-purple hover:bg-lotofacil-purple/80 text-white py-3 sm:py-4 rounded-xl flex items-center justify-center gap-3 font-bold uppercase tracking-widest text-[10px] sm:text-xs transition-all shadow-[0_4px_15px_rgba(107,33,168,0.3)] disabled:opacity-50"
+                    className={cn(
+                      "w-full py-3 sm:py-4 rounded-xl flex items-center justify-center gap-3 font-bold uppercase tracking-widest text-[10px] sm:text-xs transition-all shadow-lg disabled:opacity-50",
+                      accessName.trim() 
+                        ? "bg-slate-900 text-white shadow-slate-900/10" 
+                        : "bg-emerald-600 text-white shadow-emerald-600/20"
+                    )}
                   >
-                    {loading ? 'PROCESSANDO...' : accessName ? 'ENTRAR COMO CONVIDADO' : 'ENTRAR NO PAINEL'}
+                    {loading ? 'PROCESSANDO...' : accessName.trim() ? 'ENTRAR COMO CONVIDADO' : 'ACESSAR PAINEL DO COLABORADOR'}
                   </button>
                   <p className="text-center text-[9px] text-slate-400 uppercase tracking-widest mt-2">
                     Dica: Preencha o nome para entrar como cliente ou deixe vazio para entrar como vendedor.

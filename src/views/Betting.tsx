@@ -97,8 +97,8 @@ const Betting: React.FC = () => {
     }
   };
 
-  const generateRandomNumbers = () => {
-    const numbers: number[] = [];
+  const generateRandomNumbers = (baseNumbers: number[] = []) => {
+    const numbers = [...baseNumbers].slice(0, 10);
     while (numbers.length < 10) {
       const num = Math.floor(Math.random() * 25) + 1;
       if (!numbers.includes(num)) {
@@ -109,15 +109,28 @@ const Betting: React.FC = () => {
   };
 
   const handleAddSurpresinha = () => {
-    const newBets: number[][] = [];
-    for (let i = 0; i < surpresinhaCount; i++) {
-      newBets.push(generateRandomNumbers());
+    if (surpresinhaCount === 1) {
+      // Se tiver alguns números selecionados (menos de 10), completa a aposta.
+      // Se não tiver nenhum ou já tiver 10, gera uma nova aposta completa.
+      const base = selectedNumbers.length > 0 && selectedNumbers.length < 10 ? selectedNumbers : [];
+      const numbers = generateRandomNumbers(base);
+      setSelectedNumbers(numbers);
+      setFeedback({ 
+        message: base.length > 0 ? 'Aposta completada com sucesso!' : 'Surpresinha selecionada no grid!', 
+        type: 'success' 
+      });
+    } else {
+      // Para múltiplas surpresinhas, mantém o comportamento de adicionar direto ao resumo
+      const newBets: number[][] = [];
+      for (let i = 0; i < surpresinhaCount; i++) {
+        newBets.push(generateRandomNumbers([]));
+      }
+      setPendingBets([...pendingBets, ...newBets]);
+      setFeedback({ 
+        message: `${surpresinhaCount} Surpresinhas geradas com sucesso!`, 
+        type: 'success' 
+      });
     }
-    setPendingBets([...pendingBets, ...newBets]);
-    setFeedback({ 
-      message: surpresinhaCount === 1 ? 'Surpresinha gerada com sucesso!' : `${surpresinhaCount} Surpresinhas geradas com sucesso!`, 
-      type: 'success' 
-    });
   };
 
   const registerBet = () => {
@@ -378,7 +391,7 @@ const Betting: React.FC = () => {
                     >
                       <div className="flex flex-wrap gap-1">
                         {bet.map(num => (
-                          <span key={num} className="text-[10px] sm:text-xs font-bold text-lotofacil-purple">
+                          <span key={num} className="text-[10px] sm:text-xs font-bold text-black bg-[#ffd700] px-1 rounded border border-black">
                             {num.toString().padStart(2, '0')}
                           </span>
                         ))}

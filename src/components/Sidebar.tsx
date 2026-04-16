@@ -153,7 +153,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
               </div>
               <div className="min-w-0">
                 <p className="text-[10px] font-bold text-slate-900 truncate uppercase tracking-wider">{user.name || 'Usuário'}</p>
-                <p className="text-[9px] text-slate-400 truncate tracking-tight">{user.email || user.whatsapp}</p>
+                <p className="text-[9px] text-slate-400 truncate tracking-tight">{user.role === 'vendedor' ? 'Colaborador' : (user.email || user.whatsapp)}</p>
               </div>
             </div>
           )}

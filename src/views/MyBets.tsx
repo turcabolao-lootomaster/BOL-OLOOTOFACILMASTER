@@ -348,7 +348,7 @@ const MyBets: React.FC = () => {
             <div className="flex-1 space-y-3">
               <div className="flex flex-wrap gap-1">
                 {bet.numbers.map(num => (
-                  <div key={num} className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[9px] sm:text-xs font-bold text-slate-900 border border-slate-200 bg-slate-50">
+                  <div key={num} className="w-6 h-6 sm:w-8 sm:h-8 rounded-md flex items-center justify-center text-[9px] sm:text-xs font-bold text-black border border-black bg-[#ffd700]">
                     {num.toString().padStart(2, '0')}
                   </div>
                 ))}

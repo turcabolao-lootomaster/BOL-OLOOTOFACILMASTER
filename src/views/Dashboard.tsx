@@ -139,7 +139,8 @@ const Dashboard: React.FC = () => {
           </div>
           <div>
             <h1 className="text-sm sm:text-lg font-bold text-slate-900 leading-tight uppercase">
-              Olá, <span className={cn(
+              {user?.role === 'vendedor' ? 'Olá Colaborador ' : 'Olá, '}
+              <span className={cn(
                 user?.role === 'admin' || user?.role === 'master' ? "text-lotofacil-purple" : 
                 user?.role === 'vendedor' ? "text-emerald-600" : "text-lotofacil-purple"
               )}>{user?.name?.split(' ')[0]}</span>

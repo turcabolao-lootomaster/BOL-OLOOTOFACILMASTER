@@ -207,14 +207,14 @@ const AppContent: React.FC = () => {
               <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 border-l border-slate-100">
                 <div className="hidden sm:block text-right">
                   <p className="text-[10px] font-bold text-slate-900 leading-none uppercase truncate max-w-[120px]">
-                    {user.name || 'Usuário'}
+                    {user.role === 'vendedor' ? `Vendedor: ${user.name || 'Usuário'}` : (user.name || 'Usuário')}
                   </p>
                   <p className={cn(
                     "text-[8px] font-bold uppercase tracking-widest mt-0.5",
                     user.role === 'admin' || user.role === 'master' ? "text-lotofacil-purple" : 
                     user.role === 'vendedor' ? "text-emerald-600" : "text-slate-400"
                   )}>
-                    {user.role}
+                    {user.role === 'vendedor' ? 'Colaborador' : user.role}
                   </p>
                 </div>
                 <div className={cn(

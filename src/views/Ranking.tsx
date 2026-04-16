@@ -256,7 +256,7 @@ const Ranking: React.FC = () => {
               {p.numbers && (
                 <div className="flex flex-wrap justify-center gap-0.5 mt-2">
                   {p.numbers.map(num => (
-                    <span key={num} className="text-[9px] font-bold text-lotofacil-purple bg-lotofacil-purple/5 px-0.5 rounded border border-lotofacil-purple/10">
+                    <span key={num} className="text-[9px] font-bold text-black bg-[#ffd700] px-0.5 rounded border border-black">
                       {num.toString().padStart(2, '0')}
                     </span>
                   ))}
@@ -372,7 +372,7 @@ const Ranking: React.FC = () => {
                 {p.numbers && (
                   <div className="flex flex-wrap gap-0.5 mt-1">
                     {p.numbers.map(num => (
-                      <span key={num} className="text-[9px] font-bold text-lotofacil-purple bg-lotofacil-purple/5 px-0.5 rounded border border-lotofacil-purple/10">
+                      <span key={num} className="text-[9px] font-bold text-black bg-[#ffd700] px-0.5 rounded border border-black">
                         {num.toString().padStart(2, '0')}
                       </span>
                     ))}

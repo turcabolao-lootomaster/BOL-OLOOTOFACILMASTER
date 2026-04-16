@@ -1125,7 +1125,7 @@ const LiveRanking: React.FC = () => {
                                     "text-[8px] font-bold px-1 rounded-[2px] border transition-all shrink-0",
                                     isHit 
                                       ? "bg-lotofacil-purple text-white border-lotofacil-purple shadow-[0_0_4px_rgba(107,33,168,0.4)] z-10" 
-                                      : "text-lotofacil-purple bg-lotofacil-purple/5 border-lotofacil-purple/10 opacity-40"
+                                      : "bg-[#ffd700] text-black border-black"
                                   )}
                                 >
                                   {num.toString().padStart(2, '0')}
@@ -1154,7 +1154,7 @@ const LiveRanking: React.FC = () => {
                                   "w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-bold border transition-all",
                                   isHit 
                                     ? (isExpanded ? "bg-white text-slate-900 border-white" : "bg-lotofacil-purple border-lotofacil-purple text-white shadow-sm scale-110 z-10")
-                                    : (isExpanded ? "bg-white/10 border-white/10 text-white/40" : "bg-slate-50 border-slate-200 text-slate-400")
+                                    : (isExpanded ? "bg-white/10 border-white/10 text-white/40" : "bg-[#ffd700] border-black text-black")
                                 )}
                               >
                                 {num.toString().padStart(2, '0')}
@@ -1249,8 +1249,8 @@ const LiveRanking: React.FC = () => {
                                         className={cn(
                                           "aspect-square rounded-xl flex items-center justify-center text-sm sm:text-xl font-black border-2 transition-all",
                                           isHit 
-                                            ? "bg-white border-white text-slate-900 shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-105" 
-                                            : "bg-white/5 border-white/10 text-white/20"
+                                            ? "bg-lotofacil-purple border-lotofacil-purple text-white shadow-[0_0_15px_rgba(147,51,234,0.3)] scale-105" 
+                                            : "bg-[#ffd700] border-black text-black"
                                         )}
                                       >
                                         {num.toString().padStart(2, '0')}
