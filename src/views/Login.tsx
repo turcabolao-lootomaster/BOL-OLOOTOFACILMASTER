@@ -110,7 +110,10 @@ const Login: React.FC = () => {
             <img src="https://cdn-icons-png.flaticon.com/512/3112/3112946.png" alt="Logo" className="w-full h-full object-cover p-2" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-display tracking-widest text-slate-900 uppercase">BOLÃO <span className="text-lotofacil-purple">LOTOFÁCIL</span></h1>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1 sm:mt-2">Gestão Completa de Bolões</p>
+          <div className="flex flex-col items-center mt-1 sm:mt-2">
+            <p className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-tighter">Seu bolão com organização e clareza</p>
+            <p className="text-slate-400 text-[9px] sm:text-[11px] mt-0.5">Tudo do seu bolão na palma da sua mão</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200 mb-6 sm:mb-8">
