@@ -722,8 +722,11 @@ export const firebaseService = {
         blocked: false
       });
       
-      // Update user role to 'vendedor'
-      await updateDoc(doc(db, 'users', seller.userId), { role: 'vendedor' });
+      // Update user role to 'vendedor' and link the seller code
+      await updateDoc(doc(db, 'users', seller.userId), { 
+        role: 'vendedor',
+        linkedSellerCode: seller.code.toUpperCase()
+      });
       
       return docRef.id;
     } catch (error) {

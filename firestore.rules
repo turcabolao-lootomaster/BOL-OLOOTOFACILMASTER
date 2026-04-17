@@ -80,6 +80,15 @@ service cloud.firestore {
       );
     }
 
+    function isSeller() {
+      return hasRole('vendedor');
+    }
+
+    function isSellerOwner(sellerCode) {
+      return isSeller() && 
+             getUserData(request.auth.uid).linkedSellerCode == sellerCode;
+    }
+
     // Validator Functions
     function isValidUser(data) {
       return data.keys().hasAll(['name', 'role']) &&
@@ -156,9 +165,10 @@ service cloud.firestore {
                       request.resource.data.status == 'pendente' &&
                       isValidBet(request.resource.data);
                       
-      allow update: if isAdmin() && isValidBet(request.resource.data);
+      allow update: if (isAdmin() || (isSellerOwner(resource.data.sellerCode) && request.resource.data.sellerCode == resource.data.sellerCode)) && 
+                      isValidBet(request.resource.data);
       
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || isSellerOwner(resource.data.sellerCode);
     }
 
     match /sellers/{sellerId} {

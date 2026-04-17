@@ -55,6 +55,12 @@ const SellerPanel: React.FC = () => {
       }
 
       if (sellerData) {
+        // Ensure user document has the linkedSellerCode for Security Rules
+        const currentUserId = user?.id || user?.uid;
+        if (currentUserId && (!user?.linkedSellerCode || user?.linkedSellerCode !== sellerData.code)) {
+          firebaseService.updateUserProfile(currentUserId, { linkedSellerCode: sellerData.code });
+        }
+
         // Subscribe to seller sales
         unsubscribeSales = firebaseService.subscribeToSellerSales(sellerData.code, (sales) => {
           if (!isMounted) return;
