@@ -28,6 +28,7 @@ export interface Seller {
   totalSales: number;
   totalCommission: number;
   pixKey?: string;
+  blocked?: boolean;
 }
 
 export type ContestStatus = 'aberto' | 'em_andamento' | 'encerrado';
@@ -104,6 +105,17 @@ export interface Commission {
   betId: string;
   amount: number;
   paid: boolean;
+  createdAt: any;
+}
+
+export interface SellerRequest {
+  id: string;
+  userId: string;
+  name: string;
+  email?: string;
+  whatsapp: string;
+  requestedCode: string;
+  status: 'pendente' | 'aprovado' | 'rejeitado';
   createdAt: any;
 }
 

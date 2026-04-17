@@ -78,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
     { id: 'admin', label: 'Admin', icon: Settings, roles: ['master', 'admin'] },
   ];
 
-  const publicViews = ['participants', 'current-contest', 'ranking'];
+  const publicViews = ['participants', 'current-contest', 'ranking', 'instructions'];
 
   const filteredMenu = menuItems.filter(item => {
     if (!user) return publicViews.includes(item.id);

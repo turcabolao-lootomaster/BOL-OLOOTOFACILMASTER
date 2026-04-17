@@ -40,66 +40,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
           console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'No user');
+          
+          if (unsubscribeUser) unsubscribeUser();
+          
           if (firebaseUser) {
-            try {
-              // Always search for user by UID field first to find wa_ or code_ docs
-              const q = query(collection(db, 'users'), where('uid', '==', firebaseUser.uid));
-              const snapshot = await getDocs(q);
-              
-              let userDocRef = doc(db, 'users', firebaseUser.uid);
-              let foundDoc = false;
-
+            // Listen via query to catch dynamic UID linking (important for seller/custom login)
+            const q = query(collection(db, 'users'), where('uid', '==', firebaseUser.uid));
+            
+            unsubscribeUser = onSnapshot(q, async (snapshot) => {
               if (!snapshot.empty) {
                 // If multiple docs found, prefer the one that is NOT just the UID (wa_ or code_)
+                // This happens when a pre-existing user (e.g. created by admin) gets linked to a new UID
                 const bestDoc = snapshot.docs.find(d => d.id !== firebaseUser.uid) || snapshot.docs[0];
-                userDocRef = doc(db, 'users', bestDoc.id);
-                foundDoc = true;
-              } else {
-                // Check if a doc with UID as ID exists
-                const directDoc = await getDoc(userDocRef);
-                if (directDoc.exists()) {
-                  foundDoc = true;
-                }
-              }
-
-              if (foundDoc) {
-                if (unsubscribeUser) unsubscribeUser();
-                unsubscribeUser = onSnapshot(userDocRef, (doc) => {
-                  if (doc.exists()) {
-                    const data = doc.data() as User;
-                    setUser({ id: doc.id, ...data });
-                  }
-                  setLoading(false);
-                }, (error) => {
-                  console.error('Error in user snapshot:', error);
-                  setLoading(false);
-                });
-              } else {
-                // If user is authenticated but has no document, create a default one
-                const isMaster = firebaseUser.email === 'turcabolao@gmail.com';
-                const newUser: User = {
-                  id: firebaseUser.uid,
-                  uid: firebaseUser.uid,
-                  name: firebaseUser.displayName || (firebaseUser.isAnonymous ? 'Visitante' : 'Usuário'),
-                  email: firebaseUser.email || '',
-                  role: isMaster ? 'master' : 'cliente',
-                  totalPoints: 0,
-                  createdAt: Timestamp.now()
-                };
-                
-                await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
-                setUser(newUser);
+                const data = bestDoc.data() as User;
+                setUser({ id: bestDoc.id, ...data });
                 setLoading(false);
+              } else {
+                // No document found with this UID yet.
+                // Wait a bit to see if a custom login method links it (seller login)
+                // If not, created a default one after a small delay
+                setTimeout(async () => {
+                  // Re-check if still empty after delay
+                  const secondCheck = await getDocs(q);
+                  if (secondCheck.empty && auth.currentUser?.uid === firebaseUser.uid) {
+                    const isMaster = firebaseUser.email === 'turcabolao@gmail.com';
+                    const newUser: User = {
+                      id: firebaseUser.uid,
+                      uid: firebaseUser.uid,
+                      name: firebaseUser.displayName || (firebaseUser.isAnonymous ? 'Visitante' : 'Usuário'),
+                      email: firebaseUser.email || '',
+                      role: isMaster ? 'master' : 'cliente',
+                      totalPoints: 0,
+                      createdAt: Timestamp.now()
+                    };
+                    
+                    try {
+                      await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
+                      // Snapshot will pick this up on next emission
+                    } catch (err) {
+                      console.error('Error creating default user doc:', err);
+                    }
+                  }
+                }, 2000);
               }
-            } catch (error) {
-              console.error('Error in AuthProvider inner:', error);
+            }, (error) => {
+              console.error('Error in user query snapshot:', error);
               setLoading(false);
-            }
+            });
           } else {
             setUser(null);
             setLoading(false);
           }
         }, (error) => {
+
           console.error('onAuthStateChanged error:', error);
           setLoading(false);
         });
@@ -189,9 +182,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const sellerData = sellerSnap.docs[0].data();
       
-      // 2. Validate Password
+      // 2. Validate Password and Blocked Status
       if (!sellerData.password || sellerData.password !== password) {
         throw new Error('Senha de vendedor incorreta.');
+      }
+
+      if (sellerData.blocked) {
+        throw new Error('O seu acesso de colaborador está bloqueado. Entre em contato com o suporte.');
       }
 
       const sellerUserId = sellerData.userId;

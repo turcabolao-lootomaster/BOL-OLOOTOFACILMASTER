@@ -21,7 +21,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { User, Bet, Contest, Draw, UserRanking, Commission, ContestStatus, Seller, Settings } from '../types';
+import { User, Bet, Contest, Draw, UserRanking, Commission, ContestStatus, Seller, Settings, SellerRequest } from '../types';
 
 enum OperationType {
   CREATE = 'create',
@@ -63,6 +63,35 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 export const firebaseService = {
+  // Seller Requests
+  async createSellerRequest(requestData: Omit<SellerRequest, 'id' | 'status' | 'createdAt'>): Promise<void> {
+    const docRef = doc(collection(db, 'sellerRequests'));
+    await setDoc(docRef, {
+      ...requestData,
+      status: 'pendente',
+      createdAt: serverTimestamp()
+    });
+  },
+
+  async getAllSellerRequests(): Promise<SellerRequest[]> {
+    const q = query(collection(db, 'sellerRequests'), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SellerRequest));
+  },
+
+  async updateSellerRequestStatus(requestId: string, status: 'aprovado' | 'rejeitado'): Promise<void> {
+    const docRef = doc(db, 'sellerRequests', requestId);
+    await updateDoc(docRef, { status });
+    
+    // If approved, we don't automatically create the seller here 
+    // to allow the admin to review/edit the code and commission in the UI
+    // before final creation. But we'll handle the UI flow to make it easy.
+  },
+
+  async deleteSellerRequest(requestId: string): Promise<void> {
+    await deleteDoc(doc(db, 'sellerRequests', requestId));
+  },
+
   // Users
   async getUser(userId: string): Promise<User | null> {
     const path = `users/${userId}`;
@@ -676,7 +705,8 @@ export const firebaseService = {
       const docRef = await addDoc(collection(db, 'sellers'), {
         ...seller,
         totalSales: 0,
-        totalCommission: 0
+        totalCommission: 0,
+        blocked: false
       });
       
       // Update user role to 'vendedor'
@@ -698,14 +728,25 @@ export const firebaseService = {
     }
   },
 
-  async deleteSeller(sellerId: string, userId: string): Promise<void> {
+  async deleteSeller(sellerId: string, userId: string, resetRole: boolean = true): Promise<void> {
     const path = `sellers/${sellerId}`;
     try {
       await deleteDoc(doc(db, 'sellers', sellerId));
-      // Optionally reset role to 'cliente'
-      await updateDoc(doc(db, 'users', userId), { role: 'cliente' });
+      if (resetRole) {
+        // Only reset to cliente if explicitly requested (usually when deleting, but not when promoting)
+        await updateDoc(doc(db, 'users', userId), { role: 'cliente' });
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  },
+
+  async toggleBlockSeller(sellerId: string, blocked: boolean): Promise<void> {
+    const path = `sellers/${sellerId}`;
+    try {
+      await updateDoc(doc(db, 'sellers', sellerId), { blocked });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
     }
   },
 

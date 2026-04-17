@@ -170,6 +170,11 @@ const Betting: React.FC = () => {
         throw new Error(availability.message);
       }
 
+      // 2. Link user to seller if not already linked and code is provided
+      if (user && !user.linkedSellerCode && sellerCode) {
+        await firebaseService.linkUserToSeller(user.id, sellerCode);
+      }
+
       const activeContest = await firebaseService.getActiveContest();
       if (!activeContest) {
         throw new Error('Nenhum concurso aberto no momento.');
@@ -214,7 +219,12 @@ const Betting: React.FC = () => {
       setLastBetName(betName);
       setSuccess(true);
       setPendingBets([]);
-      setSellerCode('');
+      
+      // Preserve seller code if linked
+      if (!isSellerLink) {
+        setSellerCode('');
+      }
+      
       setBetName('');
       setTimeout(() => setSuccess(false), 15000); // Keep success message longer for WhatsApp button
     } catch (error: any) {
@@ -417,17 +427,18 @@ const Betting: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-600 mb-1.5 ml-1">
-                    Código do Vendedor {isSellerLink ? '(Vinculado)' : '(Opcional)'}
+                  <label className="block text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-600 mb-1.5 ml-1 font-bold">
+                    Código do Vendedor {isSellerLink ? '(Vinculado)' : '(Obrigatório)'}
                   </label>
                   <input 
                     type="text" 
                     value={sellerCode}
-                    onChange={(e) => (!isSellerLink || user?.role === 'admin' || user?.role === 'master') && setSellerCode(e.target.value)}
+                    onChange={(e) => (!isSellerLink || user?.role === 'admin' || user?.role === 'master') && setSellerCode(e.target.value.toUpperCase())}
                     readOnly={isSellerLink && user?.role !== 'admin' && user?.role !== 'master'}
                     placeholder="Ex: REF123"
+                    required
                     className={cn(
-                      "w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 sm:py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs text-slate-900",
+                      "w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 sm:py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs text-slate-900 font-bold tracking-widest",
                       isSellerLink && user?.role !== 'admin' && user?.role !== 'master' && "bg-slate-100 text-slate-400 cursor-not-allowed border-dashed"
                     )}
                   />
@@ -442,7 +453,7 @@ const Betting: React.FC = () => {
 
                 <button 
                   type="submit"
-                  disabled={pendingBets.length === 0 || isSubmitting || (activeContest?.status !== 'aberto') || !betName.trim()}
+                  disabled={pendingBets.length === 0 || isSubmitting || (activeContest?.status !== 'aberto') || !betName.trim() || !sellerCode}
                   className="w-full bg-gradient-to-r from-slate-900 to-slate-800 text-white h-12 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm uppercase tracking-widest font-bold hover:brightness-125 transition-all border-2 border-white/10 relative overflow-hidden group"
                 >
                   <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />

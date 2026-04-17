@@ -116,6 +116,21 @@
         "lastUpdated": { "type": "string", "format": "date-time" }
       },
       "required": ["betName", "totalPoints"]
+    },
+    "SellerRequest": {
+      "title": "Seller Request",
+      "description": "Request for a new seller account",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "requestedCode": { "type": "string" },
+        "status": { "type": "string", "enum": ["pendente", "aprovado", "rejeitado"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "whatsapp", "status"]
     }
   },
   "firestore": {
@@ -146,6 +161,10 @@
     "/rankings/{rankingId}": {
       "schema": "Ranking",
       "description": "Global ranking records"
+    },
+    "/sellerRequests/{requestId}": {
+      "schema": "SellerRequest",
+      "description": "Requests for new seller accounts"
     }
   }
 }

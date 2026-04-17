@@ -71,9 +71,22 @@ const AppContent: React.FC = () => {
   React.useEffect(() => {
     document.title = "Bolão Lotofácil";
     
-    if (!loading && !user) {
-      setView('login');
-      return;
+    if (!loading) {
+      if (!user && !publicViews.includes(currentView) && currentView !== 'login') {
+        setView('login');
+        return;
+      }
+
+      // Auto redirect based on role when coming from login
+      if (currentView === 'login') {
+        if (user.role === 'vendedor') {
+          setView('seller');
+        } else if (user.role === 'admin' || user.role === 'master') {
+          setView('dashboard');
+        } else {
+          setView('dashboard');
+        }
+      }
     }
 
     const params = new URLSearchParams(window.location.search);
@@ -189,6 +202,24 @@ const AppContent: React.FC = () => {
               >
                 Apostar
               </button>
+              <button 
+                onClick={() => setView('participants')}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
+                  currentView === 'participants' ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" : "text-slate-500 hover:bg-slate-50"
+                )}
+              >
+                Ao Vivo
+              </button>
+              <button 
+                onClick={() => setView('instructions')}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
+                  currentView === 'instructions' ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" : "text-slate-500 hover:bg-slate-50"
+                )}
+              >
+                Instruções
+              </button>
               {user && (user.role === 'admin' || user.role === 'master') && (
                 <button 
                   onClick={() => setView('admin')}
@@ -198,6 +229,17 @@ const AppContent: React.FC = () => {
                   )}
                 >
                   Painel Admin
+                </button>
+              )}
+              {user && user.role === 'vendedor' && (
+                <button 
+                  onClick={() => setView('seller')}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
+                    currentView === 'seller' ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20" : "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+                  )}
+                >
+                  Painel Vendedor
                 </button>
               )}
             </div>

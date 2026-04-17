@@ -33,16 +33,33 @@ import {
   DollarSign,
   Info,
   Store,
-  Pencil
+  Pencil,
+  MessageCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
 import { cn } from '../utils';
-import { Bet, Contest, ContestStatus, Seller, User as AppUser } from '../types';
+import { Bet, Contest, ContestStatus, Seller, User as AppUser, SellerRequest } from '../types';
 
 const AdminPanel: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('apostas');
+  const [modalConfig, setModalConfig] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    type: 'confirm' | 'alert';
+    onConfirm?: () => void;
+    confirmText?: string;
+  } | null>(null);
+
+  const showAlert = (title: string, message: string) => {
+    setModalConfig({ show: true, title, message, type: 'alert' });
+  };
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void, confirmText = 'Confirmar') => {
+    setModalConfig({ show: true, title, message, type: 'confirm', onConfirm, confirmText });
+  };
 
   const tabs = [
     { id: 'apostas', label: 'Apostas', icon: Ticket },
@@ -99,21 +116,69 @@ const AdminPanel: React.FC = () => {
           exit={{ opacity: 0, y: -10 }}
           className="glass-card p-4 sm:p-8 bg-card-bg"
         >
-          {activeTab === 'apostas' && <BetsTab />}
-          {activeTab === 'sorteios' && <DrawsTab />}
-          {activeTab === 'concursos' && <ContestsTab />}
-          {activeTab === 'vendedores' && <SellersTab />}
-          {activeTab === 'usuarios' && <UsersTab />}
+          {activeTab === 'apostas' && <BetsTab showAlert={showAlert} showConfirm={showConfirm} />}
+          {activeTab === 'sorteios' && <DrawsTab showAlert={showAlert} showConfirm={showConfirm} />}
+          {activeTab === 'concursos' && <ContestsTab showAlert={showAlert} showConfirm={showConfirm} />}
+          {activeTab === 'vendedores' && <SellersTab showAlert={showAlert} showConfirm={showConfirm} />}
+          {activeTab === 'usuarios' && <UsersTab showAlert={showAlert} showConfirm={showConfirm} />}
           {activeTab === 'relatorios' && <ReportsTab />}
           {activeTab === 'financeiro' && <FinanceiroTab />}
-          {activeTab === 'config' && <ConfigTab />}
+          {activeTab === 'config' && <ConfigTab showAlert={showAlert} />}
         </motion.div>
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {modalConfig?.show && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white border border-slate-200 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 sm:p-8 text-center space-y-4">
+                <div className="w-16 h-16 bg-slate-50 text-lotofacil-purple rounded-full flex items-center justify-center mx-auto border border-slate-100/50">
+                  {modalConfig.type === 'confirm' ? <AlertTriangle size={32} /> : <CheckCircle size={32} />}
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-display tracking-widest uppercase text-slate-900">{modalConfig.title}</h3>
+                  <p className="text-sm text-slate-500">{modalConfig.message}</p>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  {modalConfig.type === 'confirm' && (
+                    <button 
+                      onClick={() => setModalConfig(null)}
+                      className="flex-1 py-3 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-100 transition-all font-bold uppercase tracking-widest text-[10px]"
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => {
+                      if (modalConfig.onConfirm) modalConfig.onConfirm();
+                      setModalConfig(null);
+                    }}
+                    className={cn(
+                      "flex-1 py-3 rounded-xl text-white transition-all font-bold uppercase tracking-widest text-[10px] shadow-lg",
+                      modalConfig.type === 'confirm' ? "bg-red-500 shadow-red-500/20" : "bg-lotofacil-purple shadow-lotofacil-purple/20"
+                    )}
+                  >
+                    {modalConfig.confirmText || 'OK'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
     </div>
   );
 };
 
-const BetsTab = () => {
+const BetsTab: React.FC<{
+  showAlert: (title: string, message: string) => void;
+  showConfirm: (title: string, message: string, onConfirm: () => void, confirmText?: string) => void;
+}> = ({ showAlert, showConfirm }) => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -230,13 +295,13 @@ const BetsTab = () => {
     if (!editingBet) return;
     
     if (editBetNumbers.length !== 10) {
-      alert('A aposta deve ter exatamente 10 números.');
+      showAlert('Aposta Inválida', 'A aposta deve ter exatamente 10 números.');
       return;
     }
 
     const uniqueNumbers = new Set(editBetNumbers);
     if (uniqueNumbers.size !== 10) {
-      alert('Não é permitido números repetidos na aposta.');
+      showAlert('Aposta Inválida', 'Não é permitido números repetidos na aposta.');
       return;
     }
 
@@ -251,7 +316,7 @@ const BetsTab = () => {
       fetchBets();
     } catch (error) {
       console.error('Erro ao atualizar aposta:', error);
-      alert('Erro ao atualizar aposta.');
+      showAlert('Erro', 'Erro ao atualizar aposta.');
     } finally {
       setIsUpdatingBet(false);
     }
@@ -646,7 +711,10 @@ const BetsTab = () => {
   );
 };
 
-const DrawsTab = () => {
+const DrawsTab: React.FC<{
+  showAlert: (title: string, message: string) => void;
+  showConfirm: (title: string, message: string, onConfirm: () => void, confirmText?: string) => void;
+}> = ({ showAlert, showConfirm }) => {
   const [contest, setContest] = useState<Contest | null>(null);
   const [drawResults, setDrawResults] = useState<string[][]>([
     Array(15).fill(''),
@@ -704,19 +772,19 @@ const DrawsTab = () => {
       .filter(n => !isNaN(n));
     
     if (results.length !== 15) {
-      alert('Por favor, preencha todos os 15 números.');
+      showAlert('Resultado incompleto', 'Por favor, preencha todos os 15 números.');
       return;
     }
 
     const uniqueResults = new Set(results);
     if (uniqueResults.size !== 15) {
-      alert('Não é permitido números repetidos no sorteio.');
+      showAlert('Números Duplicados', 'Não é permitido números repetidos no sorteio.');
       return;
     }
 
     const invalidNumbers = results.filter(n => n < 1 || n > 25);
     if (invalidNumbers.length > 0) {
-      alert('Os números devem estar entre 01 e 25.');
+      showAlert('Faixa Inválida', 'Os números devem estar entre 01 e 25.');
       return;
     }
 
@@ -739,7 +807,7 @@ const DrawsTab = () => {
       setShowFinalizeConfirm(false);
     } catch (error) {
       console.error('Erro ao finalizar concurso:', error);
-      alert('Erro ao finalizar concurso.');
+      showAlert('Erro', 'Ocorreu um erro ao finalizar o concurso.');
     } finally {
       setIsFinalizing(false);
     }
@@ -756,7 +824,7 @@ const DrawsTab = () => {
       showSuccessConfirmed('RANKING RECALCULADO', 'A Corrida 150 PTS foi reconstruída com sucesso com base em todos os concursos encerrados.');
     } catch (error) {
       console.error('Error recalculating ranking:', error);
-      alert('Erro ao recalcular ranking.');
+      showAlert('Erro', 'Ocorreu um erro ao recalcular o ranking.');
     } finally {
       setIsRecalculating(false);
     }
@@ -1139,7 +1207,10 @@ const DrawsTab = () => {
   );
 };
 
-const ContestsTab = () => {
+const ContestsTab: React.FC<{
+  showAlert: (title: string, message: string) => void;
+  showConfirm: (title: string, message: string, onConfirm: () => void, confirmText?: string) => void;
+}> = ({ showAlert, showConfirm }) => {
   const [contests, setContests] = useState<Contest[]>([]);
   const [contestBetCounts, setContestBetCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -1286,10 +1357,10 @@ const ContestsTab = () => {
       await firebaseService.resetAllContests();
       await fetchContests();
       setShowResetConfirm(false);
-      alert('Todos os concursos e apostas foram zerados com sucesso.');
+      showAlert('Sucesso', 'Todos os concursos e apostas foram zerados com sucesso.');
     } catch (error) {
       console.error('Erro ao zerar concursos:', error);
-      alert('Erro ao zerar concursos. Tente novamente.');
+      showAlert('Erro', 'Ocorreu um erro ao zerar os concursos. Tente novamente.');
     } finally {
       setIsResetting(false);
     }
@@ -1913,9 +1984,14 @@ const ContestsTab = () => {
   );
 };
 
-const SellersTab = () => {
+const SellersTab: React.FC<{
+  showAlert: (title: string, message: string) => void;
+  showConfirm: (title: string, message: string, onConfirm: () => void, confirmText?: string) => void;
+}> = ({ showAlert, showConfirm }) => {
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [requests, setRequests] = useState<SellerRequest[]>([]);
+  const [subTab, setSubTab] = useState<'list' | 'requests'>('list');
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [editingSeller, setEditingSeller] = useState<Seller | null>(null);
@@ -1928,21 +2004,78 @@ const SellersTab = () => {
     pixKey: ''
   });
 
-  useEffect(() => {
-    const unsubscribeSellers = firebaseService.subscribeToAllSellers((sellersData) => {
+  const fetchData = async () => {
+    try {
+      const sellersData = await firebaseService.getAllSellers();
       setSellers(sellersData);
+      const requestsData = await firebaseService.getAllSellerRequests();
+      setRequests(requestsData);
+    } catch (error) {
+      console.error('Error fetching sellers/requests:', error);
+    } finally {
       setLoading(false);
-    });
+    }
+  };
 
+  useEffect(() => {
+    fetchData();
+    
     const unsubscribeUsers = firebaseService.subscribeToAllUsers((usersData) => {
       setUsers(usersData);
     });
 
     return () => {
-      unsubscribeSellers();
       unsubscribeUsers();
     };
   }, []);
+
+  const handleApproveRequest = (req: SellerRequest) => {
+    // If user exists, we use their ID, otherwise we'll have to find then or create later. 
+    // Most likely they are logged in as guest or existing client.
+    let userId = req.userId;
+    if (userId === 'guest') {
+      const foundUser = users.find(u => u.whatsapp === req.whatsapp || u.email === req.email);
+      if (foundUser) userId = foundUser.uid;
+    }
+    
+    setNewSeller({
+      userId: userId === 'guest' ? '' : userId,
+      code: req.requestedCode,
+      password: '', // Admin will set this
+      commissionPct: 15,
+      pixKey: ''
+    });
+    setIsAdding(true);
+    setSubTab('list');
+    // Pre-fill user search if guest
+    if (userId === 'guest') setUserSearchTerm(req.whatsapp);
+  };
+
+  const handleUpdateStatus = async (id: string, status: 'aprovado' | 'rejeitado') => {
+    try {
+      await firebaseService.updateSellerRequestStatus(id, status);
+      fetchData();
+    } catch (error) {
+      console.error('Error updating request:', error);
+    }
+  };
+
+  const handleDeleteRequest = async (id: string) => {
+    showConfirm(
+      'Excluir Solicitação',
+      'Deseja realmente excluir esta solicitação? Esta ação não pode ser desfeita.',
+      async () => {
+        try {
+          await firebaseService.deleteSellerRequest(id);
+          fetchData();
+        } catch (error) {
+          console.error('Error deleting request:', error);
+          showAlert('Erro', 'Erro ao excluir solicitação.');
+        }
+      },
+      'Excluir'
+    );
+  };
 
   const filteredUsersForSeller = users.filter(u => {
     const isClient = u.role === 'cliente' || !u.role;
@@ -1961,7 +2094,7 @@ const SellersTab = () => {
   const handleAddSeller = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSeller.userId || !newSeller.code || !newSeller.password) {
-      alert('Por favor, preencha todos os campos, incluindo a senha.');
+      showAlert('Campos Obrigatórios', 'Por favor, preencha todos os campos, incluindo a senha.');
       return;
     }
     
@@ -1969,31 +2102,67 @@ const SellersTab = () => {
       await firebaseService.createSeller(newSeller);
       setIsAdding(false);
       setNewSeller({ userId: '', code: '', password: '', commissionPct: 15, pixKey: '' });
-      alert('Vendedor cadastrado com sucesso!');
+      showAlert('Vendedor Cadastrado', 'O colaborador foi cadastrado com sucesso!');
     } catch (error) {
       console.error('Error adding seller:', error);
-      alert('Erro ao cadastrar vendedor.');
+      showAlert('Erro', 'Ocorreu um erro ao cadastrar o vendedor.');
     }
   };
 
   const handleDeleteSeller = async (sellerId: string, userId: string) => {
-    if (!window.confirm('Deseja realmente remover este vendedor? O usuário voltará a ser "cliente".')) return;
-    try {
-      await firebaseService.deleteSeller(sellerId, userId);
-      alert('Vendedor removido com sucesso!');
-    } catch (error) {
-      console.error('Error deleting seller:', error);
-    }
+    showConfirm(
+      'Remover Vendedor',
+      'Deseja realmente remover este vendedor? O usuário voltará a ser "cliente".',
+      async () => {
+        try {
+          await firebaseService.deleteSeller(sellerId, userId);
+          showAlert('Sucesso', 'Vendedor removido com sucesso!');
+          fetchData(); 
+        } catch (error) {
+          console.error('Error deleting seller:', error);
+          showAlert('Erro', 'Erro ao remover vendedor.');
+        }
+      },
+      'Excluir'
+    );
   };
 
-  const handlePromoteToAdmin = async (userId: string) => {
-    if (!window.confirm('Deseja promover este usuário a ADMINISTRADOR?')) return;
-    try {
-      await firebaseService.updateUserRole(userId, 'admin');
-      alert('Usuário promovido a Administrador!');
-    } catch (error) {
-      console.error('Error promoting user:', error);
-    }
+  const handlePromoteToAdmin = async (sellerId: string, userId: string) => {
+    showConfirm(
+      'Promover Usuário',
+      'Deseja promover este usuário a ADMINISTRADOR? Ele deixará de ser vendedor para ter acesso total.',
+      async () => {
+        try {
+          await firebaseService.updateUserRole(userId, 'admin');
+          await firebaseService.deleteSeller(sellerId, userId, false);
+          showAlert('Sucesso', 'Usuário promovido a Administrador com sucesso!');
+          fetchData();
+        } catch (error) {
+          console.error('Error promoting user:', error);
+          showAlert('Erro', 'Erro ao promover usuário.');
+        }
+      },
+      'Promover'
+    );
+  };
+
+  const handleToggleBlockSeller = async (sellerId: string, currentBlockedStatus: boolean) => {
+    const action = currentBlockedStatus ? 'Desbloquear' : 'Bloquear';
+    showConfirm(
+      `${action} Vendedor`,
+      `Deseja realmente ${action.toLowerCase()} este colaborador?`,
+      async () => {
+        try {
+          await firebaseService.toggleBlockSeller(sellerId, !currentBlockedStatus);
+          showAlert('Sucesso', `Vendedor ${currentBlockedStatus ? 'desbloqueado' : 'bloqueado'} com sucesso!`);
+          fetchData();
+        } catch (error) {
+          console.error('Error toggling block status:', error);
+          showAlert('Erro', 'Erro ao alterar status do vendedor.');
+        }
+      },
+      action
+    );
   };
 
   const handleUpdateSeller = async (e: React.FormEvent) => {
@@ -2006,10 +2175,11 @@ const SellersTab = () => {
         password: editingSeller.password
       });
       setEditingSeller(null);
-      alert('Vendedor atualizado com sucesso!');
+      showAlert('Sucesso', 'Dados do vendedor atualizados com sucesso!');
+      fetchData();
     } catch (error) {
       console.error('Error updating seller:', error);
-      alert('Erro ao atualizar vendedor.');
+      showAlert('Erro', 'Erro ao atualizar vendedor.');
     }
   };
 
@@ -2018,17 +2188,135 @@ const SellersTab = () => {
   return (
     <div className="space-y-4 sm:space-y-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">GESTÃO DE <span className="text-lotofacil-purple">VENDEDORES</span></h2>
-        {!isAdding && (
+        <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">
+          GESTÃO DE <span className="text-lotofacil-purple">COLABORADORES</span>
+        </h2>
+        
+        <div className="flex gap-2 w-full sm:w-auto">
           <button 
-            onClick={() => setIsAdding(true)}
-            className="bg-lotofacil-purple text-white py-2 px-4 sm:px-6 rounded-xl flex items-center gap-2 text-[9px] sm:text-xs w-full sm:w-auto justify-center font-bold uppercase tracking-widest shadow-[0_4px_10px_rgba(107,33,168,0.3)]"
+            onClick={() => setSubTab('list')}
+            className={cn(
+              "flex-1 sm:flex-initial px-4 py-2 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all",
+              subTab === 'list' ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            )}
           >
-            <Plus size={14} />
-            CADASTRAR VENDEDOR
+            Vendedores ({sellers.length})
           </button>
-        )}
+          <button 
+            onClick={() => setSubTab('requests')}
+            className={cn(
+              "flex-1 sm:flex-initial px-4 py-2 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all relative",
+              subTab === 'requests' ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            )}
+          >
+            Solicitações ({requests.filter(r => r.status === 'pendente').length})
+            {requests.filter(r => r.status === 'pendente').length > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full animate-pulse">
+                {requests.filter(r => r.status === 'pendente').length}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
+
+      {subTab === 'requests' ? (
+        <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Data</th>
+                  <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Nome</th>
+                  <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">WhatsApp</th>
+                  <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Código Sugerido</th>
+                  <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Status</th>
+                  <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {requests.map(r => (
+                  <tr key={r.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 text-xs text-slate-500 whitespace-nowrap">
+                      {r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString('pt-BR') : '---'}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-bold text-slate-900">{r.name}</td>
+                    <td className="px-6 py-4">
+                      <a 
+                        href={`https://wa.me/55${r.whatsapp.replace(/\D/g, '')}`} 
+                        target="_blank" 
+                        className="text-emerald-600 font-bold text-sm flex items-center gap-1 hover:underline"
+                      >
+                        <MessageCircle size={14} />
+                        {r.whatsapp}
+                      </a>
+                    </td>
+                    <td className="px-6 py-4 font-mono text-lotofacil-yellow font-bold uppercase">{r.requestedCode}</td>
+                    <td className="px-6 py-4">
+                      <span className={cn(
+                        "text-[9px] font-bold uppercase px-2 py-1 rounded-full",
+                        r.status === 'pendente' ? "bg-amber-100 text-amber-700" :
+                        r.status === 'aprovado' ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                      )}>
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-2">
+                        {r.status === 'pendente' && (
+                          <>
+                            <button 
+                              onClick={() => {
+                                handleApproveRequest(r);
+                                handleUpdateStatus(r.id, 'aprovado');
+                              }}
+                              className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all"
+                              title="Aprovar e Configurar"
+                            >
+                              <CheckCircle size={14} />
+                            </button>
+                            <button 
+                              onClick={() => handleUpdateStatus(r.id, 'rejeitado')}
+                              className="p-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-all"
+                              title="Rejeitar"
+                            >
+                              <X size={14} />
+                            </button>
+                          </>
+                        )}
+                        <button 
+                          onClick={() => handleDeleteRequest(r.id)}
+                          className="p-2 bg-slate-50 text-slate-400 hover:bg-red-500 hover:text-white rounded-lg transition-all"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {requests.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-10 text-center text-slate-400 italic text-sm">
+                      Nenhuma solicitação encontrada.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="flex justify-end">
+            {!isAdding && (
+              <button 
+                onClick={() => setIsAdding(true)}
+                className="bg-lotofacil-purple text-white py-2 px-4 sm:px-6 rounded-xl flex items-center gap-2 text-[9px] sm:text-xs w-full sm:w-auto justify-center font-bold uppercase tracking-widest shadow-[0_4px_10px_rgba(107,33,168,0.3)]"
+              >
+                <Plus size={14} />
+                CADASTRAR VENDEDOR
+              </button>
+            )}
+          </div>
 
       <AnimatePresence>
         {editingSeller && (
@@ -2243,6 +2531,16 @@ const SellersTab = () => {
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-center gap-2">
                       <button 
+                        onClick={() => handleToggleBlockSeller(s.id, !!s.blocked)}
+                        className={cn(
+                          "p-2 rounded-lg transition-all",
+                          s.blocked ? "bg-amber-100 text-amber-600 hover:bg-amber-600 hover:text-white" : "bg-slate-50 text-slate-400 hover:bg-slate-600 hover:text-white"
+                        )}
+                        title={s.blocked ? "Desbloquear Vendedor" : "Bloquear Vendedor"}
+                      >
+                        {s.blocked ? <Unlock size={14} /> : <Lock size={14} />}
+                      </button>
+                      <button 
                         onClick={() => setEditingSeller(s)}
                         className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-all"
                         title="Editar Vendedor"
@@ -2250,8 +2548,8 @@ const SellersTab = () => {
                         <Pencil size={14} />
                       </button>
                       <button 
-                        onClick={() => handlePromoteToAdmin(s.userId)}
-                        className="p-2 bg-slate-50 text-slate-600 hover:bg-slate-600 hover:text-white rounded-lg transition-all"
+                        onClick={() => handlePromoteToAdmin(s.id, s.userId)}
+                        className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all"
                         title="Promover a Admin"
                       >
                         <ShieldCheck size={14} />
@@ -2270,17 +2568,22 @@ const SellersTab = () => {
             })}
             {sellers.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-10 text-center text-slate-500 italic text-sm">Nenhum vendedor cadastrado.</td>
+                <td colSpan={8} className="px-6 py-10 text-center text-slate-500 italic text-sm">Nenhum vendedor cadastrado.</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
     </div>
+  )}
+</div>
   );
 };
 
-const UsersTab = () => {
+const UsersTab: React.FC<{
+  showAlert: (title: string, message: string) => void;
+  showConfirm: (title: string, message: string, onConfirm: () => void, confirmText?: string) => void;
+}> = ({ showAlert, showConfirm }) => {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -2295,13 +2598,19 @@ const UsersTab = () => {
   }, []);
 
   const handleUpdateRole = async (userId: string, role: AppUser['role']) => {
-    if (!window.confirm(`Deseja alterar o cargo deste usuário para ${role.toUpperCase()}?`)) return;
-    try {
-      await firebaseService.updateUserRole(userId, role);
-      alert('Cargo atualizado com sucesso!');
-    } catch (error) {
-      console.error('Error updating role:', error);
-    }
+    showConfirm(
+      'Alterar Cargo',
+      `Deseja alterar o cargo deste usuário para ${role.toUpperCase()}?`,
+      async () => {
+        try {
+          await firebaseService.updateUserRole(userId, role);
+          showAlert('Sucesso', 'Cargo atualizado com sucesso!');
+        } catch (error) {
+          console.error('Error updating role:', error);
+          showAlert('Erro', 'Ocorreu um erro ao atualizar o cargo.');
+        }
+      }
+    );
   };
 
   const filteredUsers = users.filter(u => 
@@ -2366,10 +2675,10 @@ const UsersTab = () => {
                         if (newCode !== null) {
                           try {
                             await firebaseService.linkUserToSeller(u.id, newCode.toUpperCase());
-                            alert('Vendedor vinculado com sucesso!');
+                            showAlert('Sucesso', 'Vendedor vinculado com sucesso!');
                           } catch (error) {
                             console.error('Error linking seller:', error);
-                            alert('Erro ao vincular vendedor.');
+                            showAlert('Erro', 'Ocorreu um erro ao vincular o vendedor.');
                           }
                         }
                       }}
@@ -2546,7 +2855,9 @@ const ReportsTab = () => {
   );
 };
 
-const ConfigTab: React.FC = () => {
+const ConfigTab: React.FC<{
+  showAlert: (title: string, message: string) => void;
+}> = ({ showAlert }) => {
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -2570,7 +2881,7 @@ const ConfigTab: React.FC = () => {
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Erro ao salvar configurações.');
+      showAlert('Erro', 'Erro ao salvar as configurações.');
     } finally {
       setLoading(false);
     }

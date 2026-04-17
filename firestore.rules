@@ -162,17 +162,17 @@ service cloud.firestore {
     }
 
     match /sellers/{sellerId} {
-      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow read: if isAuthenticated();
       allow create: if isAdmin();
       allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
-      allow delete: if isMaster();
+      allow delete: if isAdmin();
     }
 
     match /commissions/{commissionId} {
       allow read: if isAdmin() || (isAuthenticated() && resource.data.sellerId == request.auth.uid);
       allow create: if isAdmin();
       allow update: if isAdmin();
-      allow delete: if isMaster();
+      allow delete: if isAdmin();
     }
 
     match /settings/{settingId} {
@@ -183,6 +183,13 @@ service cloud.firestore {
     match /rankings/{rankingId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    match /sellerRequests/{requestId} {
+      allow read: if isAdmin();
+      allow create: if true; // Open to interested participants
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
   }
 }
