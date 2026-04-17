@@ -28,7 +28,7 @@ const AppContent: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [lastCompletedDraws, setLastCompletedDraws] = useState<number>(0);
 
-  const publicViews = ['participants', 'current-contest', 'ranking', 'instructions'];
+  const publicViews = ['participants', 'current-contest', 'ranking', 'instructions', 'bet'];
 
   // Monitorar sorteios para atualizar a bolinha (badge)
   React.useEffect(() => {
@@ -119,7 +119,7 @@ const AppContent: React.FC = () => {
     
     switch (currentView) {
       case 'dashboard': return <Dashboard />;
-      case 'bet': return <Betting />;
+      case 'bet': return <Betting setView={setView} />;
       case 'my-bets': return <MyBets />;
       case 'participants': return <LiveRanking />;
       case 'current-contest': return <CurrentContest />;

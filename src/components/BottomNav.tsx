@@ -79,7 +79,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
     : [
         { id: 'participants', label: 'Ao Vivo', icon: Users },
         { id: 'current-contest', label: 'Sorteios', icon: Trophy },
-        { id: 'instructions', label: 'Instruções', icon: BookOpen },
+        { id: 'bet', label: 'Apostar', icon: Ticket },
+        { id: 'instructions', label: 'Regras', icon: BookOpen },
         { id: 'login', label: 'Entrar', icon: LogOut },
       ];
 

@@ -12,7 +12,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../utils';
 import { Contest } from '../types';
 
-const Betting: React.FC = () => {
+interface BettingProps {
+  setView?: (view: string) => void;
+}
+
+const Betting: React.FC<BettingProps> = ({ setView }) => {
   const { user } = useAuth();
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [pendingBets, setPendingBets] = useState<number[][]>([]);
@@ -148,24 +152,42 @@ const Betting: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pendingBets.length === 0) return;
-    if (!betName.trim()) {
-      alert('Por favor, preencha o Nome na Aposta.');
+    
+    const cleanBetName = betName.trim().toUpperCase();
+    if (!cleanBetName) {
+      setFeedback({ message: 'Por favor, preencha o Nome na Aposta.', type: 'info' });
       return;
     }
     
     setIsSubmitting(true);
     const ids: string[] = [];
-    const userId = user?.uid || user?.id || auth.currentUser?.uid || '';
+    let userId = user?.uid || user?.id || auth.currentUser?.uid || '';
     
+    // Auto-login anonymous if no user and it's a seller link action
     if (!userId) {
-      alert('Erro de autenticação. Por favor, tente sair e entrar novamente.');
-      setIsSubmitting(false);
-      return;
+      try {
+        const { signInAnonymously } = await import('firebase/auth');
+        const userCred = await signInAnonymously(auth);
+        userId = userCred.user.uid;
+        
+        // Basic user setup for the anonymous session
+        await firebaseService.updateUserProfile(userId, {
+          name: cleanBetName,
+          role: 'cliente',
+          linkedSellerCode: sellerCode.toUpperCase(),
+          totalPoints: 0
+        });
+      } catch (authError) {
+        console.error('Auth error:', authError);
+        setFeedback({ message: 'Erro ao processar identificação rápida. Tente novamente.', type: 'info' });
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     try {
       // 1. Check name availability
-      const availability = await firebaseService.checkBetNameAvailability(betName, userId);
+      const availability = await firebaseService.checkBetNameAvailability(cleanBetName, userId);
       if (!availability.available) {
         throw new Error(availability.message);
       }
@@ -201,22 +223,22 @@ const Betting: React.FC = () => {
       for (const numbers of pendingBets) {
         const id = await firebaseService.createBet({
           userId: userId,
-          userName: user?.name || '',
+          userName: user?.name || cleanBetName,
           contestId: activeContest.id,
           contestNumber: activeContest.number,
           numbers: [...numbers],
-          betName: betName || '',
-          sellerCode: sellerCode || '', // Fix: Use empty string instead of undefined
+          betName: cleanBetName,
+          sellerCode: sellerCode || '',
         });
         if (id) {
           ids.push(id);
           // Reserve the nick for this user
-          await firebaseService.reserveNick(betName, userId);
+          await firebaseService.reserveNick(cleanBetName, userId);
         }
       }
       
       setLastBetIds(ids);
-      setLastBetName(betName);
+      setLastBetName(cleanBetName);
       setSuccess(true);
       setPendingBets([]);
       
