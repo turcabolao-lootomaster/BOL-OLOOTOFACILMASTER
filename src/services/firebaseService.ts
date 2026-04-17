@@ -722,11 +722,17 @@ export const firebaseService = {
         blocked: false
       });
       
-      // Update user role to 'vendedor' and link the seller code
-      await updateDoc(doc(db, 'users', seller.userId), { 
+      // Update user role to 'vendedor', link the seller code and update whatsapp
+      const userUpdate: any = { 
         role: 'vendedor',
         linkedSellerCode: seller.code.toUpperCase()
-      });
+      };
+
+      if (seller.whatsapp) {
+        userUpdate.whatsapp = seller.whatsapp;
+      }
+
+      await updateDoc(doc(db, 'users', seller.userId), userUpdate);
       
       return docRef.id;
     } catch (error) {
@@ -739,6 +745,13 @@ export const firebaseService = {
     const path = `sellers/${sellerId}`;
     try {
       await updateDoc(doc(db, 'sellers', sellerId), data);
+
+      // If updating whatsapp, also update user doc if userId is known
+      if (data.whatsapp && data.userId) {
+        await updateDoc(doc(db, 'users', data.userId), {
+          whatsapp: data.whatsapp
+        });
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
     }
@@ -1080,6 +1093,19 @@ export const firebaseService = {
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
     }
+  },
+
+  subscribeToSettings(callback: (settings: Settings | null) => void) {
+    const docRef = doc(db, 'settings', 'global');
+    return onSnapshot(docRef, (doc) => {
+      if (doc.exists()) {
+        callback(doc.data() as Settings);
+      } else {
+        callback(null);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'settings/global');
+    });
   },
 
   async getSellerByCode(code: string): Promise<Seller | null> {

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../utils';
+import { motion } from 'motion/react';
 
 interface BottomNavProps {
   currentView: string;
@@ -43,31 +44,52 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
     const filteredItems = items.filter(item => item.roles.includes(user.role)).slice(0, 5);
     
     return (
-      <nav className="fixed bottom-0 left-0 lg:left-72 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 px-2 py-1 z-50 flex items-center justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-        {filteredItems.map(item => (
-          <button
-            key={item.id}
-            onClick={() => item.id === 'logout' ? logout() : setView(item.id)}
-            className={cn(
-              "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[64px]",
-              currentView === item.id 
-                ? "text-lotofacil-purple scale-110" 
-                : item.id === 'logout' ? "text-red-400" : "text-slate-400"
-            )}
-          >
-            <item.icon size={20} strokeWidth={currentView === item.id ? 2.5 : 2} />
-            <span className={cn(
-              "text-[9px] font-bold uppercase tracking-tighter",
-              currentView === item.id ? "opacity-100" : "opacity-60"
-            )}>
-              {item.label}
-            </span>
-            {currentView === item.id && (
-              <div className="w-1 h-1 bg-lotofacil-purple rounded-full mt-0.5" />
-            )}
-          </button>
-        ))}
-      </nav>
+    <nav className="fixed bottom-0 left-0 lg:left-72 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200 px-2 py-2 z-50 flex items-center justify-around shadow-[0_-8px_30px_rgba(107,33,168,0.1)]">
+      {filteredItems.map(item => (
+        <button
+          key={item.id}
+          onClick={() => item.id === 'logout' ? logout() : setView(item.id)}
+          className={cn(
+            "flex flex-col items-center gap-1.5 p-2 rounded-2xl transition-all min-w-[64px] relative group",
+            currentView === item.id 
+              ? "text-lotofacil-purple scale-110" 
+              : item.id === 'logout' ? "text-red-400" : "text-slate-400"
+          )}
+        >
+          {currentView === item.id && (
+            <motion.div 
+              layoutId="nav-glow"
+              className="absolute inset-0 bg-lotofacil-purple/10 rounded-2xl blur-lg" 
+            />
+          )}
+          <div className={cn(
+            "p-1.5 rounded-xl transition-all",
+            currentView === item.id ? "bg-lotofacil-purple/10 shadow-inner" : ""
+          )}>
+            <item.icon 
+              size={currentView === item.id ? 24 : 20} 
+              strokeWidth={currentView === item.id ? 3 : 2}
+              className={cn(
+                "transition-all",
+                currentView === item.id ? "drop-shadow-[0_0_12px_rgba(107,33,168,0.5)]" : ""
+              )} 
+            />
+          </div>
+          <span className={cn(
+            "text-[9px] font-bold uppercase tracking-widest transition-all",
+            currentView === item.id ? "opacity-100 translate-y-0 text-lotofacil-purple" : "opacity-60"
+          )}>
+            {item.label}
+          </span>
+          {currentView === item.id && (
+            <motion.div 
+              layoutId="nav-dot"
+              className="w-1.5 h-1.5 bg-lotofacil-purple rounded-full mt-0.5 shadow-[0_0_8px_rgba(107,33,168,0.6)]" 
+            />
+          )}
+        </button>
+      ))}
+    </nav>
     );
   }
 
@@ -95,27 +117,48 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 lg:left-72 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 px-2 py-1 z-50 flex items-center justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+    <nav className="fixed bottom-0 left-0 lg:left-72 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200 px-2 py-2 z-50 flex items-center justify-around shadow-[0_-8px_30px_rgba(107,33,168,0.1)]">
       {filteredItems.map(item => (
         <button
           key={item.id}
           onClick={() => handleAction(item.id)}
           className={cn(
-            "flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[64px]",
+            "flex flex-col items-center gap-1.5 p-2 rounded-2xl transition-all min-w-[64px] relative group",
             currentView === item.id 
               ? "text-lotofacil-purple scale-110" 
-              : item.id === 'logout' || item.id === 'login' ? (user ? "text-red-400" : "text-lotofacil-purple") : "text-slate-400"
+              : item.id === 'logout' || item.id === 'login' ? (user ? "text-red-400" : "text-lotofacil-purple") : "text-slate-400 flex"
           )}
         >
-          <item.icon size={20} strokeWidth={currentView === item.id ? 2.5 : 2} />
+          {currentView === item.id && (
+            <motion.div 
+              layoutId="nav-glow-guest"
+              className="absolute inset-0 bg-lotofacil-purple/10 rounded-2xl blur-lg" 
+            />
+          )}
+          <div className={cn(
+            "p-1.5 rounded-xl transition-all",
+            currentView === item.id ? "bg-lotofacil-purple/10 shadow-inner" : ""
+          )}>
+            <item.icon 
+              size={currentView === item.id ? 24 : 20} 
+              strokeWidth={currentView === item.id ? 3 : 2}
+              className={cn(
+                "transition-all",
+                currentView === item.id ? "drop-shadow-[0_0_12px_rgba(107,33,168,0.5)]" : ""
+              )} 
+            />
+          </div>
           <span className={cn(
-            "text-[9px] font-bold uppercase tracking-tighter",
-            currentView === item.id ? "opacity-100" : "opacity-60"
+            "text-[9px] font-bold uppercase tracking-widest transition-all",
+            currentView === item.id ? "opacity-100 text-lotofacil-purple" : "opacity-60"
           )}>
             {item.label}
           </span>
           {currentView === item.id && (
-            <div className="w-1 h-1 bg-lotofacil-purple rounded-full mt-0.5" />
+            <motion.div 
+              layoutId="nav-dot-guest"
+              className="w-1.5 h-1.5 bg-lotofacil-purple rounded-full mt-0.5 shadow-[0_0_8px_rgba(107,33,168,0.6)]" 
+            />
           )}
         </button>
       ))}

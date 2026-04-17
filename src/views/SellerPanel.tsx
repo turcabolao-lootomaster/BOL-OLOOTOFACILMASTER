@@ -17,7 +17,8 @@ import {
   ExternalLink,
   AlertCircle,
   Check,
-  Trash2
+  Trash2,
+  X
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../utils';
@@ -33,6 +34,7 @@ const SellerPanel: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
@@ -99,7 +101,12 @@ const SellerPanel: React.FC = () => {
       setSelectedIds(prev => prev.filter(i => i !== id));
     } catch (error) {
       console.error('Erro ao validar aposta:', error);
-      alert('Erro ao processar validação.');
+      const errorMsg = error instanceof Error ? error.message : 'Erro desconhecido';
+      if (errorMsg.includes('permission-denied') || errorMsg.includes('insufficient permissions')) {
+        showError('Erro de Permissão: Verifique o status da aposta ou seu acesso.');
+      } else {
+        showError(`Erro ao processar: ${errorMsg.substring(0, 40)}...`);
+      }
     }
   };
 
@@ -112,7 +119,7 @@ const SellerPanel: React.FC = () => {
       setSelectedIds([]);
     } catch (error) {
       console.error('Erro na validação em massa:', error);
-      alert('Erro ao validar apostas em massa.');
+      showError('Erro ao validar alguns registros. Verifique permissões.');
     } finally {
       setIsBulkProcessing(false);
     }
@@ -129,7 +136,7 @@ const SellerPanel: React.FC = () => {
       setSelectedIds([]);
     } catch (error) {
       console.error('Erro na exclusão em massa:', error);
-      alert('Erro ao excluir apostas em massa.');
+      showError('Erro ao excluir registros. Verifique se as apostas ainda existem.');
     } finally {
       setIsBulkProcessing(false);
     }
@@ -152,6 +159,11 @@ const SellerPanel: React.FC = () => {
   const showSuccess = (msg: string) => {
     setSuccessMessage(msg);
     setTimeout(() => setSuccessMessage(null), 3000);
+  };
+
+  const showError = (msg: string) => {
+    setErrorMessage(msg);
+    setTimeout(() => setErrorMessage(null), 4000);
   };
 
   const copyLink = () => {
@@ -192,10 +204,21 @@ const SellerPanel: React.FC = () => {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed top-20 right-4 z-50 bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 text-xs font-bold uppercase tracking-widest"
+          className="fixed top-20 right-4 z-[100] bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 text-xs font-bold uppercase tracking-widest"
         >
           <CheckCircle2 size={18} />
           {successMessage}
+        </motion.div>
+      )}
+
+      {errorMessage && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed top-20 right-4 z-[100] bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 text-xs font-bold uppercase tracking-widest"
+        >
+          <AlertCircle size={18} />
+          {errorMessage}
         </motion.div>
       )}
 
@@ -295,33 +318,34 @@ const SellerPanel: React.FC = () => {
               <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">VENDAS <span className="text-slate-200">DOS MEUS CLIENTES</span></h2>
               <div className="flex items-center gap-4">
                 {selectedIds.length > 0 && (
-                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-1.5 rounded-xl">
+                  <div className="flex items-center gap-2 bg-white/50 backdrop-blur-sm border border-slate-200 p-1 rounded-xl shadow-sm pr-2">
                     <button 
                       onClick={handleBulkValidate}
                       disabled={isBulkProcessing}
-                      className="bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center gap-2 disabled:opacity-50"
+                      className="bg-emerald-600 text-white px-2 sm:px-4 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center gap-1 sm:gap-2 disabled:opacity-50"
                     >
-                      <CheckCircle2 size={12} />
-                      VALIDAR
+                      <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />
+                      <span className="hidden xxs:inline">VALIDAR</span>
                     </button>
                     <button 
                       onClick={handleBulkDelete}
                       disabled={isBulkProcessing}
-                      className="bg-red-600 text-white px-4 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all flex items-center gap-2 disabled:opacity-50"
+                      className="bg-red-600 text-white px-2 sm:px-4 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all flex items-center gap-1 sm:gap-2 disabled:opacity-50"
                     >
-                      <Trash2 size={12} />
-                      EXCLUIR / APAGAR
+                      <Trash2 size={10} className="sm:w-3 sm:h-3" />
+                      <span className="hidden xxs:inline">EXCLUIR</span>
                     </button>
                   </div>
                 )}
-                <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+                <span className="hidden xs:inline text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
                   {recentSales.length} {recentSales.length === 1 ? 'Aposta' : 'Apostas'}
                 </span>
               </div>
             </div>
             
-            <div className="overflow-x-auto -mx-5 sm:mx-0">
-              <table className="w-full text-left border-collapse min-w-[600px] sm:min-w-0">
+            {/* Desktop View Table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
                     <th className="px-4 py-3 w-10">
@@ -337,10 +361,10 @@ const SellerPanel: React.FC = () => {
                         {selectedIds.length === recentSales.length && recentSales.length > 0 && <Check size={10} strokeWidth={4} />}
                       </div>
                     </th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold">Data</th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold">Cliente</th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold">Status</th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold text-center">Ações</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold font-display">Data</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold font-display">Cliente</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold font-display">Status</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold font-display text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -430,11 +454,89 @@ const SellerPanel: React.FC = () => {
                   ))}
                   {recentSales.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-6 py-10 text-center text-slate-300 italic text-sm">Nenhuma venda registrada.</td>
+                      <td colSpan={5} className="px-6 py-10 text-center text-slate-300 italic text-sm">Nenhuma venda registrada.</td>
                     </tr>
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile View Cards */}
+            <div className="sm:hidden space-y-4">
+              {recentSales.map((sale, idx) => (
+                <motion.div 
+                  key={sale.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className={cn(
+                    "p-4 rounded-2xl border transition-all space-y-4",
+                    selectedIds.includes(sale.id) 
+                      ? "bg-lotofacil-purple/5 border-lotofacil-purple/30" 
+                      : "bg-slate-50 border-slate-100"
+                  )}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div 
+                        onClick={() => toggleSelectBet(sale.id)}
+                        className={cn(
+                          "w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-all",
+                          selectedIds.includes(sale.id) 
+                            ? "bg-lotofacil-purple border-lotofacil-purple text-white" 
+                            : "border-slate-300 bg-white"
+                        )}
+                      >
+                        {selectedIds.includes(sale.id) && <Check size={12} strokeWidth={4} />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">{sale.betName || sale.userName}</p>
+                        <p className="text-[10px] text-slate-400 uppercase tracking-widest">
+                          {sale.createdAt instanceof Date ? sale.createdAt.toLocaleDateString() : 'Recent'} • ID: {sale.id.substring(0, 4).toUpperCase()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={cn(
+                      "px-2 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest flex items-center gap-1",
+                      sale.status === 'validado' ? "bg-emerald-100 text-emerald-700" : 
+                      sale.status === 'pendente' ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-700"
+                    )}>
+                      {sale.status === 'validado' ? <CheckCircle2 size={8} /> : sale.status === 'pendente' ? <Clock size={8} /> : <AlertCircle size={8} />}
+                      {sale.status}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 py-2 border-y border-slate-200/50">
+                    {sale.numbers.map(n => (
+                      <span key={n} className="w-6 h-6 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-[10px] font-mono font-bold text-lotofacil-purple">
+                        {n.toString().padStart(2, '0')}
+                      </span>
+                    ))}
+                  </div>
+
+                  {sale.status === 'pendente' && (
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleValidate(sale.id, 'validado')}
+                        className="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm"
+                      >
+                        <CheckCircle2 size={12} />
+                        Aprovar
+                      </button>
+                      <button 
+                        onClick={() => handleValidate(sale.id, 'rejeitado')}
+                        className="flex-1 bg-red-600 text-white py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm"
+                      >
+                        <X size={12} />
+                        Rejeitar
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+              {recentSales.length === 0 && (
+                <div className="text-center py-10 text-slate-400 italic text-sm">Nenhuma venda registrada.</div>
+              )}
             </div>
           </div>
         </>

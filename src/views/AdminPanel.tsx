@@ -34,7 +34,9 @@ import {
   Info,
   Store,
   Pencil,
-  MessageCircle
+  MessageCircle,
+  Calendar,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
@@ -2000,6 +2002,7 @@ const SellersTab: React.FC<{
     userId: '',
     code: '',
     password: '',
+    whatsapp: '',
     commissionPct: 15,
     pixKey: ''
   });
@@ -2042,6 +2045,7 @@ const SellersTab: React.FC<{
       userId: userId === 'guest' ? '' : userId,
       code: req.requestedCode,
       password: '', // Admin will set this
+      whatsapp: req.whatsapp,
       commissionPct: 15,
       pixKey: ''
     });
@@ -2101,7 +2105,7 @@ const SellersTab: React.FC<{
     try {
       await firebaseService.createSeller(newSeller);
       setIsAdding(false);
-      setNewSeller({ userId: '', code: '', password: '', commissionPct: 15, pixKey: '' });
+      setNewSeller({ userId: '', code: '', password: '', whatsapp: '', commissionPct: 15, pixKey: '' });
       showAlert('Vendedor Cadastrado', 'O colaborador foi cadastrado com sucesso!');
     } catch (error) {
       console.error('Error adding seller:', error);
@@ -2171,8 +2175,10 @@ const SellersTab: React.FC<{
     try {
       await firebaseService.updateSeller(editingSeller.id, {
         commissionPct: editingSeller.commissionPct,
+        whatsapp: editingSeller.whatsapp,
         pixKey: editingSeller.pixKey,
-        password: editingSeller.password
+        password: editingSeller.password,
+        userId: editingSeller.userId // Needed for sync with user doc
       });
       setEditingSeller(null);
       showAlert('Sucesso', 'Dados do vendedor atualizados com sucesso!');
@@ -2350,6 +2356,17 @@ const SellersTab: React.FC<{
                   />
                 </div>
                 <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">WhatsApp</label>
+                  <input 
+                    type="text" 
+                    value={editingSeller.whatsapp || ''}
+                    onChange={(e) => setEditingSeller({ ...editingSeller, whatsapp: e.target.value.replace(/\D/g, '') })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                    placeholder="Ex: 5511999999999"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Chave PIX</label>
                   <input 
                     type="text" 
@@ -2451,6 +2468,17 @@ const SellersTab: React.FC<{
                 />
               </div>
               <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">WhatsApp de Validação</label>
+                <input 
+                  type="text" 
+                  value={newSeller.whatsapp}
+                  onChange={(e) => setNewSeller({ ...newSeller, whatsapp: e.target.value.replace(/\D/g, '') })}
+                  placeholder="Ex: 5511999999999"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Chave PIX (Para Recebimento)</label>
                 <input 
                   type="text" 
@@ -2501,6 +2529,7 @@ const SellersTab: React.FC<{
             <tr className="bg-slate-50 border-b border-slate-200">
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Código</th>
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Vendedor</th>
+              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">WhatsApp</th>
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Comissão %</th>
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Vendas</th>
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Senha</th>
@@ -2518,6 +2547,16 @@ const SellersTab: React.FC<{
                   <td className="px-6 py-4">
                     <p className="text-sm font-bold text-slate-900">{user?.name || 'Unknown'}</p>
                     <p className="text-[10px] text-slate-600 uppercase tracking-widest">{user?.email}</p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <a 
+                      href={`https://wa.me/${(s.whatsapp || user?.whatsapp || '').replace(/\D/g, '')}`} 
+                      target="_blank" 
+                      className="text-emerald-600 font-bold text-[10px] flex items-center gap-1 hover:underline"
+                    >
+                      <MessageCircle size={12} />
+                      {s.whatsapp || user?.whatsapp || '---'}
+                    </a>
                   </td>
                   <td className="px-6 py-4 text-center text-sm text-slate-500">{s.commissionPct}%</td>
                   <td className="px-6 py-4 text-center text-sm text-slate-900 font-bold">{s.totalSales || 0}</td>
@@ -2859,6 +2898,9 @@ const ConfigTab: React.FC<{
   showAlert: (title: string, message: string) => void;
 }> = ({ showAlert }) => {
   const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [poolStartDate, setPoolStartDate] = useState('');
+  const [poolStartTime, setPoolStartTime] = useState('');
+  const [isPoolActive, setIsPoolActive] = useState(true);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -2867,6 +2909,9 @@ const ConfigTab: React.FC<{
       const settings = await firebaseService.getSettings();
       if (settings) {
         setWhatsappNumber(settings.whatsappNumber || '');
+        setPoolStartDate(settings.poolStartDate || '');
+        setPoolStartTime(settings.poolStartTime || '');
+        setIsPoolActive(settings.isPoolActive !== false); // Default to true
       }
     };
     fetchSettings();
@@ -2876,7 +2921,12 @@ const ConfigTab: React.FC<{
     e.preventDefault();
     setLoading(true);
     try {
-      await firebaseService.updateSettings({ whatsappNumber });
+      await firebaseService.updateSettings({ 
+        whatsappNumber,
+        poolStartDate,
+        poolStartTime,
+        isPoolActive
+      });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
@@ -2888,53 +2938,123 @@ const ConfigTab: React.FC<{
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div>
-        <h2 className="text-lg sm:text-xl font-display tracking-widest text-slate-900 uppercase">CONFIGURAÇÕES DO <span className="text-lotofacil-purple">SISTEMA</span></h2>
-        <p className="text-[10px] sm:text-sm text-slate-600 mt-1">Ajuste parâmetros globais do aplicativo.</p>
+    <div className="space-y-6 max-w-2xl bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
+      <div className="flex items-center gap-4 mb-2">
+        <div className="w-12 h-12 rounded-2xl bg-lotofacil-purple/10 text-lotofacil-purple flex items-center justify-center">
+          <Settings size={24} />
+        </div>
+        <div>
+          <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">CONFIGURAÇÕES DO <span className="text-lotofacil-purple">SISTEMA</span></h2>
+          <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-widest">Ajuste parâmetros globais do aplicativo.</p>
+        </div>
       </div>
 
       <form onSubmit={handleSave} className="space-y-8">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-[9px] uppercase tracking-widest text-slate-600 mb-2 ml-1 font-bold">WhatsApp para Validação</label>
-            <div className="relative">
-              <input 
-                type="text" 
-                value={whatsappNumber}
-                onChange={(e) => setWhatsappNumber(e.target.value)}
-                placeholder="Ex: 5511999999999"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-sm text-slate-900"
-              />
-              <p className="text-[9px] text-slate-500 mt-2 ml-1 leading-relaxed">Insira apenas números com DDD (ex: 5511999999999). Este número será usado no botão de validação de apostas.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* WhatsApp Config */}
+          <div className="space-y-4 md:col-span-2">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+              <div className="w-1 h-1 rounded-full bg-emerald-500" />
+              Comunicação Geral
+            </h3>
+            <div className="space-y-2">
+              <label className="block text-[10px] uppercase tracking-widest text-slate-900 font-bold ml-1">WhatsApp de Suporte (Admin)</label>
+              <div className="relative">
+                <input 
+                  type="text" 
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  placeholder="Ex: 5511999999999"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-sm text-slate-900 font-bold"
+                />
+              </div>
+              <p className="text-[9px] text-slate-400 font-medium ml-1">Número com DDD. Usado como fallback para validação de apostas.</p>
+            </div>
+          </div>
+
+          {/* Start Date Config */}
+          <div className="space-y-4 md:col-span-2 pt-6 border-t border-slate-100">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+              <div className="w-1 h-1 rounded-full bg-lotofacil-yellow" />
+              Lançamento do Bolão (Concurso #1)
+            </h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-900 font-bold ml-1">
+                  <Calendar size={12} className="text-lotofacil-purple" />
+                  Data de Início
+                </label>
+                <input 
+                  type="date" 
+                  value={poolStartDate}
+                  onChange={(e) => setPoolStartDate(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-sm text-slate-900 font-bold"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-900 font-bold ml-1">
+                  <Clock size={12} className="text-lotofacil-purple" />
+                  Horário de Início
+                </label>
+                <input 
+                  type="time" 
+                  value={poolStartTime}
+                  onChange={(e) => setPoolStartTime(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-sm text-slate-900 font-bold"
+                />
+              </div>
+            </div>
+
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Sistema Ativo?</p>
+                <p className="text-[9px] text-slate-500 font-medium">Se desativado, um modal de "Início em Breve" será exibido.</p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setIsPoolActive(!isPoolActive)}
+                className={cn(
+                  "relative w-12 h-6 rounded-full transition-colors",
+                  isPoolActive ? "bg-emerald-500" : "bg-slate-300"
+                )}
+              >
+                <div className={cn(
+                  "absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm",
+                  isPoolActive ? "translate-x-6" : "translate-x-0"
+                )} />
+              </button>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 pt-4">
           <button 
             type="submit"
             disabled={loading}
-            className="bg-lotofacil-purple text-white px-6 h-11 rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(107,33,168,0.3)] disabled:opacity-30 text-[10px] font-bold uppercase tracking-widest"
+            className="flex-1 bg-lotofacil-purple text-white px-8 h-14 rounded-2xl flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(107,33,168,0.3)] disabled:opacity-30 text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
-            {loading ? 'SALVANDO...' : (
+            {loading ? 'PROCESSANDO...' : (
               <>
-                <Save size={16} />
-                SALVAR
+                <Save size={18} />
+                SALVAR ALTERAÇÕES
               </>
             )}
           </button>
           
-          {success && (
-            <motion.div 
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 text-lotofacil-yellow text-[10px] font-bold uppercase tracking-widest"
-            >
-              <Check size={16} />
-              SALVO!
-            </motion.div>
-          )}
+          <AnimatePresence>
+            {success && (
+              <motion.div 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100 shadow-sm shadow-emerald-500/10"
+              >
+                <CheckCircle size={18} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Sucesso</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </form>
     </div>

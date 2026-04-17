@@ -18,15 +18,27 @@ import Ranking from './views/Ranking';
 import Instructions from './views/Instructions';
 import SellerPanel from './views/SellerPanel';
 import AdminPanel from './views/AdminPanel';
+import SystemStartModal from './components/SystemStartModal';
 import { Menu, LogOut } from 'lucide-react';
 import { cn } from './utils';
 import { firebaseService } from './services/firebaseService';
+import { Settings } from './types';
 
 const AppContent: React.FC = () => {
   const { user, loading, logout } = useAuth();
   const [currentView, setView] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [lastCompletedDraws, setLastCompletedDraws] = useState<number>(0);
+  const [systemSettings, setSystemSettings] = useState<Settings | null>(null);
+  const [isModalManuallyClosed, setIsModalManuallyClosed] = useState(false);
+
+  // Monitorar configurações globais
+  React.useEffect(() => {
+    const unsubscribe = firebaseService.subscribeToSettings((settings) => {
+      setSystemSettings(settings);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const publicViews = ['participants', 'current-contest', 'ranking', 'instructions', 'bet'];
 
@@ -291,6 +303,17 @@ const AppContent: React.FC = () => {
 
         <BottomNav currentView={currentView} setView={setView} />
       </main>
+
+      <SystemStartModal 
+        isOpen={systemSettings?.isPoolActive === false && user?.role !== 'admin' && user?.role !== 'master' && !isModalManuallyClosed}
+        onClose={() => setIsModalManuallyClosed(true)}
+        onAdminLogin={() => {
+          setView('login');
+          setIsModalManuallyClosed(true);
+        }}
+        startDate={systemSettings?.poolStartDate}
+        startTime={systemSettings?.poolStartTime}
+      />
     </div>
   );
 };

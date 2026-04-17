@@ -26,17 +26,21 @@ import {
   FileText,
   Pencil,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  HelpCircle,
+  Gift,
+  Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { cn } from '../utils';
-import { Bet, Contest } from '../types';
+import { Bet, Contest, Settings } from '../types';
 
 const LiveRanking: React.FC = () => {
   const [activeContest, setActiveContest] = useState<Contest | null>(null);
+  const [systemSettings, setSystemSettings] = useState<Settings | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -77,12 +81,20 @@ const LiveRanking: React.FC = () => {
   const [isUpdatingPrizes, setIsUpdatingPrizes] = useState(false);
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [showRulesModal, setShowRulesModal] = useState(false);
+  const [showPrizesInfoModal, setShowPrizesInfoModal] = useState(false);
+  const [showStartBubble, setShowStartBubble] = useState(true);
 
   useEffect(() => {
     let unsubscribeContest: (() => void) | undefined;
     let unsubscribeBets: (() => void) | undefined;
+    let unsubscribeSettings: (() => void) | undefined;
 
     const init = async () => {
+      unsubscribeSettings = firebaseService.subscribeToSettings((settings) => {
+        setSystemSettings(settings);
+      });
+
       unsubscribeContest = firebaseService.subscribeToActiveContest((contest) => {
         setActiveContest(contest);
         if (contest) {
@@ -105,6 +117,7 @@ const LiveRanking: React.FC = () => {
     return () => {
       if (unsubscribeContest) unsubscribeContest();
       if (unsubscribeBets) unsubscribeBets();
+      if (unsubscribeSettings) unsubscribeSettings();
     };
   }, []);
 
@@ -728,6 +741,107 @@ const LiveRanking: React.FC = () => {
 
   return (
     <div className="mobile-p mobile-gap flex flex-col">
+      <AnimatePresence>
+        {/* Modal Pequeno de Regras */}
+        {showRulesModal && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: -20 }}
+            className="fixed top-24 right-4 z-[150] w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 overflow-hidden"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 text-lotofacil-purple font-bold text-xs uppercase tracking-widest">
+                <HelpCircle size={14} />
+                Regras Rápidas
+              </div>
+              <button 
+                onClick={() => setShowRulesModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <div className="space-y-2 text-[10px] text-slate-600 leading-tight">
+              <p>• <span className="font-bold text-slate-900">Sorteio 1:</span> Marque 10 pontos e ganhe o prêmio fixo.</p>
+              <p>• <span className="font-bold text-slate-900">Rapidinha:</span> Quem tiver mais pontos no 1º sorteio leva.</p>
+              <p>• <span className="font-bold text-slate-900">Total:</span> Maior pontuação acumulada (S1+S2+S3) vence o Bolão.</p>
+              <p>• <span className="font-bold text-slate-900">Bônus:</span> 25 ou 27 pontos no total garantem prêmios especiais.</p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Modal Pequeno de Prêmios */}
+        {showPrizesInfoModal && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: -20 }}
+            className="fixed top-24 right-4 z-[150] w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 overflow-hidden"
+          >
+            <div className="flex items-center justify-between mb-3 text-lotofacil-yellow-dark font-bold text-xs uppercase tracking-widest">
+              <div className="flex items-center gap-2">
+                <Gift size={14} />
+                Prêmios Estimados
+              </div>
+              <button 
+                onClick={() => setShowPrizesInfoModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+                title="Fechar"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-[10px] border-b border-slate-50 pb-1">
+                <span className="text-slate-500">Campeão:</span>
+                <span className="font-bold text-lotofacil-purple">{prizes.campeao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+              </div>
+              <div className="flex justify-between items-center text-[10px] border-b border-slate-50 pb-1">
+                <span className="text-slate-500">Rapidinha:</span>
+                <span className="font-bold text-lotofacil-yellow-dark">{prizes.rapidinha.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+              </div>
+              <div className="flex justify-between items-center text-[10px] border-b border-slate-50 pb-1">
+                <span className="text-slate-500">Bônus 27+:</span>
+                <span className="font-bold text-slate-900">{prizes.fixed27Plus.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+              </div>
+              <p className="text-[8px] text-slate-400 italic text-center mt-2">Valores calculados com base nas apostas validadas.</p>
+            </div>
+          </motion.div>
+        )}
+        {/* Balão de Fala Verde - Data de Início */}
+        {showStartBubble && systemSettings?.poolStartDate && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.8, y: 10, x: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed top-20 right-6 z-[160] max-w-[200px]"
+          >
+            <div className="bg-emerald-500 text-white p-3 rounded-2xl shadow-xl relative animate-bounce-subtle">
+              <button 
+                onClick={() => setShowStartBubble(false)}
+                className="absolute -top-2 -right-2 w-5 h-5 bg-white text-emerald-500 rounded-full flex items-center justify-center shadow-md hover:bg-emerald-50 transition-colors border border-emerald-100"
+              >
+                <X size={10} strokeWidth={3} />
+              </button>
+              
+              <div className="flex items-start gap-2">
+                <Calendar size={14} className="shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="text-[9px] font-black uppercase tracking-tighter opacity-80">Início do Bolão</p>
+                  <p className="text-[11px] font-bold leading-tight">
+                    {systemSettings.poolStartDate.split('-').reverse().join('/')} às {systemSettings.poolStartTime || '20:00'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Speech Bubble Tail */}
+              <div className="absolute -bottom-2 right-6 w-4 h-4 bg-emerald-500 rotate-45 transform origin-center" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 relative">
         <div>
@@ -762,7 +876,34 @@ const LiveRanking: React.FC = () => {
           )}
         </div>
         
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          {/* Botões de Informação Rápida */}
+          <div className="flex items-center justify-end gap-2 mb-2">
+            <button 
+              onClick={() => setShowRulesModal(true)}
+              className="p-2 bg-white/50 hover:bg-lotofacil-purple/10 text-slate-500 hover:text-lotofacil-purple rounded-full transition-all border border-slate-200"
+              title="Regras"
+            >
+              <HelpCircle size={18} />
+            </button>
+            <button 
+              onClick={() => setShowPrizesInfoModal(true)}
+              className="p-2 bg-white/50 hover:bg-lotofacil-yellow/20 text-slate-500 hover:text-lotofacil-yellow-dark rounded-full transition-all border border-slate-200"
+              title="Premiação"
+            >
+              <Gift size={18} />
+            </button>
+            {!showStartBubble && systemSettings?.poolStartDate && (
+              <button 
+                onClick={() => setShowStartBubble(true)}
+                className="p-2 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 rounded-full transition-all border border-emerald-500/20"
+                title="Ver Data de Início"
+              >
+                <Calendar size={18} />
+              </button>
+            )}
+          </div>
+
           <div className="flex items-center gap-2">
             <button 
               onClick={() => {

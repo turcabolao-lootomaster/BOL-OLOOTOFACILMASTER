@@ -24,6 +24,7 @@ export interface Seller {
   userId: string;
   code: string;
   password?: string;
+  whatsapp?: string;
   commissionPct: number;
   totalSales: number;
   totalCommission: number;
@@ -121,5 +122,8 @@ export interface SellerRequest {
 
 export interface Settings {
   whatsappNumber: string;
+  poolStartDate?: string;
+  poolStartTime?: string;
+  isPoolActive?: boolean;
   updatedAt: any;
 }

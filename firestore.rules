@@ -179,8 +179,16 @@ service cloud.firestore {
     }
 
     match /commissions/{commissionId} {
-      allow read: if isAdmin() || (isAuthenticated() && resource.data.sellerId == request.auth.uid);
-      allow create: if isAdmin();
+      allow read: if isAdmin() || (
+        isAuthenticated() && 
+        exists(/databases/$(database)/documents/sellers/$(resource.data.sellerId)) &&
+        get(/databases/$(database)/documents/sellers/$(resource.data.sellerId)).data.userId == request.auth.uid
+      );
+      allow create: if isAdmin() || (
+        isAuthenticated() && 
+        exists(/databases/$(database)/documents/sellers/$(request.resource.data.sellerId)) &&
+        get(/databases/$(database)/documents/sellers/$(request.resource.data.sellerId)).data.userId == request.auth.uid
+      );
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }

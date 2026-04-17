@@ -26,8 +26,19 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
   }
+  @keyframes bounce-subtle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
   --animate-spin-slow: spin-slow 3s linear infinite;
   --animate-blink: blink 1s ease-in-out infinite;
+  --animate-bounce-subtle: bounce-subtle 2s ease-in-out infinite;
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(107,33,168,0.3); }
+  50% { box-shadow: 0 0 25px rgba(107,33,168,0.6); }
 }
 
 @layer base {
