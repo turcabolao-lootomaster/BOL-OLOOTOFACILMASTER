@@ -151,14 +151,27 @@ export const firebaseService = {
   async getActiveContest(): Promise<Contest | null> {
     const path = 'contests';
     try {
-      const q = query(
+      // First, try to find the newest "aberto" contest
+      const qOpen = query(
+        collection(db, 'contests'), 
+        where('status', '==', 'aberto'),
+        orderBy('number', 'desc'),
+        limit(1)
+      );
+      const openSnapshot = await getDocs(qOpen);
+      if (!openSnapshot.empty) {
+        return { id: openSnapshot.docs[0].id, ...openSnapshot.docs[0].data() } as Contest;
+      }
+
+      // Fallback: just get the latest contest regardless of status
+      const qLatest = query(
         collection(db, 'contests'), 
         orderBy('number', 'desc'),
         limit(1)
       );
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        return { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as Contest;
+      const latestSnapshot = await getDocs(qLatest);
+      if (!latestSnapshot.empty) {
+        return { id: latestSnapshot.docs[0].id, ...latestSnapshot.docs[0].data() } as Contest;
       }
       return null;
     } catch (error) {

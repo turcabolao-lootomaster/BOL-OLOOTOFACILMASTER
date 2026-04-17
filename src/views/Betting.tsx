@@ -32,6 +32,7 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
   const [lastBetIds, setLastBetIds] = useState<string[]>([]);
   const [lastBetName, setLastBetName] = useState('');
   const [surpresinhaCount, setSurpresinhaCount] = useState(1);
+  const [isLoadingContest, setIsLoadingContest] = useState(true);
   const [activeContest, setActiveContest] = React.useState<Contest | null>(null);
   const [feedback, setFeedback] = useState<{ message: string, type: 'success' | 'info' } | null>(null);
   const [whatsappNumber, setWhatsappNumber] = useState('5511999999999');
@@ -47,51 +48,52 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
 
   React.useEffect(() => {
     const fetchData = async () => {
-      // Check for seller ref in URL
-      const params = new URLSearchParams(window.location.search);
-      const ref = params.get('ref');
-      
-      let finalSellerCode = '';
-      
-      if (user?.role === 'vendedor') {
-        const seller = await firebaseService.getSellerByUserId(user.id);
-        if (seller) {
-          finalSellerCode = seller.code.toUpperCase();
+      try {
+        const [contestResult, settingsResult] = await Promise.allSettled([
+          firebaseService.getActiveContest(),
+          firebaseService.getSettings()
+        ]);
+        
+        if (contestResult.status === 'fulfilled') {
+          setActiveContest(contestResult.value);
+        }
+        
+        if (settingsResult.status === 'fulfilled' && settingsResult.value?.whatsappNumber) {
+          setWhatsappNumber(settingsResult.value.whatsappNumber);
+        }
+
+        // Check for seller ref in URL or user link
+        const params = new URLSearchParams(window.location.search);
+        const ref = params.get('ref');
+        let finalSellerCode = '';
+        
+        if (user?.role === 'vendedor') {
+          const seller = await firebaseService.getSellerByUserId(user.id);
+          if (seller) finalSellerCode = seller.code.toUpperCase();
+        } else if (ref) {
+          finalSellerCode = ref.toUpperCase();
+        } else if (user?.linkedSellerCode) {
+          finalSellerCode = user.linkedSellerCode.toUpperCase();
+        }
+
+        if (finalSellerCode) {
+          setSellerCode(finalSellerCode);
           setIsSellerLink(true);
+          const seller = await firebaseService.getSellerByCode(finalSellerCode);
+          if (seller) {
+            const ws = await firebaseService.getSellerWhatsApp(seller.userId);
+            if (ws) setSellerWhatsApp(ws);
+            if (seller.pixKey) setSellerPixKey(seller.pixKey);
+          }
         }
-      } else if (ref) {
-        finalSellerCode = ref.toUpperCase();
-        setIsSellerLink(true);
-        // Link user to seller if not already linked
-        if (user && !user.linkedSellerCode) {
-          firebaseService.linkUserToSeller(user.id, finalSellerCode);
-        }
-      } else if (user?.linkedSellerCode) {
-        finalSellerCode = user.linkedSellerCode.toUpperCase();
-        setIsSellerLink(true);
-      }
-
-      if (finalSellerCode) {
-        setSellerCode(finalSellerCode);
-        const seller = await firebaseService.getSellerByCode(finalSellerCode);
-        if (seller) {
-          const ws = await firebaseService.getSellerWhatsApp(seller.userId);
-          if (ws) setSellerWhatsApp(ws);
-          if (seller.pixKey) setSellerPixKey(seller.pixKey);
-        }
-      }
-
-      const [contest, settings] = await Promise.all([
-        firebaseService.getActiveContest(),
-        firebaseService.getSettings()
-      ]);
-      setActiveContest(contest);
-      if (settings?.whatsappNumber) {
-        setWhatsappNumber(settings.whatsappNumber);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoadingContest(false);
       }
     };
     fetchData();
-  }, []);
+  }, [user]);
 
   const toggleNumber = (num: number) => {
     if (selectedNumbers.includes(num)) {
@@ -475,12 +477,15 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
 
                 <button 
                   type="submit"
-                  disabled={pendingBets.length === 0 || isSubmitting || (activeContest?.status !== 'aberto') || !betName.trim() || !sellerCode}
+                  disabled={pendingBets.length === 0 || isSubmitting || isLoadingContest || (activeContest?.status !== 'aberto') || !cleanBetName || !sellerCode}
                   className="w-full bg-gradient-to-r from-slate-900 to-slate-800 text-white h-12 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm uppercase tracking-widest font-bold hover:brightness-125 transition-all border-2 border-white/10 relative overflow-hidden group"
                 >
                   <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                   <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400">
-                    {isSubmitting ? 'PROCESSANDO...' : (activeContest?.status !== 'aberto' ? 'APOSTAS BLOQUEADAS' : 'FINALIZAR E ENVIAR')}
+                    {isSubmitting ? 'PROCESSANDO...' : 
+                     isLoadingContest ? 'CARREGANDO...' :
+                     (!activeContest ? 'SEM CONCURSO ATIVO' : 
+                      (activeContest.status !== 'aberto' ? 'APOSTAS BLOQUEADAS' : 'FINALIZAR E ENVIAR'))}
                   </span>
                 </button>
               </div>
