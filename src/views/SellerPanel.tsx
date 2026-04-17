@@ -15,7 +15,9 @@ import {
   DollarSign, 
   ArrowUpRight,
   ExternalLink,
-  AlertCircle
+  AlertCircle,
+  Check,
+  Trash2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../utils';
@@ -28,6 +30,9 @@ const SellerPanel: React.FC = () => {
   const [linkedUsers, setLinkedUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'sales' | 'finance' | 'clients' | 'config'>('sales');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
@@ -83,11 +88,64 @@ const SellerPanel: React.FC = () => {
   const handleValidate = async (id: string, status: 'validado' | 'rejeitado') => {
     try {
       await firebaseService.validateBet(id, status);
-      // No need to manually refresh, subscriptions will handle it
+      showSuccess(`Aposta ${status === 'validado' ? 'validada' : 'rejeitada'} com sucesso!`);
+      // Update local state for immediate feedback
+      setSelectedIds(prev => prev.filter(i => i !== id));
     } catch (error) {
       console.error('Erro ao validar aposta:', error);
       alert('Erro ao processar validação.');
     }
+  };
+
+  const handleBulkValidate = async () => {
+    if (selectedIds.length === 0) return;
+    setIsBulkProcessing(true);
+    try {
+      await Promise.all(selectedIds.map(id => firebaseService.validateBet(id, 'validado')));
+      showSuccess(`${selectedIds.length} Apostas validadas com sucesso!`);
+      setSelectedIds([]);
+    } catch (error) {
+      console.error('Erro na validação em massa:', error);
+      alert('Erro ao validar apostas em massa.');
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Deseja realmente EXCLUIR ${selectedIds.length} apostas?`)) return;
+    
+    setIsBulkProcessing(true);
+    try {
+      await Promise.all(selectedIds.map(id => firebaseService.deleteBet(id)));
+      showSuccess(`${selectedIds.length} Apostas excluídas com sucesso!`);
+      setSelectedIds([]);
+    } catch (error) {
+      console.error('Erro na exclusão em massa:', error);
+      alert('Erro ao excluir apostas em massa.');
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === recentSales.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(recentSales.map(s => s.id));
+    }
+  };
+
+  const toggleSelectBet = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const showSuccess = (msg: string) => {
+    setSuccessMessage(msg);
+    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   const copyLink = () => {
@@ -123,6 +181,18 @@ const SellerPanel: React.FC = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-10 space-y-6 sm:space-y-10">
+      {/* Messages */}
+      {successMessage && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed top-20 right-4 z-50 bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 text-xs font-bold uppercase tracking-widest"
+        >
+          <CheckCircle2 size={18} />
+          {successMessage}
+        </motion.div>
+      )}
+
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 sm:gap-6">
         <div>
           <h1 className="text-2xl sm:text-4xl font-display tracking-widest text-slate-900">PAINEL DO <span className="text-lotofacil-purple uppercase">VENDEDOR</span></h1>
@@ -217,15 +287,50 @@ const SellerPanel: React.FC = () => {
           <div className="glass-card p-5 sm:p-8 space-y-6 sm:space-y-8">
             <div className="flex items-center justify-between">
               <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">VENDAS <span className="text-slate-200">DOS MEUS CLIENTES</span></h2>
-              <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
-                {recentSales.length} {recentSales.length === 1 ? 'Aposta' : 'Apostas'}
-              </span>
+              <div className="flex items-center gap-4">
+                {selectedIds.length > 0 && (
+                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-1.5 rounded-xl">
+                    <button 
+                      onClick={handleBulkValidate}
+                      disabled={isBulkProcessing}
+                      className="bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center gap-2 disabled:opacity-50"
+                    >
+                      <CheckCircle2 size={12} />
+                      VALIDAR
+                    </button>
+                    <button 
+                      onClick={handleBulkDelete}
+                      disabled={isBulkProcessing}
+                      className="bg-red-600 text-white px-4 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all flex items-center gap-2 disabled:opacity-50"
+                    >
+                      <Trash2 size={12} />
+                      EXCLUIR / APAGAR
+                    </button>
+                  </div>
+                )}
+                <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+                  {recentSales.length} {recentSales.length === 1 ? 'Aposta' : 'Apostas'}
+                </span>
+              </div>
             </div>
             
             <div className="overflow-x-auto -mx-5 sm:mx-0">
               <table className="w-full text-left border-collapse min-w-[600px] sm:min-w-0">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="px-4 py-3 w-10">
+                      <div 
+                        onClick={toggleSelectAll}
+                        className={cn(
+                          "w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all",
+                          selectedIds.length === recentSales.length && recentSales.length > 0
+                            ? "bg-lotofacil-purple border-lotofacil-purple text-white" 
+                            : "border-slate-300 hover:border-slate-400"
+                        )}
+                      >
+                        {selectedIds.length === recentSales.length && recentSales.length > 0 && <Check size={10} strokeWidth={4} />}
+                      </div>
+                    </th>
                     <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold">Data</th>
                     <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold">Cliente</th>
                     <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold">Status</th>
@@ -239,8 +344,24 @@ const SellerPanel: React.FC = () => {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
-                      className="hover:bg-slate-50 transition-all"
+                      className={cn(
+                        "hover:bg-slate-50 transition-all",
+                        selectedIds.includes(sale.id) && "bg-lotofacil-purple/5"
+                      )}
                     >
+                      <td className="px-4 py-4">
+                        <div 
+                          onClick={() => toggleSelectBet(sale.id)}
+                          className={cn(
+                            "w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all",
+                            selectedIds.includes(sale.id) 
+                              ? "bg-lotofacil-purple border-lotofacil-purple text-white" 
+                              : "border-slate-300 hover:border-slate-400"
+                          )}
+                        >
+                          {selectedIds.includes(sale.id) && <Check size={10} strokeWidth={4} />}
+                        </div>
+                      </td>
                       <td className="px-4 sm:px-6 py-4 sm:py-5 text-[10px] sm:text-xs text-slate-400 uppercase tracking-widest">
                         {sale.createdAt instanceof Date ? sale.createdAt.toLocaleDateString() : 'Recent'}
                       </td>

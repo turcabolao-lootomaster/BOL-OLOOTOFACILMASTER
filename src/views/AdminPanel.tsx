@@ -565,7 +565,7 @@ const BetsTab: React.FC<{
                 className="flex-1 sm:flex-none bg-red-600 text-white px-3 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg"
               >
                 <Trash2 size={12} />
-                Excluir
+                Excluir/Apagar
               </button>
             </div>
           </motion.div>

@@ -772,10 +772,22 @@ export const firebaseService = {
     }
   },
 
-  async updateUserProfile(userId: string, data: { name?: string, whatsapp?: string }): Promise<void> {
+  async updateUserProfile(userId: string, data: Partial<User>): Promise<void> {
     const path = `users/${userId}`;
     try {
-      await updateDoc(doc(db, 'users', userId), data);
+      const docRef = doc(db, 'users', userId);
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        // If it's a new anonymous user, ensure basic fields exist
+        await setDoc(docRef, {
+          id: userId,
+          uid: userId,
+          createdAt: serverTimestamp(),
+          ...data
+        });
+      } else {
+        await updateDoc(docRef, data);
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
     }

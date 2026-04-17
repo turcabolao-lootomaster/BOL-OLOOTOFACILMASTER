@@ -477,7 +477,7 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
 
                 <button 
                   type="submit"
-                  disabled={pendingBets.length === 0 || isSubmitting || isLoadingContest || (activeContest?.status !== 'aberto') || !cleanBetName || !sellerCode}
+                  disabled={pendingBets.length === 0 || isSubmitting || isLoadingContest || (activeContest?.status !== 'aberto') || !betName.trim() || !sellerCode}
                   className="w-full bg-gradient-to-r from-slate-900 to-slate-800 text-white h-12 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.5)] disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm uppercase tracking-widest font-bold hover:brightness-125 transition-all border-2 border-white/10 relative overflow-hidden group"
                 >
                   <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
