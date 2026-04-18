@@ -195,6 +195,15 @@ export const firebaseService = {
     }
   },
 
+  async updateContestStartInfo(contestId: string, startDate: string, startTime: string): Promise<void> {
+    const path = `contests/${contestId}`;
+    try {
+      await updateDoc(doc(db, 'contests', contestId), { startDate, startTime });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
   async updateContestStatus(contestId: string, status: ContestStatus): Promise<void> {
     const path = `contests/${contestId}`;
     try {
@@ -444,7 +453,9 @@ export const firebaseService = {
     prizes?: Contest['prizes'], 
     publicLink?: string,
     betPrice?: number,
-    prizeConfig?: Contest['prizeConfig']
+    prizeConfig?: Contest['prizeConfig'],
+    startDate?: string,
+    startTime?: string
   ): Promise<void> {
     const path = 'contests';
     try {
@@ -482,6 +493,8 @@ export const firebaseService = {
           pctAdmin: 0.10,
           pctReserve: 0.05
         },
+        startDate: startDate || '',
+        startTime: startTime || '',
         createdAt: serverTimestamp()
       });
 

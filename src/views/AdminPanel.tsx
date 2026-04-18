@@ -1220,6 +1220,8 @@ const ContestsTab: React.FC<{
   const [newContestNumber, setNewContestNumber] = useState('');
   const [newBetPrice, setNewBetPrice] = useState('10');
   const [newPublicLink, setNewPublicLink] = useState('');
+  const [newContestStartDate, setNewContestStartDate] = useState('');
+  const [newContestStartTime, setNewContestStartTime] = useState('');
   const [newPrizes, setNewPrizes] = useState<NonNullable<Contest['prizes']>>({
     draw1: '10 PTS',
     draw2: '10 PTS',
@@ -1243,7 +1245,13 @@ const ContestsTab: React.FC<{
     pctReserve: 0.05
   });
 
-  const [editingPrizes, setEditingPrizes] = useState<{ id: string, prizes: NonNullable<Contest['prizes']>, prizeConfig?: Contest['prizeConfig'] } | null>(null);
+  const [editingPrizes, setEditingPrizes] = useState<{ 
+    id: string, 
+    prizes: NonNullable<Contest['prizes']>, 
+    prizeConfig?: Contest['prizeConfig'],
+    startDate?: string,
+    startTime?: string
+  } | null>(null);
   const [editingPublicLink, setEditingPublicLink] = useState<{ id: string, publicLink: string } | null>(null);
 
   const fetchContests = async () => {
@@ -1283,10 +1291,14 @@ const ContestsTab: React.FC<{
         newPrizes, 
         newPublicLink, 
         parseFloat(newBetPrice) || 10,
-        newPrizeConfig
+        newPrizeConfig,
+        newContestStartDate,
+        newContestStartTime
       );
       setNewContestNumber('');
       setNewPublicLink('');
+      setNewContestStartDate('');
+      setNewContestStartTime('');
       setNewPrizes({
         draw1: '10 PTS',
         draw2: '10 PTS',
@@ -1323,6 +1335,13 @@ const ContestsTab: React.FC<{
       await firebaseService.updateContestPrizes(editingPrizes.id, editingPrizes.prizes);
       if (editingPrizes.prizeConfig) {
         await firebaseService.updateContestPrizeConfig(editingPrizes.id, editingPrizes.prizeConfig);
+      }
+      if (editingPrizes.startDate !== undefined || editingPrizes.startTime !== undefined) {
+        await firebaseService.updateContestStartInfo(
+          editingPrizes.id, 
+          editingPrizes.startDate || '', 
+          editingPrizes.startTime || ''
+        );
       }
       setEditingPrizes(null);
       await fetchContests();
@@ -1472,6 +1491,27 @@ const ContestsTab: React.FC<{
                   value={newPublicLink}
                   onChange={(e) => setNewPublicLink(e.target.value)}
                   placeholder="Ex: https://youtube.com/..."
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest">Data de Início</label>
+                <input 
+                  type="date" 
+                  value={newContestStartDate}
+                  onChange={(e) => setNewContestStartDate(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest">Horário de Início/Prazo</label>
+                <input 
+                  type="time" 
+                  value={newContestStartTime}
+                  onChange={(e) => setNewContestStartTime(e.target.value)}
                   className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
                 />
               </div>
@@ -1702,6 +1742,34 @@ const ContestsTab: React.FC<{
                     ))}
                   </div>
 
+                  {/* Informações de Início no Edit Modal */}
+                  <div className="space-y-4 pt-4 border-t border-slate-100">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-blue-500" />
+                      Data e Horário de Início
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Data de Início</label>
+                        <input 
+                          type="date" 
+                          value={editingPrizes.startDate || ''}
+                          onChange={(e) => setEditingPrizes({...editingPrizes, startDate: e.target.value})}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50 transition-all"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Horário de Início</label>
+                        <input 
+                          type="time" 
+                          value={editingPrizes.startTime || ''}
+                          onChange={(e) => setEditingPrizes({...editingPrizes, startTime: e.target.value})}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-lotofacil-purple/50 transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[
                       { label: 'Rapidinha 1° Lugar', key: 'rapidinha1' },
@@ -1903,6 +1971,11 @@ const ContestsTab: React.FC<{
                 <div className="flex flex-col gap-0.5">
                   <p className="text-[8px] sm:text-[10px] text-slate-600 uppercase tracking-widest">Status: {getStatusLabel(c.status)}</p>
                   <p className="text-[8px] sm:text-[10px] text-lotofacil-yellow uppercase tracking-widest font-bold">Apostas: {contestBetCounts[c.id] || 0}</p>
+                  {c.startDate && (
+                    <p className="text-[8px] sm:text-[10px] text-emerald-600 uppercase tracking-widest font-bold">
+                      Início: {c.startDate.split('-').reverse().join('/')} {c.startTime && `às ${c.startTime}`}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -1941,7 +2014,9 @@ const ContestsTab: React.FC<{
                     pctSeller: 0.15,
                     pctAdmin: 0.10,
                     pctReserve: 0.05
-                  }
+                  },
+                  startDate: c.startDate || '',
+                  startTime: c.startTime || ''
                 })}
                 className="w-8 h-8 sm:w-10 sm:h-10 bg-white text-slate-600 hover:text-lotofacil-purple border border-slate-200 rounded-lg sm:rounded-xl flex items-center justify-center transition-all shadow-sm"
                 title="Editar Premiações"

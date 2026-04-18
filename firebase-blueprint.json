@@ -38,7 +38,10 @@
       "type": "object",
       "properties": {
         "number": { "type": "integer" },
-        "status": { "type": "string", "enum": ["aberto", "encerrado"] },
+        "status": { "type": "string", "enum": ["aberto", "em_andamento", "encerrado"] },
+        "startDate": { "type": "string" },
+        "startTime": { "type": "string" },
+        "betPrice": { "type": "number" },
         "draws": { 
           "type": "array", 
           "items": {
@@ -62,10 +65,36 @@
             "rankeada": { "type": "string" }
           }
         },
+        "prizeConfig": {
+          "type": "object",
+          "properties": {
+            "pctRapidinha": { "type": "number" },
+            "pctChampion": { "type": "number" },
+            "pctVice": { "type": "number" },
+            "pctSeller": { "type": "number" },
+            "pctAdmin": { "type": "number" },
+            "pctReserve": { "type": "number" },
+            "fixed10PtsDraw1": { "type": "number" },
+            "fixed10PtsDraw2": { "type": "number" },
+            "fixed10PtsDraw3": { "type": "number" },
+            "fixed25PlusTotal": { "type": "number" },
+            "fixed27PlusTotal": { "type": "number" }
+          }
+        },
         "publicLink": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["number", "status", "draws"]
+    },
+    "NickReservation": {
+      "title": "Nick Reservation",
+      "description": "Reservation of a participant name to prevent collisions",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "reservedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId"]
     },
     "Seller": {
       "title": "Seller",
@@ -165,6 +194,10 @@
     "/sellerRequests/{requestId}": {
       "schema": "SellerRequest",
       "description": "Requests for new seller accounts"
+    },
+    "/nick_reservations/{key}": {
+      "schema": "NickReservation",
+      "description": "Participant name reservations"
     }
   }
 }

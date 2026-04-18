@@ -193,7 +193,15 @@ const LiveRanking: React.FC = () => {
   // Identify prize thresholds
   const maxTotalHits = rankingWithRanks.length > 0 ? rankingWithRanks[0].totalHits : 0;
   const secondMaxTotalHits = rankingWithRanks.find(b => b.totalHits < maxTotalHits)?.totalHits || 0;
-  const maxS1Hits = bets.length > 0 ? Math.max(...bets.map(b => b.hits?.[0] || 0)) : 0;
+  
+  // Safer calculation for large datasets instead of Math.max(...array)
+  let maxS1Hits = 0;
+  if (bets.length > 0) {
+    for (const b of bets) {
+      const h1 = b.hits?.[0] || 0;
+      if (h1 > maxS1Hits) maxS1Hits = h1;
+    }
+  }
 
   // Find winners/leaders based on all bets
   const rapidinhaLeader = [...bets].sort((a, b) => (b.hits?.[0] || 0) - (a.hits?.[0] || 0))[0];
@@ -505,7 +513,18 @@ const LiveRanking: React.FC = () => {
     doc.setFontSize(11);
     doc.setTextColor(30, 41, 59);
     doc.setFont('helvetica', 'bold');
-    doc.text(`CLASSIFICAÇÃO | CONCURSO #${activeContest.number} | INICIO: 10/04/2026`, pageWidth / 2, 150, { align: 'center' });
+    
+    // Use contest start date if available, otherwise global start date
+    const displayStartDate = activeContest.startDate || systemSettings?.poolStartDate || '10/04/2026';
+    const displayStartTime = activeContest.startTime || systemSettings?.poolStartTime || '';
+    
+    const formattedStartDate = displayStartDate.includes('-') 
+      ? displayStartDate.split('-').reverse().join('/') 
+      : displayStartDate;
+      
+    const startInfo = displayStartTime ? `${formattedStartDate} | ${displayStartTime}` : formattedStartDate;
+
+    doc.text(`CLASSIFICAÇÃO | CONCURSO #${activeContest.number} | INICIO: ${startInfo}`, pageWidth / 2, 150, { align: 'center' });
     
     // Draw Results Section (3 Lines) - Centralized with Balls
     const ballRadius = 2.5;

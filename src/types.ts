@@ -71,6 +71,8 @@ export interface Contest {
     pctReserve: number;
   };
   publicLink?: string;
+  startDate?: string;
+  startTime?: string;
 }
 
 export type BetStatus = 'pendente' | 'validado' | 'rejeitado';
