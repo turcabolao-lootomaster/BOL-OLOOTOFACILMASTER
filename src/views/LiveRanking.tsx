@@ -155,14 +155,14 @@ const LiveRanking: React.FC = () => {
   };
 
   const prizes = {
-    rapidinha: totalRevenue * (prizeConfig.pctRapidinha || 0.10),
-    campeao: totalRevenue * (prizeConfig.pctChampion || 0.45),
-    vice: totalRevenue * (prizeConfig.pctVice || 0.15),
-    fixed10PtsDraw1: prizeConfig.fixed10PtsDraw1 || 500,
-    fixed10PtsDraw2: prizeConfig.fixed10PtsDraw2 || 500,
-    fixed10PtsDraw3: prizeConfig.fixed10PtsDraw3 || 500,
-    fixed25Plus: prizeConfig.fixed25PlusTotal || 2000,
-    fixed27Plus: prizeConfig.fixed27PlusTotal || 5000
+    rapidinha: activeContest.displayPrizes?.rapidinha ?? (totalRevenue * (prizeConfig.pctRapidinha || 0.10)),
+    campeao: activeContest.displayPrizes?.champion ?? (totalRevenue * (prizeConfig.pctChampion || 0.45)),
+    vice: activeContest.displayPrizes?.vice ?? (totalRevenue * (prizeConfig.pctVice || 0.15)),
+    fixed10PtsDraw1: activeContest.displayPrizes?.draw1 ?? (prizeConfig.fixed10PtsDraw1 || 500),
+    fixed10PtsDraw2: activeContest.displayPrizes?.draw2 ?? (prizeConfig.fixed10PtsDraw2 || 500),
+    fixed10PtsDraw3: activeContest.displayPrizes?.draw3 ?? (prizeConfig.fixed10PtsDraw3 || 500),
+    fixed25Plus: activeContest.displayPrizes?.bonus25 ?? (prizeConfig.fixed25PlusTotal || 2000),
+    fixed27Plus: activeContest.displayPrizes?.bonus27 ?? (prizeConfig.fixed27PlusTotal || 5000)
   };
 
   // Process ranking data - Show all bets individually (No grouping in Live Ranking)
@@ -634,18 +634,29 @@ const LiveRanking: React.FC = () => {
       alternateRowStyles: { fillColor: [252, 252, 252] },
       didParseCell: (data) => {
         if (data.section === 'body') {
-          const betId = rankingWithRanks[data.row.index].id;
+          const rowInfo = rankingWithRanks[data.row.index];
+          const betId = rowInfo.id;
+          const rank = rowInfo.rank;
           
-          // Check if winner to highlight row
-          const isWinner = winners10Pts.some(w => w.some(wb => wb.id === betId)) || 
-                           rapidinhaLeader?.id === betId || 
-                           champion?.id === betId || 
-                           vice?.id === betId || 
-                           winners25Plus.some(w => w.id === betId) || 
-                           winners27Plus.some(w => w.id === betId);
-
-          if (isWinner && data.column.index <= 2) {
-            data.cell.styles.fillColor = [254, 243, 199]; // Light Gold
+          // Row Highlighting based on Rank
+          if (data.column.index <= 2) {
+            if (rank === 1) {
+              data.cell.styles.fillColor = [255, 237, 213]; // Orange 100 (Gold/Bronze) - More distinct than Amber 50
+              data.cell.styles.fontStyle = 'bold';
+            } else if (rank === 2) {
+              data.cell.styles.fillColor = [219, 234, 254]; // Blue 100 (Silver/Blue) - Clearly distinct from white
+              data.cell.styles.fontStyle = 'bold';
+            } else {
+              // Check for other special winners (Rapidinha, 10pts etc)
+              const isOtherWinner = winners10Pts.some(w => w.some(wb => wb.id === betId)) || 
+                                   rapidinhaLeader?.id === betId || 
+                                   winners25Plus.some(w => w.id === betId) || 
+                                   winners27Plus.some(w => w.id === betId);
+              
+              if (isOtherWinner) {
+                data.cell.styles.fillColor = [241, 245, 249]; // Slate 50
+              }
+            }
           }
 
           // Highlight hit numbers for the SELECTED draw only
@@ -1211,9 +1222,9 @@ const LiveRanking: React.FC = () => {
                       className={cn(
                         "transition-all duration-300 cursor-pointer relative",
                         isExpanded ? "bg-slate-900 text-white shadow-2xl z-30 scale-[1.02] rounded-xl" : 
-                        isChampion ? "bg-gradient-to-r from-amber-50 via-amber-100 to-amber-50 hover:from-amber-100 hover:via-amber-200 hover:to-amber-100 border-y border-amber-200 shadow-sm" : 
-                        isVice ? "bg-gradient-to-r from-slate-50 via-slate-100 to-slate-50 hover:from-slate-100 hover:via-slate-200 hover:to-slate-100 border-y border-slate-200 shadow-sm" :
-                        hits[selectedDraw] >= 10 ? "bg-orange-100 hover:bg-orange-200" :
+                        isChampion ? "bg-gradient-to-r from-amber-50 via-amber-100 to-amber-50 hover:from-amber-100 hover:via-amber-200 hover:to-amber-100/80 border-y border-amber-200/50 shadow-sm" : 
+                        isVice ? "bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 hover:from-blue-100 hover:via-blue-200 hover:to-blue-100/80 border-y border-blue-200/50 shadow-sm" :
+                        hits[selectedDraw] >= 10 ? "bg-orange-100/40 hover:bg-orange-200/60" :
                         isRapidinha ? "bg-yellow-100/40 hover:bg-yellow-100/60" :
                         isWinner ? "bg-lotofacil-purple/5 hover:bg-lotofacil-purple/10" : "hover:bg-slate-50"
                       )}

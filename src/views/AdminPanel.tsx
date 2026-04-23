@@ -1245,10 +1245,22 @@ const ContestsTab: React.FC<{
     pctReserve: 0.05
   });
 
+  const [newDisplayPrizes, setNewDisplayPrizes] = useState<NonNullable<Contest['displayPrizes']>>({
+    draw1: 300,
+    draw2: 300,
+    draw3: 300,
+    rapidinha: 0,
+    champion: 0,
+    vice: 0,
+    bonus25: 2000,
+    bonus27: 5000
+  });
+
   const [editingPrizes, setEditingPrizes] = useState<{ 
     id: string, 
     prizes: NonNullable<Contest['prizes']>, 
     prizeConfig?: Contest['prizeConfig'],
+    displayPrizes?: Contest['displayPrizes'],
     startDate?: string,
     startTime?: string
   } | null>(null);
@@ -1293,7 +1305,8 @@ const ContestsTab: React.FC<{
         parseFloat(newBetPrice) || 10,
         newPrizeConfig,
         newContestStartDate,
-        newContestStartTime
+        newContestStartTime,
+        newDisplayPrizes
       );
       setNewContestNumber('');
       setNewPublicLink('');
@@ -1320,6 +1333,16 @@ const ContestsTab: React.FC<{
         pctAdmin: 0.10,
         pctReserve: 0.05
       });
+      setNewDisplayPrizes({
+        draw1: 300,
+        draw2: 300,
+        draw3: 300,
+        rapidinha: 0,
+        champion: 0,
+        vice: 0,
+        bonus25: 2000,
+        bonus27: 5000
+      });
       setIsCreating(false);
       await fetchContests();
     } catch (error) {
@@ -1335,6 +1358,9 @@ const ContestsTab: React.FC<{
       await firebaseService.updateContestPrizes(editingPrizes.id, editingPrizes.prizes);
       if (editingPrizes.prizeConfig) {
         await firebaseService.updateContestPrizeConfig(editingPrizes.id, editingPrizes.prizeConfig);
+      }
+      if (editingPrizes.displayPrizes) {
+        await firebaseService.updateContestDisplayPrizes(editingPrizes.id, editingPrizes.displayPrizes);
       }
       if (editingPrizes.startDate !== undefined || editingPrizes.startTime !== undefined) {
         await firebaseService.updateContestStartInfo(
@@ -1621,6 +1647,42 @@ const ContestsTab: React.FC<{
               </div>
             </div>
 
+            {/* Prêmios para Visualização (Overlays) */}
+            <div className="space-y-4 pt-6 border-t border-slate-200">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                <div className="w-1 h-1 rounded-full bg-lotofacil-purple" />
+                Valores para Visualização (Ao Vivo)
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: '1° Sorteio', key: 'draw1' },
+                  { label: '2° Sorteio', key: 'draw2' },
+                  { label: '3° Sorteio', key: 'draw3' },
+                  { label: 'Rapidinha', key: 'rapidinha' },
+                  { label: 'Campeão', key: 'champion' },
+                  { label: 'Vice', key: 'vice' },
+                  { label: 'Bônus 25', key: 'bonus25' },
+                  { label: 'Super 27', key: 'bonus27' },
+                ].map(item => (
+                  <div key={item.key} className="space-y-1.5">
+                    <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">{item.label}</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">R$</span>
+                      <input 
+                        type="number" 
+                        value={(newDisplayPrizes as any)[item.key] || 0}
+                        onChange={(e) => setNewDisplayPrizes({
+                          ...newDisplayPrizes, 
+                          [item.key]: parseFloat(e.target.value) || 0
+                        })}
+                        className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm font-bold text-slate-900 focus:outline-none focus:border-lotofacil-purple/50 transition-all"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-4 pt-6 border-t border-slate-200">
               <div className="flex items-center justify-between">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900">Configuração de Porcentagens (%)</h4>
@@ -1837,6 +1899,45 @@ const ContestsTab: React.FC<{
                   </div>
                 </div>
 
+                {/* Prêmios para Visualização (Overlays) */}
+                <div className="space-y-4 pt-6 border-t border-slate-100">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-lotofacil-purple" />
+                    Valores para Visualização (Ao Vivo)
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { label: '1° Sorteio', key: 'draw1' },
+                      { label: '2° Sorteio', key: 'draw2' },
+                      { label: '3° Sorteio', key: 'draw3' },
+                      { label: 'Rapidinha', key: 'rapidinha' },
+                      { label: 'Campeão', key: 'champion' },
+                      { label: 'Vice', key: 'vice' },
+                      { label: 'Bônus 25', key: 'bonus25' },
+                      { label: 'Super 27', key: 'bonus27' },
+                    ].map(item => (
+                      <div key={item.key} className="space-y-1.5">
+                        <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">{item.label}</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">R$</span>
+                          <input 
+                            type="number" 
+                            value={(editingPrizes.displayPrizes as any)?.[item.key] || 0}
+                            onChange={(e) => setEditingPrizes({
+                              ...editingPrizes, 
+                              displayPrizes: {
+                                ...(editingPrizes.displayPrizes || {}), 
+                                [item.key]: parseFloat(e.target.value) || 0
+                              } as any
+                            })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm font-bold text-slate-900 focus:outline-none focus:border-lotofacil-purple/50 transition-all"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Porcentagens */}
                 <div className="space-y-4 pt-6 border-t border-slate-100">
                   <div className="flex items-center justify-between">
@@ -2014,6 +2115,16 @@ const ContestsTab: React.FC<{
                     pctSeller: 0.15,
                     pctAdmin: 0.10,
                     pctReserve: 0.05
+                  },
+                  displayPrizes: c.displayPrizes || {
+                    draw1: 300,
+                    draw2: 300,
+                    draw3: 300,
+                    rapidinha: 0,
+                    champion: 0,
+                    vice: 0,
+                    bonus25: 2000,
+                    bonus27: 5000
                   },
                   startDate: c.startDate || '',
                   startTime: c.startTime || ''

@@ -455,7 +455,8 @@ export const firebaseService = {
     betPrice?: number,
     prizeConfig?: Contest['prizeConfig'],
     startDate?: string,
-    startTime?: string
+    startTime?: string,
+    displayPrizes?: Contest['displayPrizes']
   ): Promise<void> {
     const path = 'contests';
     try {
@@ -493,6 +494,7 @@ export const firebaseService = {
           pctAdmin: 0.10,
           pctReserve: 0.05
         },
+        displayPrizes: displayPrizes || {},
         startDate: startDate || '',
         startTime: startTime || '',
         createdAt: serverTimestamp()
@@ -836,6 +838,16 @@ export const firebaseService = {
     try {
       const contestRef = doc(db, 'contests', contestId);
       await updateDoc(contestRef, { prizes });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
+  async updateContestDisplayPrizes(contestId: string, displayPrizes: Contest['displayPrizes']): Promise<void> {
+    const path = `contests/${contestId}`;
+    try {
+      const contestRef = doc(db, 'contests', contestId);
+      await updateDoc(contestRef, { displayPrizes });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
     }

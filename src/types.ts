@@ -70,6 +70,16 @@ export interface Contest {
     pctAdmin: number;
     pctReserve: number;
   };
+  displayPrizes?: {
+    draw1?: number;
+    draw2?: number;
+    draw3?: number;
+    rapidinha?: number;
+    champion?: number;
+    vice?: number;
+    bonus25?: number;
+    bonus27?: number;
+  };
   publicLink?: string;
   startDate?: string;
   startTime?: string;
