@@ -117,6 +117,7 @@ export interface Commission {
   sellerId: string;
   betId: string;
   amount: number;
+  type?: 'sale' | 'bonus_1st_place';
   paid: boolean;
   createdAt: any;
 }
@@ -138,4 +139,15 @@ export interface Settings {
   poolStartTime?: string;
   isPoolActive?: boolean;
   updatedAt: any;
+}
+
+export interface PageViewStats {
+  id: string;
+  page: string;
+  total: number;
+  masters: number;
+  admins: number;
+  sellers: number;
+  clients: number;
+  lastUpdate: any;
 }

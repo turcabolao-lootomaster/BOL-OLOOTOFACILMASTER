@@ -23,6 +23,7 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
   const [sellerCode, setSellerCode] = useState('');
   const [isSellerLink, setIsSellerLink] = useState(false);
   const [betName, setBetName] = useState('');
+  const [showInfoTip, setShowInfoTip] = useState(false);
 
   const handleBetNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBetName(e.target.value.toUpperCase());
@@ -282,6 +283,42 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
   return (
     <div className="mobile-p lg:p-6 max-w-[850px] mx-auto space-y-2 sm:space-y-6">
       <AnimatePresence>
+        {showInfoTip && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowInfoTip(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-lotofacil-purple/10 rounded-xl text-lotofacil-purple">
+                    <Info size={24} />
+                  </div>
+                  <h3 className="text-sm font-bold tracking-widest text-slate-900 uppercase">DICA IMPORTANTE</h3>
+                </div>
+                <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                  Use sempre o <span className="font-black italic underline">mesmo nome</span> nas próximas edições para somar os pontos já conquistados na <span className="text-lotofacil-purple font-bold">CORRIDA DOS CAMPEÕES</span>.
+                </p>
+                <button 
+                  onClick={() => setShowInfoTip(false)}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-bold uppercase tracking-widest text-xs transition-all"
+                >
+                  Entendi!
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {showSuccessModal && (
           <motion.div 
             initial={{ opacity: 0 }}
@@ -408,9 +445,18 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
         <div className="w-full lg:w-[320px] space-y-4 shrink-0">
           {/* Bet Name Input - Moved inside column for alignment */}
           <div className="space-y-1.5 px-1">
-            <label className="block text-[10px] uppercase tracking-widest text-slate-500 font-bold ml-1">
-              NOME NA APOSTA (NICK)
-            </label>
+            <div className="flex items-center justify-between ml-1">
+              <label className="block text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+                NOME NA APOSTA (NICK)
+              </label>
+              <button 
+                onClick={() => setShowInfoTip(true)}
+                className="flex items-center gap-1 text-emerald-500 hover:text-emerald-600 transition-colors"
+              >
+                <span className="text-[9px] font-bold uppercase tracking-tighter">DICA</span>
+                <Info size={12} strokeWidth={3} />
+              </button>
+            </div>
             <div className="relative">
               <input 
                 type="text" 

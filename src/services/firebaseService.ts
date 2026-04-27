@@ -18,10 +18,11 @@ import {
   Timestamp,
   orderBy,
   limit,
-  serverTimestamp
+  serverTimestamp,
+  increment
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { User, Bet, Contest, Draw, UserRanking, Commission, ContestStatus, Seller, Settings, SellerRequest } from '../types';
+import { User, Bet, Contest, Draw, UserRanking, Commission, ContestStatus, Seller, Settings, SellerRequest, PageViewStats } from '../types';
 
 enum OperationType {
   CREATE = 'create',
@@ -207,13 +208,77 @@ export const firebaseService = {
   async updateContestStatus(contestId: string, status: ContestStatus): Promise<void> {
     const path = `contests/${contestId}`;
     try {
-      await updateDoc(doc(db, 'contests', contestId), { status });
-      // When a contest is finalized, recalculate the general ranking to ensure accuracy
-      if (status === 'encerrado') {
-        await this.recalculateGeneralRanking();
+      const contestRef = doc(db, 'contests', contestId);
+      const contestSnap = await getDoc(contestRef);
+      const oldStatus = contestSnap.data()?.status;
+
+      await updateDoc(contestRef, { status });
+      
+      // When a contest is finalized, recalculate the general ranking and process seller bonuses
+      if (status === 'encerrado' && oldStatus !== 'encerrado') {
+        await Promise.all([
+          this.recalculateGeneralRanking(),
+          this.processSellerBonuses(contestId)
+        ]);
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
+  async processSellerBonuses(contestId: string): Promise<void> {
+    try {
+      // Fetch all validated bets for this contest
+      const betsQuery = query(
+        collection(db, 'bets'), 
+        where('contestId', '==', contestId), 
+        where('status', '==', 'validado')
+      );
+      const betsSnap = await getDocs(betsQuery);
+      const bets = betsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bet));
+
+      if (bets.length === 0) return;
+
+      // Find top winners (1st place)
+      let maxPoints = -1;
+      bets.forEach(b => {
+        const total = (b.hits || [0, 0, 0]).reduce((sum, h) => sum + h, 0);
+        if (total > maxPoints) maxPoints = total;
+      });
+
+      if (maxPoints <= 0) return;
+
+      const winners = bets.filter(b => (b.hits || [0, 0, 0]).reduce((sum, h) => sum + h, 0) === maxPoints);
+      
+      // Bonus of R$ 100 divided among winning bets
+      const bonusPerWinningBet = 100 / winners.length;
+
+      for (const winner of winners) {
+        if (winner.sellerCode) {
+          const sellersQuery = query(collection(db, 'sellers'), where('code', '==', winner.sellerCode));
+          const sellersSnap = await getDocs(sellersQuery);
+          if (!sellersSnap.empty) {
+            const sellerDoc = sellersSnap.docs[0];
+            const sellerData = sellerDoc.data() as Seller;
+            
+            await updateDoc(doc(db, 'sellers', sellerDoc.id), {
+              totalCommission: (sellerData.totalCommission || 0) + bonusPerWinningBet
+            });
+
+            // Create commission record for the bonus
+            await addDoc(collection(db, 'commissions'), {
+              sellerId: sellerDoc.id,
+              betId: winner.id,
+              amount: bonusPerWinningBet,
+              type: 'bonus_1st_place',
+              paid: false,
+              createdAt: serverTimestamp()
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error processing seller bonuses:', error);
     }
   },
 
@@ -354,20 +419,23 @@ export const firebaseService = {
     try {
       const docRef = doc(db, 'bets', betId);
       const betSnap = await getDoc(docRef);
-      const oldStatus = betSnap.data()?.status;
+      const betData = betSnap.data() as Bet;
+      const oldStatus = betData.status;
       
       await updateDoc(docRef, { status });
 
       // If status changed to 'validado', update seller stats
       if (status === 'validado' && oldStatus !== 'validado') {
-        const betData = betSnap.data() as Bet;
+        const contestSnap = await getDoc(doc(db, 'contests', betData.contestId));
+        const betPrice = contestSnap.exists() ? (contestSnap.data()?.betPrice || 10) : 10;
+
         if (betData.sellerCode) {
           const sellersQuery = query(collection(db, 'sellers'), where('code', '==', betData.sellerCode));
           const sellersSnap = await getDocs(sellersQuery);
           if (!sellersSnap.empty) {
             const sellerDoc = sellersSnap.docs[0];
             const sellerData = sellerDoc.data() as Seller;
-            const commissionAmount = 10 * (sellerData.commissionPct / 100); // Fixed price R$ 10
+            const commissionAmount = betPrice * (sellerData.commissionPct / 100);
             
             await updateDoc(doc(db, 'sellers', sellerDoc.id), {
               totalSales: (sellerData.totalSales || 0) + 1,
@@ -379,6 +447,7 @@ export const firebaseService = {
               sellerId: sellerDoc.id,
               betId: betId,
               amount: commissionAmount,
+              type: 'sale',
               paid: false,
               createdAt: serverTimestamp()
             });
@@ -464,7 +533,7 @@ export const firebaseService = {
       const activeQuery = query(collection(db, 'contests'), where('status', 'in', ['aberto', 'em_andamento']));
       const activeSnap = await getDocs(activeQuery);
       for (const contestDoc of activeSnap.docs) {
-        await updateDoc(doc(db, 'contests', contestDoc.id), { status: 'encerrado' });
+        await this.updateContestStatus(contestDoc.id, 'encerrado');
       }
 
       // 2. Create the new contest
@@ -1255,6 +1324,41 @@ export const firebaseService = {
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, path);
       return [];
+    }
+  },
+
+  async trackPageView(pageId: string, role: string): Promise<void> {
+    const statsRef = doc(db, 'system_stats', 'page_views');
+    const updates: any = {
+      [`${pageId}_total`]: increment(1),
+      lastUpdate: serverTimestamp()
+    };
+    
+    if (role === 'master' || role === 'admin') {
+      updates[`${pageId}_admins`] = increment(1);
+    } else if (role === 'vendedor') {
+      updates[`${pageId}_sellers`] = increment(1);
+    } else {
+      updates[`${pageId}_clients`] = increment(1);
+    }
+
+    try {
+      await setDoc(statsRef, updates, { merge: true });
+    } catch (error) {
+      console.error('Error tracking page view:', error);
+    }
+  },
+
+  async getPageViewStats(): Promise<any> {
+    try {
+      const docSnap = await getDoc(doc(db, 'system_stats', 'page_views'));
+      if (docSnap.exists()) {
+        return docSnap.data();
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting page view stats:', error);
+      return null;
     }
   }
 };

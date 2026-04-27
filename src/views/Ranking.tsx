@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { firebaseService } from '../services/firebaseService';
-import { Trophy, Medal, TrendingUp, Search, Share2, Crown, FileText, Lock } from 'lucide-react';
+import { Trophy, Medal, TrendingUp, Search, Share2, Crown, FileText, Lock, AlertCircle, HelpCircle, X as CloseIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../utils';
 import { RANKING_GOAL } from '../utils';
@@ -21,6 +21,8 @@ const Ranking: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [sortBy, setSortBy] = useState<'points' | 'name'>('points');
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
 
@@ -49,13 +51,13 @@ const Ranking: React.FC = () => {
     doc.text('CORRIDA DOS CAMPEÕES', pageWidth / 2, 20, { align: 'center' });
     
     doc.setFontSize(14);
-    doc.text('RUMO AOS 150 PONTOS', pageWidth / 2, 30, { align: 'center' });
+    doc.text('RUMO AOS 160 PONTOS', pageWidth / 2, 30, { align: 'center' });
 
     // Meta Info
     doc.setFillColor(147, 51, 234); // Purple 600
     doc.roundedRect(pageWidth / 2 - 60, 35, 120, 8, 2, 2, 'F');
     doc.setFontSize(10);
-    doc.text('META: 150 PONTOS | PRÊMIO: R$ 1.000,00', pageWidth / 2, 40.5, { align: 'center' });
+    doc.text('META: 160 PONTOS | PRÊMIO: R$ 1.000,00', pageWidth / 2, 40.5, { align: 'center' });
 
     // Footer Info
     doc.setTextColor(71, 85, 105);
@@ -102,7 +104,7 @@ const Ranking: React.FC = () => {
       didParseCell: (data) => {
         if (data.section === 'body' && data.column.index === 4) {
           const points = parseInt(data.cell.raw as string);
-          if (points >= 150) {
+          if (points >= 160) {
             data.cell.styles.fillColor = [30, 58, 138]; // Dark Blue
             data.cell.styles.textColor = [255, 215, 0]; // Gold
           }
@@ -143,11 +145,18 @@ const Ranking: React.FC = () => {
   }, []);
 
   const filteredRanking = React.useMemo(() => {
-    const filtered = ranking.filter(p => 
+    let filtered = ranking.filter(p => 
       (p.userName || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    if (sortBy === 'name') {
+      filtered = [...filtered].sort((a, b) => (a.userName || '').localeCompare(b.userName || ''));
+    } else {
+      filtered = [...filtered].sort((a, b) => b.points - a.points);
+    }
+
     return filtered.slice(0, 25); // Limit to Top 25
-  }, [ranking, searchTerm]);
+  }, [ranking, searchTerm, sortBy]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -171,7 +180,7 @@ const Ranking: React.FC = () => {
           <div className="flex items-center gap-2 sm:gap-4">
             <h1 className="text-lg sm:text-4xl font-display tracking-widest text-slate-900 uppercase">
               CORRIDA DOS CAMPEÕES
-              <span className="text-lotofacil-purple"> - 150 PTS</span>
+              <span className="text-lotofacil-purple"> - 160 PTS</span>
             </h1>
             <div className="flex items-center gap-2">
               <button 
@@ -183,6 +192,13 @@ const Ranking: React.FC = () => {
                 <span className="hidden sm:inline">PDF</span>
               </button>
               <button 
+                onClick={() => setShowInfoModal(true)}
+                className="p-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all shadow-md shadow-emerald-500/20"
+                title="Informações sobre a Corrida"
+              >
+                <HelpCircle size={20} />
+              </button>
+              <button 
                 onClick={handleShare}
                 className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-lotofacil-purple transition-all border border-slate-200"
                 title="Copiar Link Público"
@@ -192,12 +208,12 @@ const Ranking: React.FC = () => {
             </div>
           </div>
           <p className="text-xs sm:text-sm text-slate-600 mt-1 sm:mt-2">
-            Acompanhe a corrida rumo aos 150 pontos!
+            Acompanhe a corrida rumo aos 160 pontos!
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <div className="px-3 py-1.5 bg-slate-900 text-white rounded-lg flex items-center gap-2 shadow-md border border-lotofacil-purple/30">
               <Trophy size={14} className="text-lotofacil-purple" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Meta: 150 Pontos</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">Meta: 160 Pontos</span>
             </div>
             <div className="px-3 py-1.5 bg-lotofacil-purple text-white rounded-lg flex items-center gap-2 shadow-md">
               <span className="text-[10px] font-bold uppercase tracking-widest">Prêmio para quem alcançar primeiro: R$ 1.000</span>
@@ -206,21 +222,91 @@ const Ranking: React.FC = () => {
         </div>
       </div>
 
-      <div className="p-3 sm:p-4 bg-lotofacil-purple/5 border border-lotofacil-purple/20 rounded-2xl flex items-start gap-3 sm:gap-4">
-        <TrendingUp className="text-lotofacil-purple mt-0.5 shrink-0" size={18} />
-        <div className="flex flex-col">
-          <p className="text-[10px] sm:text-xs font-bold text-lotofacil-purple uppercase tracking-wider">Corrida 150 PTS</p>
-          <p className="text-[9px] sm:text-xs text-slate-600 leading-relaxed max-w-2xl">
-            A Corrida 150 PTS soma os pontos de todos os concursos realizados. 
-            Os pontos do concurso atual são adicionados automaticamente após a finalização do 3º sorteio.
-          </p>
-        </div>
-      </div>
+      {/* Info Modal */}
+      <AnimatePresence>
+        {showInfoModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowInfoModal(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg bg-white rounded-[2rem] shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 sm:p-8 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-100 rounded-xl text-emerald-600">
+                      <HelpCircle size={24} />
+                    </div>
+                    <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">REGRAS DA <span className="text-lotofacil-purple">CORRIDA</span></h3>
+                  </div>
+                  <button 
+                    onClick={() => setShowInfoModal(false)}
+                    className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400"
+                  >
+                    <CloseIcon size={24} />
+                  </button>
+                </div>
 
-      {/* Top 3 Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
+                <div className="space-y-4">
+                  <div className="bg-amber-100 border border-amber-200 rounded-2xl p-5 space-y-3">
+                    <div className="flex items-center gap-2 text-amber-700">
+                      <AlertCircle size={20} />
+                      <span className="font-bold uppercase tracking-widest text-xs">Importante</span>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm text-slate-800 font-bold leading-relaxed">
+                        Somente a melhor aposta do participante em cada concurso entra na disputa do geral.
+                      </p>
+                      <p className="text-sm text-black font-medium leading-relaxed">
+                        Use sempre o <span className="font-black underline italic">mesmo nome</span> nas próximas edições para somar os pontos já conquistados na corrida.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-lotofacil-purple/5 border border-lotofacil-purple/10 rounded-2xl p-5 space-y-3">
+                    <div className="flex items-center gap-2 text-lotofacil-purple">
+                      <TrendingUp size={20} />
+                      <span className="font-bold uppercase tracking-widest text-xs">Funcionamento</span>
+                    </div>
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                      A Corrida 160 PTS soma os pontos de todos os concursos realizados. 
+                      Os pontos do concurso atual são adicionados automaticamente após a finalização do 3º sorteio.
+                    </p>
+                    <div className="flex items-center gap-2 pt-2">
+                      <div className="px-3 py-1 bg-slate-900 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest">
+                        Meta: 160 Pontos
+                      </div>
+                      <div className="px-3 py-1 bg-lotofacil-purple text-white rounded-lg text-[10px] font-bold uppercase tracking-widest">
+                        Prêmio: R$ 1.000
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setShowInfoModal(false)}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-2xl font-bold uppercase tracking-widest transition-all"
+                >
+                  Entendido!
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Top 3 Cards - Horizontal Scroll on Mobile */}
+      <div className="flex sm:grid sm:grid-cols-3 gap-3 sm:gap-6 overflow-x-auto pb-4 sm:pb-0 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
         {loading ? (
-          <div className="col-span-3 text-center py-10 text-slate-600 text-xs sm:text-sm">Carregando ranking...</div>
+          <div className="min-w-full text-center py-10 text-slate-600 text-xs sm:text-sm">Carregando ranking...</div>
         ) : filteredRanking.slice(0, 3).map((p, idx) => (
           <motion.div 
             key={p.userId}
@@ -228,7 +314,7 @@ const Ranking: React.FC = () => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: idx * 0.1 }}
             className={cn(
-              "glass-card p-4 sm:p-8 flex flex-col items-center text-center space-y-3 sm:space-y-6 relative overflow-hidden",
+              "glass-card p-3 sm:p-5 flex flex-col items-center text-center space-y-2 sm:space-y-4 relative overflow-hidden min-w-[200px] sm:min-w-0 flex-shrink-0",
               p.position === 1 && "border-lotofacil-yellow/30 ring-1 ring-lotofacil-yellow/20 shadow-sm"
             )}
           >
@@ -236,27 +322,27 @@ const Ranking: React.FC = () => {
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-lotofacil-yellow to-transparent" />
             )}
             <div className={cn(
-              "w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center relative",
+              "w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl flex items-center justify-center relative",
               p.position === 1 ? "bg-lotofacil-yellow/10" : p.position === 2 ? "bg-slate-100" : "bg-orange-50"
             )}>
               {getRankIcon(p.position)}
               {p.position === 1 && (
-                <div className="absolute -top-2 -right-2 bg-slate-900 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg ring-1 ring-lotofacil-purple/50 flex items-center gap-1">
-                  <Crown size={8} className="text-lotofacil-purple" /> Líder
+                <div className="absolute -top-1 -right-1 bg-slate-900 text-white text-[7px] font-bold px-1 py-0.5 rounded shadow-lg ring-1 ring-lotofacil-purple/50 flex items-center gap-1">
+                  <Crown size={7} className="text-lotofacil-purple" /> Líder
                 </div>
               )}
             </div>
             <div>
               <h3 className={cn(
-                "text-lg sm:text-xl font-bold",
+                "text-base sm:text-lg font-bold leading-tight",
                 p.position === 1 ? "text-lotofacil-yellow" : p.position === 2 ? "text-slate-600" : "text-slate-900"
               )}>{p.userName}</h3>
               
               {/* Numbers Display */}
               {p.numbers && (
-                <div className="flex flex-wrap justify-center gap-0.5 mt-2">
+                <div className="flex flex-wrap justify-center gap-1 mt-2">
                   {p.numbers.map(num => (
-                    <span key={num} className="text-[9px] font-bold text-black bg-[#ffd700] px-0.5 rounded border border-black">
+                    <span key={num} className="text-[9px] sm:text-[11px] font-bold text-black bg-[#ffd700] px-1 py-0.5 rounded border border-black/50 shrink-0 shadow-sm">
                       {num.toString().padStart(2, '0')}
                     </span>
                   ))}
@@ -264,45 +350,45 @@ const Ranking: React.FC = () => {
               )}
 
               {p.sellerCode && (
-                <p className="text-[8px] sm:text-[10px] text-lotofacil-purple font-bold uppercase tracking-widest mt-0.5">
+                <p className="text-[7px] sm:text-[9px] text-lotofacil-purple font-bold uppercase tracking-widest mt-0.5">
                   Vendedor: {p.sellerCode}
                 </p>
               )}
               {p.position === 1 && (
-                <div className="mt-1">
-                  <span className="text-[8px] font-black text-lotofacil-yellow uppercase tracking-widest flex items-center justify-center gap-1">
-                    <Crown size={10} /> Líder do Ranking
+                <div className="mt-0.5 text-center">
+                  <span className="text-[7px] font-black text-lotofacil-yellow uppercase tracking-widest flex items-center justify-center gap-1">
+                    <Crown size={8} /> Líder do Ranking
                   </span>
                 </div>
               )}
-              {p.points >= 150 && (
-                <div className="flex flex-col items-center gap-1 mt-2">
-                  <span className="px-2 py-0.5 bg-slate-900 text-white text-[8px] font-bold uppercase tracking-tighter rounded flex items-center gap-1 shadow-lg ring-1 ring-lotofacil-yellow/50">
-                    <Trophy size={8} className="text-lotofacil-yellow" />
+              {p.points >= 160 && (
+                <div className="flex flex-col items-center gap-1 mt-1">
+                  <span className="px-2 py-0.5 bg-slate-900 text-white text-[7px] font-bold uppercase tracking-tighter rounded flex items-center gap-1 shadow-lg ring-1 ring-lotofacil-yellow/50">
+                    <Trophy size={7} className="text-lotofacil-yellow" />
                     META ALCANÇADA
                   </span>
                 </div>
               )}
-              <p className="text-[10px] sm:text-xs text-slate-600 uppercase tracking-widest mt-0.5 sm:mt-1">Participante</p>
+              <p className="text-[9px] sm:text-[10px] text-slate-600 uppercase tracking-widest mt-0.5">Participante</p>
             </div>
-            <div className="w-full space-y-2 sm:space-y-3">
-              <div className="flex justify-between items-end text-[10px] sm:text-sm">
+            <div className="w-full space-y-1.5 sm:space-y-2.5">
+              <div className="flex justify-between items-end text-[10px] sm:text-xs">
                 <div className="flex flex-col items-start">
-                  <span className="text-slate-600 uppercase tracking-widest text-[8px] sm:text-[10px]">Progresso</span>
-                  <span className="text-[9px] font-bold text-lotofacil-purple mt-0.5">
+                  <span className="text-slate-600 uppercase tracking-widest text-[7px] sm:text-[9px]">Progresso</span>
+                  <span className="text-[8px] sm:text-[10px] font-bold text-lotofacil-purple mt-0.5">
                     {p.points} / {RANKING_GOAL} PTS
                   </span>
                 </div>
                 <div className={cn(
-                  "px-2 py-0.5 rounded font-bold transition-all",
-                  p.points >= 150 
-                    ? "bg-slate-900 text-white shadow-lg scale-110 ring-2 ring-lotofacil-yellow/50" 
+                  "px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold transition-all",
+                  p.points >= 160 
+                    ? "bg-slate-900 text-white shadow-md scale-105 ring-1 ring-lotofacil-yellow/50" 
                     : "text-lotofacil-purple"
                 )}>
                   {p.points} PTS
                 </div>
               </div>
-              <div className="h-1.5 sm:h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-1 sm:h-1.5 bg-slate-100 rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min((p.points / RANKING_GOAL) * 100, 100)}%` }}
@@ -313,9 +399,11 @@ const Ranking: React.FC = () => {
                 />
               </div>
               {p.points < RANKING_GOAL && (
-                <p className="text-[8px] sm:text-[9px] text-slate-500 font-medium italic">
-                  Faltam {RANKING_GOAL - p.points} pontos para alcançar a meta
-                </p>
+                <div className="pt-1">
+                  <span className="inline-flex items-center px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-md text-[7px] sm:text-[8px] font-bold uppercase tracking-tighter shadow-sm animate-pulse">
+                    Faltam {RANKING_GOAL - p.points} pontos para a meta
+                  </span>
+                </div>
               )}
             </div>
           </motion.div>
@@ -326,7 +414,31 @@ const Ranking: React.FC = () => {
       <div className="glass-card p-3 sm:p-8 space-y-4 sm:space-y-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h2 className="text-base sm:text-2xl font-display tracking-widest text-slate-900 uppercase">Top 25 <span className="text-slate-600">Classificação</span></h2>
-          <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">ORDENAR POR</span>
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button
+                  onClick={() => setSortBy('points')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                    sortBy === 'points' ? "bg-slate-900 text-white shadow-md" : "text-slate-500 hover:bg-slate-200"
+                  )}
+                >
+                  Pontos
+                </button>
+                <button
+                  onClick={() => setSortBy('name')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                    sortBy === 'name' ? "bg-slate-900 text-white shadow-md" : "text-slate-500 hover:bg-slate-200"
+                  )}
+                >
+                  A-Z
+                </button>
+              </div>
+            </div>
+
             <div className="relative w-full sm:w-48">
               <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
               <input 
@@ -360,7 +472,7 @@ const Ranking: React.FC = () => {
                       Vendedor: {p.sellerCode}
                     </span>
                   )}
-                  {p.points >= 150 && (
+                  {p.points >= 160 && (
                     <span className="text-[7px] sm:text-[8px] bg-slate-900 text-white font-bold uppercase tracking-tighter px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm ring-1 ring-lotofacil-purple/30">
                       <Trophy size={8} className="text-lotofacil-purple" />
                       META ALCANÇADA
@@ -370,9 +482,9 @@ const Ranking: React.FC = () => {
                 
                 {/* Numbers Display */}
                 {p.numbers && (
-                  <div className="flex flex-wrap gap-0.5 mt-1">
+                  <div className="flex flex-wrap gap-1 mt-1">
                     {p.numbers.map(num => (
-                      <span key={num} className="text-[9px] font-bold text-black bg-[#ffd700] px-0.5 rounded border border-black">
+                      <span key={num} className="text-[8px] sm:text-[10px] font-bold text-black bg-[#ffd700] px-1 py-0.5 rounded border border-black/50 shrink-0 shadow-sm">
                         {num.toString().padStart(2, '0')}
                       </span>
                     ))}
@@ -396,13 +508,13 @@ const Ranking: React.FC = () => {
                   </div>
                   <div className={cn(
                     "flex flex-col items-center justify-center p-1.5 rounded-lg transition-all min-w-[40px] shrink-0",
-                    p.points >= 150 
+                    p.points >= 160 
                       ? "bg-slate-900 text-white shadow-md scale-110 ring-1 ring-lotofacil-yellow/30" 
                       : "bg-slate-50 border border-slate-100"
                   )}>
                     <span className={cn(
                       "text-[10px] sm:text-xs font-bold whitespace-nowrap leading-none",
-                      p.points >= 150 ? "text-white" : "text-lotofacil-purple"
+                      p.points >= 160 ? "text-white" : "text-lotofacil-purple"
                     )}>
                       {p.points.toString().padStart(2, '0')}
                     </span>

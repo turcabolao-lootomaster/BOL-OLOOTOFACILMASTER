@@ -281,7 +281,7 @@ const Dashboard: React.FC = () => {
         {/* Ranking Progress */}
         <div className="lg:col-span-2 glass-card p-4 sm:p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs sm:text-sm font-bold tracking-widest text-slate-900 uppercase">CORRIDA <span className="text-lotofacil-purple">150 PTS</span></h2>
+            <h2 className="text-xs sm:text-sm font-bold tracking-widest text-slate-900 uppercase">CORRIDA <span className="text-lotofacil-purple">160 PTS</span></h2>
             <TrendingUp className="text-lotofacil-purple" size={14} />
           </div>
 
@@ -312,6 +312,13 @@ const Dashboard: React.FC = () => {
               <p className="text-[7px] uppercase tracking-widest text-slate-500 mb-0.5">Posição</p>
               <p className="text-[10px] font-bold text-accent-blue">{userRank ? `#${userRank.position}º` : '...'}</p>
             </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-100 rounded-lg p-2.5 mt-2">
+            <p className="text-[9px] text-slate-800 leading-tight">
+              Somente sua <span className="font-bold">melhor aposta</span> de cada concurso conta para a corrida. 
+              Mantenha o mesmo nome para acumular pontos.
+            </p>
           </div>
         </div>
 

@@ -823,7 +823,7 @@ const DrawsTab: React.FC<{
       console.log('Calling firebaseService.recalculateGeneralRanking()...');
       await firebaseService.recalculateGeneralRanking();
       console.log('Recalculate ranking success');
-      showSuccessConfirmed('RANKING RECALCULADO', 'A Corrida 150 PTS foi reconstruída com sucesso com base em todos os concursos encerrados.');
+      showSuccessConfirmed('RANKING RECALCULADO', 'A Corrida 160 PTS foi reconstruída com sucesso com base em todos os concursos encerrados.');
     } catch (error) {
       console.error('Error recalculating ranking:', error);
       showAlert('Erro', 'Ocorreu um erro ao recalcular o ranking.');
@@ -980,9 +980,9 @@ const DrawsTab: React.FC<{
                 <TrendingUp size={32} />
               </div>
               <div className="text-center space-y-2">
-                <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">RECALCULAR <span className="text-lotofacil-purple uppercase">CORRIDA 150 PTS</span></h3>
+                <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">RECALCULAR <span className="text-lotofacil-purple uppercase">CORRIDA 160 PTS</span></h3>
                 <p className="text-sm text-slate-600 leading-relaxed">
-                  Deseja realmente recalcular toda a Corrida 150 PTS? Isso irá reconstruir a pontuação de todos os participantes com base nos concursos encerrados.
+                  Deseja realmente recalcular toda a Corrida 160 PTS? Isso irá reconstruir a pontuação de todos os participantes com base nos concursos encerrados.
                 </p>
               </div>
               <div className="flex gap-3">
@@ -1232,9 +1232,9 @@ const ContestsTab: React.FC<{
   });
 
   const [newPrizeConfig, setNewPrizeConfig] = useState<NonNullable<Contest['prizeConfig']>>({
-    fixed10PtsDraw1: 500,
-    fixed10PtsDraw2: 500,
-    fixed10PtsDraw3: 500,
+    fixed10PtsDraw1: 300,
+    fixed10PtsDraw2: 300,
+    fixed10PtsDraw3: 300,
     fixed25PlusTotal: 2000,
     fixed27PlusTotal: 5000,
     pctRapidinha: 0.10,
@@ -1321,9 +1321,9 @@ const ContestsTab: React.FC<{
         rankeada: 'LOTOMASTER'
       });
       setNewPrizeConfig({
-        fixed10PtsDraw1: 500,
-        fixed10PtsDraw2: 500,
-        fixed10PtsDraw3: 500,
+        fixed10PtsDraw1: 300,
+        fixed10PtsDraw2: 300,
+        fixed10PtsDraw3: 300,
         fixed25PlusTotal: 2000,
         fixed27PlusTotal: 5000,
         pctRapidinha: 0.10,
@@ -2104,9 +2104,9 @@ const ContestsTab: React.FC<{
                     rankeada: 'LOTOMASTER'
                   },
                   prizeConfig: c.prizeConfig || {
-                    fixed10PtsDraw1: 500,
-                    fixed10PtsDraw2: 500,
-                    fixed10PtsDraw3: 500,
+                    fixed10PtsDraw1: 300,
+                    fixed10PtsDraw2: 300,
+                    fixed10PtsDraw3: 300,
                     fixed25PlusTotal: 2000,
                     fixed27PlusTotal: 5000,
                     pctRapidinha: 0.10,
@@ -2957,6 +2957,7 @@ const ReportsTab = () => {
   const [contests, setContests] = useState<Contest[]>([]);
   const [betCounts, setBetCounts] = useState<Record<string, number>>({});
   const [userCount, setUserCount] = useState(0);
+  const [pageStats, setPageStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -2966,8 +2967,13 @@ const ReportsTab = () => {
 
     const fetchData = async () => {
       try {
-        const allContests = await firebaseService.getAllContests();
+        const [allContests, stats] = await Promise.all([
+          firebaseService.getAllContests(),
+          firebaseService.getPageViewStats()
+        ]);
+        
         setContests(allContests);
+        setPageStats(stats);
         
         const counts: Record<string, number> = {};
         await Promise.all(allContests.map(async (c) => {
@@ -3029,6 +3035,34 @@ const ReportsTab = () => {
             <span>Usuários Cadastrados</span>
           </div>
         </div>
+      </div>
+
+      {/* Page View Stats */}
+      <div className="bg-white p-6 sm:p-8 rounded-xl sm:rounded-2xl border border-slate-200 space-y-4 shadow-sm">
+        <div className="flex items-center gap-2 mb-2">
+          <Eye size={16} className="text-lotofacil-purple" />
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Acessos: Classificação ao Vivo</h3>
+        </div>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="space-y-1">
+            <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Total Geral</p>
+            <p className="text-xl sm:text-2xl font-black text-slate-900">{pageStats?.live_ranking_total || 0}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold text-lotofacil-purple">ADM (MASTER)</p>
+            <p className="text-xl sm:text-2xl font-black text-lotofacil-purple">{pageStats?.live_ranking_admins || 0}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold text-blue-600">Vendedores</p>
+            <p className="text-xl sm:text-2xl font-black text-blue-600">{pageStats?.live_ranking_sellers || 0}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold text-emerald-600">Usuários</p>
+            <p className="text-xl sm:text-2xl font-black text-emerald-600">{pageStats?.live_ranking_clients || 0}</p>
+          </div>
+        </div>
+        <p className="text-[9px] text-slate-400 font-medium">Última atualização: {pageStats?.lastUpdate?.toDate ? pageStats.lastUpdate.toDate().toLocaleString('pt-BR') : 'N/A'}</p>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">

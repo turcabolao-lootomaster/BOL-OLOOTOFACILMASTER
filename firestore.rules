@@ -219,5 +219,10 @@ service cloud.firestore {
                       request.resource.data.ownerId == request.auth.uid;
       allow delete: if isAdmin();
     }
+
+    match /system_stats/{docId} {
+      allow read: if isAdmin();
+      allow create, update: if isAuthenticated() && docId == 'page_views';
+    }
   }
 }

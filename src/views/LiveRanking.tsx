@@ -83,6 +83,7 @@ const LiveRanking: React.FC = () => {
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showPrizesInfoModal, setShowPrizesInfoModal] = useState(false);
+  const [prizeInfoType, setPrizeInfoType] = useState<'draw1' | 'bonus' | null>(null);
   const [showStartBubble, setShowStartBubble] = useState(true);
 
   useEffect(() => {
@@ -113,6 +114,11 @@ const LiveRanking: React.FC = () => {
     };
 
     init();
+    
+    // Track page hit
+    if (user) {
+      firebaseService.trackPageView('live_ranking', user.role);
+    }
 
     return () => {
       if (unsubscribeContest) unsubscribeContest();
@@ -142,6 +148,15 @@ const LiveRanking: React.FC = () => {
   // Calculate stats
   const betPrice = activeContest.betPrice || 10;
   const totalRevenue = bets.length * betPrice;
+
+  // Safer calculation for large datasets instead of Math.max(...array)
+  let maxS1Hits = 0;
+  if (bets.length > 0) {
+    for (const b of bets) {
+      const h1 = b.hits?.[0] || 0;
+      if (h1 > maxS1Hits) maxS1Hits = h1;
+    }
+  }
   
   const prizeConfig = activeContest.prizeConfig || {
     pctRapidinha: 0.10,
@@ -158,9 +173,9 @@ const LiveRanking: React.FC = () => {
     rapidinha: activeContest.displayPrizes?.rapidinha ?? (totalRevenue * (prizeConfig.pctRapidinha || 0.10)),
     campeao: activeContest.displayPrizes?.champion ?? (totalRevenue * (prizeConfig.pctChampion || 0.45)),
     vice: activeContest.displayPrizes?.vice ?? (totalRevenue * (prizeConfig.pctVice || 0.15)),
-    fixed10PtsDraw1: activeContest.displayPrizes?.draw1 ?? (prizeConfig.fixed10PtsDraw1 || 500),
-    fixed10PtsDraw2: activeContest.displayPrizes?.draw2 ?? (prizeConfig.fixed10PtsDraw2 || 500),
-    fixed10PtsDraw3: activeContest.displayPrizes?.draw3 ?? (prizeConfig.fixed10PtsDraw3 || 500),
+    fixed10PtsDraw1: activeContest.displayPrizes?.draw1 ?? (maxS1Hits >= 10 ? (prizeConfig.fixed10PtsDraw1 || 300) : 100),
+    fixed10PtsDraw2: activeContest.displayPrizes?.draw2 ?? (prizeConfig.fixed10PtsDraw2 || 300),
+    fixed10PtsDraw3: activeContest.displayPrizes?.draw3 ?? (prizeConfig.fixed10PtsDraw3 || 300),
     fixed25Plus: activeContest.displayPrizes?.bonus25 ?? (prizeConfig.fixed25PlusTotal || 2000),
     fixed27Plus: activeContest.displayPrizes?.bonus27 ?? (prizeConfig.fixed27PlusTotal || 5000)
   };
@@ -194,15 +209,6 @@ const LiveRanking: React.FC = () => {
   const maxTotalHits = rankingWithRanks.length > 0 ? rankingWithRanks[0].totalHits : 0;
   const secondMaxTotalHits = rankingWithRanks.find(b => b.totalHits < maxTotalHits)?.totalHits || 0;
   
-  // Safer calculation for large datasets instead of Math.max(...array)
-  let maxS1Hits = 0;
-  if (bets.length > 0) {
-    for (const b of bets) {
-      const h1 = b.hits?.[0] || 0;
-      if (h1 > maxS1Hits) maxS1Hits = h1;
-    }
-  }
-
   // Find winners/leaders based on all bets
   const rapidinhaLeader = [...bets].sort((a, b) => (b.hits?.[0] || 0) - (a.hits?.[0] || 0))[0];
   const champion = sortedRanking[0];
@@ -216,8 +222,8 @@ const LiveRanking: React.FC = () => {
 
   const rapidinhaWinnersCount = bets.filter(b => (b.hits?.[0] || 0) === maxS1Hits && maxS1Hits > 0).length;
 
-  const winners27Plus = rankingWithRanks.filter(b => b.totalHits >= 27);
-  const winners25Plus = rankingWithRanks.filter(b => b.totalHits >= 25);
+  const winners27Plus = rankingWithRanks.filter(b => b.rank === 1 && b.totalHits >= 27);
+  const winners25Plus = rankingWithRanks.filter(b => b.rank === 1 && b.totalHits >= 25 && b.totalHits < 27);
 
   const isDraw1Finished = activeContest.draws?.[0]?.status === 'concluido';
   const isDraw2Finished = activeContest.draws?.[1]?.status === 'concluido';
@@ -802,42 +808,108 @@ const LiveRanking: React.FC = () => {
         )}
 
         {/* Modal Pequeno de Prêmios */}
+        {/* Modal de Informações de Prêmios */}
         {showPrizesInfoModal && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: -20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -20 }}
-            className="fixed top-24 right-4 z-[150] w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 overflow-hidden"
-          >
-            <div className="flex items-center justify-between mb-3 text-lotofacil-yellow-dark font-bold text-xs uppercase tracking-widest">
-              <div className="flex items-center gap-2">
-                <Gift size={14} />
-                Prêmios Estimados
-              </div>
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-slate-100 relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-lotofacil-purple to-lotofacil-orange" />
+              
               <button 
                 onClick={() => setShowPrizesInfoModal(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
-                title="Fechar"
+                className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all"
               >
-                <X size={14} />
+                <X size={20} />
               </button>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center text-[10px] border-b border-slate-50 pb-1">
-                <span className="text-slate-500">Campeão:</span>
-                <span className="font-bold text-lotofacil-purple">{prizes.campeao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+
+              <div className="text-center space-y-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-lotofacil-purple/10 rounded-2xl text-lotofacil-purple">
+                  <Info size={32} />
+                </div>
+                
+                <div className="space-y-2">
+                  <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">
+                    {prizeInfoType === 'draw1' ? 'Regras do 1º Sorteio' : (prizeInfoType === 'bonus' ? 'Regras de Prêmios Bônus' : 'Estimativa de Prêmios')}
+                  </h3>
+                  <div className="w-12 h-1 bg-lotofacil-purple/20 mx-auto rounded-full" />
+                </div>
+
+                <div className="text-sm text-slate-600 leading-relaxed space-y-4">
+                  {prizeInfoType === 'draw1' ? (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 rounded-full bg-lotofacil-purple" />
+                          <p className="font-black text-slate-900 uppercase tracking-widest text-[10px]">10 PONTOS</p>
+                        </div>
+                        <p className="font-bold text-slate-800 text-xs">Prêmio de R$ 300,00.</p>
+                      </div>
+
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 rounded-full bg-lotofacil-purple" />
+                          <p className="font-black text-slate-900 uppercase tracking-widest text-[10px]">NÃO HAVENDO 10 PONTOS</p>
+                        </div>
+                        <p className="font-bold text-slate-800 text-xs">R$ 100,00 para a maior pontuação do dia.</p>
+                      </div>
+                    </div>
+                  ) : prizeInfoType === 'bonus' ? (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 text-left">
+                        <p className="font-bold text-amber-900 text-[10px] text-center uppercase tracking-widest mb-3">⚠️ REGRA DE UNIFICAÇÃO</p>
+                        <p className="text-[11px] text-amber-800 leading-relaxed text-center">
+                          Somente <span className="font-black underline">UM</span> dos bônus é válido por edição para o líder. <br/>
+                          <span className="font-black">OBS: Os valores já incluem o prêmio de 1º lugar.</span>
+                        </p>
+                      </div>
+
+                      <div className="space-y-3 text-left">
+                        <div className="flex gap-3">
+                          <div className="flex-shrink-0 w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-[10px] font-bold">1</div>
+                          <p className="text-xs text-slate-700 leading-tight">Se o líder fizer <span className="font-bold">27 PONTOS</span>, ele leva o <span className="font-bold text-lotofacil-yellow-dark">SUPER BÔNUS 27</span>.</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <div className="flex-shrink-0 w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-[10px] font-bold">2</div>
+                          <p className="text-xs text-slate-700 leading-tight">O <span className="font-bold text-emerald-600">BÔNUS 25</span> é válido se <span className="font-black underline">NÃO</span> houver ganhador do 27.</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <div className="flex-shrink-0 w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-[10px] font-bold">3</div>
+                          <p className="text-xs text-slate-700 leading-tight">Apostas fora do 1º lugar <span className="font-bold text-red-500">NÃO</span> têm direito aos bônus.</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-[10px] border-b border-slate-50 pb-1">
+                        <span className="text-slate-500">Campeão:</span>
+                        <span className="font-bold text-lotofacil-purple">{prizes.campeao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] border-b border-slate-50 pb-1">
+                        <span className="text-slate-500">Rapidinha:</span>
+                        <span className="font-bold text-lotofacil-yellow-dark">{prizes.rapidinha.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] border-b border-slate-50 pb-1">
+                        <span className="text-slate-500">Bônus 27+:</span>
+                        <span className="font-bold text-slate-900">{prizes.fixed27Plus.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      </div>
+                      <p className="text-[8px] text-slate-400 italic text-center mt-2">Valores calculados com base nas apostas validadas.</p>
+                    </div>
+                  )}
+                </div>
+
+                <button 
+                  onClick={() => setShowPrizesInfoModal(false)}
+                  className="w-full py-4 px-6 bg-slate-900 hover:bg-slate-800 text-white font-black uppercase tracking-[0.2em] text-xs rounded-2xl shadow-lg transition-all active:scale-95"
+                >
+                  Entendi
+                </button>
               </div>
-              <div className="flex justify-between items-center text-[10px] border-b border-slate-50 pb-1">
-                <span className="text-slate-500">Rapidinha:</span>
-                <span className="font-bold text-lotofacil-yellow-dark">{prizes.rapidinha.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-              </div>
-              <div className="flex justify-between items-center text-[10px] border-b border-slate-50 pb-1">
-                <span className="text-slate-500">Bônus 27+:</span>
-                <span className="font-bold text-slate-900">{prizes.fixed27Plus.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-              </div>
-              <p className="text-[8px] text-slate-400 italic text-center mt-2">Valores calculados com base nas apostas validadas.</p>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         )}
         {/* Balão de Fala Verde - Data de Início */}
         {showStartBubble && systemSettings?.poolStartDate && (
@@ -875,12 +947,14 @@ const LiveRanking: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 relative">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Ao Vivo</span>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="px-1.5 py-0.5 rounded-sm bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.4)]">
+              <span className="text-[8px] font-black text-white uppercase tracking-widest">LIVE</span>
+            </div>
+            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Tempo Real</span>
           </div>
           <h1 className="text-lg sm:text-4xl font-display tracking-widest text-slate-900 uppercase">
-            CLASSIFICAÇÃO <span className="text-lotofacil-purple">AO VIVO</span>
+            CLASSIFICAÇÃO <span className="text-emerald-500">AO VIVO</span>
           </h1>
           <p className="text-[10px] sm:text-sm text-slate-600 mt-1">
             Concurso #{activeContest.number} • {bets.length} Apostas Validadas
@@ -979,13 +1053,17 @@ const LiveRanking: React.FC = () => {
             key={num}
             title={`${num}º SORTEIO 10 PTS`} 
             value={num === 1 ? prizes.fixed10PtsDraw1 : num === 2 ? prizes.fixed10PtsDraw2 : prizes.fixed10PtsDraw3} 
-            count={winners10Pts[num-1].length}
+            count={num === 1 && maxS1Hits < 10 && maxS1Hits > 0 ? rapidinhaWinnersCount : winners10Pts[num-1].length}
             icon={Target}
             color="text-orange-600"
             bg="bg-orange-50"
             border="border-orange-200"
             compact
             isFinished={num === 1 ? isDraw1Finished : num === 2 ? isDraw2Finished : isThirdDrawFinished}
+            onInfoClick={num === 1 ? () => {
+              setPrizeInfoType('draw1');
+              setShowPrizesInfoModal(true);
+            } : undefined}
           />
         ))}
       </div>
@@ -1027,8 +1105,27 @@ const LiveRanking: React.FC = () => {
         />
       </div>
 
-      {/* Special Prizes (Maintain as is but separate) */}
-      <div className="w-full space-y-2">
+      {/* Special Prizes */}
+      <div className="w-full space-y-3">
+        <div className="max-w-4xl mx-auto w-full">
+          <PrizeCard 
+            title="🏆 Super Bônus 27" 
+            value={prizes.fixed27Plus} 
+            count={winners27Plus.length}
+            icon={Star}
+            color="text-lotofacil-yellow"
+            bg="bg-lotofacil-yellow/10"
+            border="border-lotofacil-yellow/20"
+            fullWidth
+            pointsLabel="27 PTS NA SOMA TOTAL"
+            variant="bonus27"
+            isFinished={isThirdDrawFinished}
+            onInfoClick={() => {
+              setPrizeInfoType('bonus');
+              setShowPrizesInfoModal(true);
+            }}
+          />
+        </div>
         <div className="max-w-4xl mx-auto w-full">
           <PrizeCard 
             title="🔥 BÔNUS 25" 
@@ -1042,21 +1139,12 @@ const LiveRanking: React.FC = () => {
             pointsLabel="25 PTS NA SOMA TOTAL"
             variant="bonus25"
             isFinished={isThirdDrawFinished}
+            onInfoClick={() => {
+              setPrizeInfoType('bonus');
+              setShowPrizesInfoModal(true);
+            }}
           />
         </div>
-        <PrizeCard 
-          title="🏆 Super Bônus 27" 
-          value={prizes.fixed27Plus} 
-          count={winners27Plus.length}
-          icon={Star}
-          color="text-lotofacil-yellow"
-          bg="bg-lotofacil-yellow/10"
-          border="border-lotofacil-yellow/20"
-          fullWidth
-          pointsLabel="27 PTS NA SOMA TOTAL"
-          variant="bonus27"
-          isFinished={isThirdDrawFinished}
-        />
       </div>
 
       {/* Search and Table */}
@@ -1066,9 +1154,11 @@ const LiveRanking: React.FC = () => {
           
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
             {/* Sort Options */}
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 w-full sm:w-auto">
-              <button
-                onClick={() => setSortBy('points')}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">ORDENAR POR</span>
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 flex-1 sm:flex-none">
+                <button
+                  onClick={() => setSortBy('points')}
                 className={cn(
                   "flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
                   sortBy === 'points' ? "bg-lotofacil-purple text-white shadow-md" : "text-slate-500 hover:bg-slate-200"
@@ -1086,6 +1176,7 @@ const LiveRanking: React.FC = () => {
                 A-Z
               </button>
             </div>
+          </div>
 
             {/* Search Input */}
             <div className="relative w-full sm:w-64">
@@ -1203,14 +1294,16 @@ const LiveRanking: React.FC = () => {
                 const isVice = totalHits === secondMaxTotalHits && secondMaxTotalHits > 0;
                 const isRapidinha = hits[0] === maxS1Hits && maxS1Hits > 0;
                 const has10Pts = hits[0] >= 10 || hits[1] >= 10 || hits[2] >= 10;
-                const has27Plus = totalHits >= 27;
+                const has27Plus = totalHits >= 27 && b.rank === 1;
+                const has25Plus = totalHits >= 25 && b.rank === 1;
 
                 const prizeNames = [];
                 if (isChampion) prizeNames.push('1º LUGAR');
                 if (isVice) prizeNames.push('2º LUGAR');
                 if (isRapidinha) prizeNames.push('RAPIDINHA');
                 if (has10Pts) prizeNames.push('10 PONTOS');
-                if (has27Plus) prizeNames.push('27+ PONTOS');
+                if (has27Plus) prizeNames.push('BÔNUS 27');
+                if (has25Plus && !has27Plus) prizeNames.push('BÔNUS 25');
 
                 const isWinner = prizeNames.length > 0;
                 const isExpanded = expandedBetId === b.id;
@@ -1286,17 +1379,17 @@ const LiveRanking: React.FC = () => {
                         
                         {/* Numbers Display - Extreme Compact for Mobile */}
                         {!isExpanded && (
-                          <div className="flex flex-nowrap gap-1 mt-1 sm:hidden">
+                          <div className="flex flex-nowrap gap-0.5 mt-1 sm:hidden">
                             {b.numbers.map(num => {
                               const isHit = currentDrawResults.includes(num);
                               return (
                                 <span 
                                   key={num} 
                                   className={cn(
-                                    "text-[8px] font-bold px-1 rounded-[2px] border transition-all shrink-0",
+                                    "text-[7px] font-bold px-0.5 rounded-[2px] border transition-all shrink-0",
                                     isHit 
                                       ? "bg-lotofacil-purple text-white border-lotofacil-purple shadow-[0_0_4px_rgba(107,33,168,0.4)] z-10" 
-                                      : "bg-[#ffd700] text-black border-black"
+                                      : "bg-[#ffd700] text-black border-black/50"
                                   )}
                                 >
                                   {num.toString().padStart(2, '0')}
@@ -1378,11 +1471,11 @@ const LiveRanking: React.FC = () => {
                           )}>
                             {totalHits}
                           </span>
-                          {totalHits >= 27 && (
+                          {totalHits >= 25 && b.rank === 1 && (
                             <span className={cn(
                               "text-[6px] font-bold px-1 rounded bg-white text-[#1e3a8a]"
                             )}>
-                              PREMIADO
+                              BÔNUS {totalHits >= 27 ? '27' : '25'}
                             </span>
                           )}
                         </div>
@@ -1814,10 +1907,11 @@ interface PrizeCardProps {
   pointsLabel?: string;
   variant?: 'default' | 'bonus25' | 'bonus27';
   isFinished?: boolean;
+  onInfoClick?: () => void;
 }
 
 const PrizeCard: React.FC<PrizeCardProps> = ({ 
-  title, value, count, icon: Icon, color, bg, border, compact, fullWidth, pointsLabel, variant = 'default', isFinished
+  title, value, count, icon: Icon, color, bg, border, compact, fullWidth, pointsLabel, variant = 'default', isFinished, onInfoClick
 }) => (
   <div className={cn(
     "glass-card border transition-all relative overflow-hidden group",
@@ -1838,17 +1932,35 @@ const PrizeCard: React.FC<PrizeCardProps> = ({
           </div>
           <div className="space-y-0.5 sm:space-y-1">
             <h2 className={cn(
-              "text-[13px] sm:text-[25px] font-black uppercase tracking-[0.2em] drop-shadow-lg sm:leading-[30px]",
+              "text-[13px] sm:text-[25px] font-black uppercase tracking-[0.2em] drop-shadow-lg sm:leading-[30px] flex items-center gap-2",
               variant === 'bonus27' ? "text-lotofacil-yellow" : "text-white"
             )}>
               {(isFinished && variant === 'default') ? `${title} (${count || 0} Ganhadores)` : title}
+              {onInfoClick && (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onInfoClick();
+                  }}
+                  className="p-1 hover:bg-white/10 rounded-full transition-all text-white/40 hover:text-white"
+                >
+                  <HelpCircle size={16} className="sm:w-6 sm:h-6" />
+                </button>
+              )}
             </h2>
             <div className="flex items-center gap-2">
-              {(count !== undefined && (count > 0 || !isFinished)) && (
+              {(count !== undefined && (count > 0 || !isFinished)) ? (
                 <div className="flex items-center gap-1 px-1.5 py-0.5 bg-white/5 rounded-full border border-white/10">
                   <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
                   <p className="text-[6px] sm:text-[13px] font-black text-[#f7f7f7] uppercase tracking-widest">
                     {count} ganhador(es)
+                  </p>
+                </div>
+              ) : (isFinished && count === 0) && (
+                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-red-500/20 rounded-full border border-red-500/30">
+                  <div className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
+                  <p className="text-[6px] sm:text-[13px] font-black text-red-100 uppercase tracking-widest">
+                    ACUMULADO
                   </p>
                 </div>
               )}
@@ -1888,13 +2000,25 @@ const PrizeCard: React.FC<PrizeCardProps> = ({
           <p className="uppercase tracking-[0.1em] sm:tracking-[0.2em] text-slate-400 font-black text-[5px] sm:text-[9px] mb-0.5">
             Estimativa
           </p>
-          <p className={cn(
-            "font-black tracking-tighter leading-none",
-            "text-[9px] sm:text-2xl",
-            color
-          )}>
-            {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-          </p>
+          <div className="flex items-center justify-end gap-1 font-black tracking-tighter leading-none">
+            {onInfoClick && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onInfoClick();
+                }}
+                className="p-1 hover:bg-slate-100 rounded-full transition-all text-slate-400 hover:text-lotofacil-purple"
+              >
+                <HelpCircle className="w-2.5 h-2.5 sm:w-5 sm:h-5" />
+              </button>
+            )}
+            <p className={cn(
+              "text-[9px] sm:text-2xl",
+              color
+            )}>
+              {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </p>
+          </div>
           <p className="font-bold uppercase tracking-widest truncate text-slate-900 text-[6px] sm:text-[11px] mt-0.5 sm:mt-1">
             {title}
           </p>

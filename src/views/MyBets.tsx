@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { firebaseService } from '../services/firebaseService';
-import { History, CheckCircle2, Clock, XCircle, ChevronRight, RefreshCcw, MessageCircle, Trash2, Copy, CheckSquare, Square, AlertCircle, X } from 'lucide-react';
+import { History, CheckCircle2, Clock, XCircle, ChevronRight, RefreshCcw, MessageCircle, Trash2, Copy, CheckSquare, Square, AlertCircle, X, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../utils';
 import { Bet, Settings, Contest } from '../types';
@@ -15,6 +15,8 @@ const MyBets: React.FC = () => {
   const { user } = useAuth();
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'date' | 'name' | 'points'>('date');
   const [whatsappNumber, setWhatsappNumber] = useState('5511999999999');
   const [activeContest, setActiveContest] = useState<Contest | null>(null);
   const [selectedBetIds, setSelectedBetIds] = useState<string[]>([]);
@@ -208,6 +210,39 @@ const MyBets: React.FC = () => {
     }
   };
 
+  const filteredBets = React.useMemo(() => {
+    let result = [...bets];
+
+    // Search
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(b => 
+        (b.betName || '').toLowerCase().includes(term) ||
+        (b.contestNumber.toString()).includes(term)
+      );
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      if (sortBy === 'name') {
+        return (a.betName || '').localeCompare(b.betName || '');
+      }
+      if (sortBy === 'points') {
+        const getPoints = (bet: Bet) => {
+          if (Array.isArray(bet.hits)) return bet.hits.reduce((acc, h) => acc + h, 0);
+          return bet.hits || 0;
+        };
+        return getPoints(b) - getPoints(a);
+      }
+      // Default: date (newest first)
+      const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : 0;
+      const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : 0;
+      return dateB - dateA;
+    });
+
+    return result;
+  }, [bets, searchTerm, sortBy]);
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'validado': return <CheckCircle2 className="text-emerald-600" size={18} />;
@@ -295,12 +330,49 @@ const MyBets: React.FC = () => {
         )}
       </AnimatePresence>
 
+      {/* Search and Sort Controls */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <input 
+            type="text" 
+            placeholder="Buscar por nome ou concurso..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs focus:outline-none focus:border-lotofacil-purple/50 transition-all shadow-sm"
+          />
+          {searchTerm && (
+            <button 
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="hidden sm:inline text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">ORDENAR POR</span>
+          <select 
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="bg-white border border-slate-200 rounded-xl py-2 px-3 text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:border-lotofacil-purple/50 shadow-sm"
+          >
+            <option value="date">Data (Novos)</option>
+            <option value="name">Nome (A-Z)</option>
+            <option value="points">Pontos (PTS)</option>
+          </select>
+        </div>
+      </div>
+
       <div className="space-y-3 pb-24">
         {loading ? (
           <p className="text-slate-600 text-center py-10 text-xs sm:text-sm">Carregando apostas...</p>
-        ) : bets.length === 0 ? (
-          <p className="text-slate-600 text-center py-10 text-xs sm:text-sm">Nenhuma aposta encontrada.</p>
-        ) : bets.map((bet, idx) => (
+        ) : filteredBets.length === 0 ? (
+          <p className="text-slate-600 text-center py-10 text-xs sm:text-sm">
+            {searchTerm ? 'Nenhuma aposta encontrada para sua busca.' : 'Nenhuma aposta encontrada.'}
+          </p>
+        ) : filteredBets.map((bet, idx) => (
           <motion.div 
             key={bet.id}
             initial={{ opacity: 0, x: -20 }}
@@ -345,10 +417,10 @@ const MyBets: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex-1 space-y-3">
-              <div className="flex flex-wrap gap-1">
+            <div className="flex-1 space-y-2">
+              <div className="flex flex-wrap gap-0.5 sm:gap-1">
                 {bet.numbers.map(num => (
-                  <div key={num} className="w-6 h-6 sm:w-8 sm:h-8 rounded-md flex items-center justify-center text-[9px] sm:text-xs font-bold text-black border border-black bg-[#ffd700]">
+                  <div key={num} className="w-5 h-5 sm:w-7 sm:h-7 rounded-md flex items-center justify-center text-[8px] sm:text-[10px] font-bold text-black border border-black/50 bg-[#ffd700] shadow-sm shrink-0">
                     {num.toString().padStart(2, '0')}
                   </div>
                 ))}

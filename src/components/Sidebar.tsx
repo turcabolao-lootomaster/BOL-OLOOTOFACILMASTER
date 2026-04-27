@@ -135,9 +135,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
             >
               <item.icon size={18} className={cn(
                 "transition-transform group-hover:scale-110",
-                currentView === item.id ? "text-white" : "text-slate-400 group-hover:text-lotofacil-purple"
+                currentView === item.id ? "text-white" : "text-slate-400 group-hover:text-lotofacil-purple",
+                item.id === 'participants' && currentView !== item.id && "text-emerald-500"
               )} />
               <span>{item.label}</span>
+              {item.id === 'participants' && (
+                <div className="ml-2 px-1 py-0.5 rounded-sm bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.4)]">
+                  <span className="text-[7px] font-black text-white uppercase tracking-tighter">LIVE</span>
+                </div>
+              )}
               {currentView === item.id && (
                 <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full" />
               )}
