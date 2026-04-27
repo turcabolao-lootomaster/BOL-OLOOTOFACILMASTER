@@ -352,7 +352,7 @@ const MyBets: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          <span className="hidden sm:inline text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">ORDENAR POR</span>
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">ORDENAR POR</span>
           <select 
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}

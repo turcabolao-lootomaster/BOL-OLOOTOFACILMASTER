@@ -281,7 +281,7 @@ const Dashboard: React.FC = () => {
         {/* Ranking Progress */}
         <div className="lg:col-span-2 glass-card p-4 sm:p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs sm:text-sm font-bold tracking-widest text-slate-900 uppercase">CORRIDA <span className="text-lotofacil-purple">160 PTS</span></h2>
+            <h2 className="text-xs sm:text-sm font-bold tracking-widest text-slate-900 uppercase">CORRIDA <span className="text-lotofacil-purple">{RANKING_GOAL} PTS</span></h2>
             <TrendingUp className="text-lotofacil-purple" size={14} />
           </div>
 
@@ -306,7 +306,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-center">
               <p className="text-[7px] uppercase tracking-widest text-slate-500 mb-0.5">Prêmio</p>
-              <p className="text-[10px] font-bold text-lotofacil-purple">R$ 1K</p>
+              <p className="text-[10px] font-bold text-lotofacil-purple">R$ 800</p>
             </div>
             <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-center">
               <p className="text-[7px] uppercase tracking-widest text-slate-500 mb-0.5">Posição</p>

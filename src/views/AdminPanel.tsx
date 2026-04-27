@@ -40,7 +40,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
-import { cn } from '../utils';
+import { cn, RANKING_GOAL } from '../utils';
 import { Bet, Contest, ContestStatus, Seller, User as AppUser, SellerRequest } from '../types';
 
 const AdminPanel: React.FC = () => {
@@ -823,7 +823,7 @@ const DrawsTab: React.FC<{
       console.log('Calling firebaseService.recalculateGeneralRanking()...');
       await firebaseService.recalculateGeneralRanking();
       console.log('Recalculate ranking success');
-      showSuccessConfirmed('RANKING RECALCULADO', 'A Corrida 160 PTS foi reconstruída com sucesso com base em todos os concursos encerrados.');
+      showSuccessConfirmed('RANKING RECALCULADO', `A Corrida ${RANKING_GOAL} PTS foi reconstruída com sucesso com base em todos os concursos encerrados.`);
     } catch (error) {
       console.error('Error recalculating ranking:', error);
       showAlert('Erro', 'Ocorreu um erro ao recalcular o ranking.');
@@ -980,9 +980,9 @@ const DrawsTab: React.FC<{
                 <TrendingUp size={32} />
               </div>
               <div className="text-center space-y-2">
-                <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">RECALCULAR <span className="text-lotofacil-purple uppercase">CORRIDA 160 PTS</span></h3>
+                <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">RECALCULAR <span className="text-lotofacil-purple uppercase">CORRIDA {RANKING_GOAL} PTS</span></h3>
                 <p className="text-sm text-slate-600 leading-relaxed">
-                  Deseja realmente recalcular toda a Corrida 160 PTS? Isso irá reconstruir a pontuação de todos os participantes com base nos concursos encerrados.
+                  Deseja realmente recalcular toda a Corrida {RANKING_GOAL} PTS? Isso irá reconstruir a pontuação de todos os participantes com base nos concursos encerrados.
                 </p>
               </div>
               <div className="flex gap-3">
@@ -3286,25 +3286,90 @@ const FinanceiroTab: React.FC = () => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isResetting, setIsResetting] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [editConfig, setEditConfig] = useState<Contest['prizeConfig'] | null>(null);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+
+  const fetchData = async () => {
+    const [contest, allSellers] = await Promise.all([
+      firebaseService.getActiveContest(),
+      firebaseService.getAllSellers()
+    ]);
+    
+    setActiveContest(contest);
+    setSellers(allSellers);
+    
+    if (contest) {
+      const contestBets = await firebaseService.getContestBets(contest.id);
+      setBets(contestBets);
+      setEditConfig(contest.prizeConfig || {
+        fixed10PtsDraw1: 10,
+        fixed10PtsDraw2: 10,
+        fixed10PtsDraw3: 10,
+        fixed25PlusTotal: 50,
+        fixed27PlusTotal: 100,
+        pctRapidinha: 0.10,
+        pctChampion: 0.45,
+        pctVice: 0.15,
+        pctSeller: 0.15,
+        pctAdmin: 0.10,
+        pctReserve: 0.05
+      });
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      const [contest, allSellers] = await Promise.all([
-        firebaseService.getActiveContest(),
-        firebaseService.getAllSellers()
-      ]);
-      
-      setActiveContest(contest);
-      setSellers(allSellers);
-      
-      if (contest) {
-        const contestBets = await firebaseService.getContestBets(contest.id);
-        setBets(contestBets);
-      }
-      setLoading(false);
-    };
     fetchData();
   }, []);
+
+  const handleResetFinancials = async () => {
+    if (!window.confirm('Deseja realmente ZERAR todos os saldos e comissões de todos os vendedores? Esta ação não pode ser desfeita.')) return;
+    
+    setIsResetting(true);
+    try {
+      await firebaseService.resetSellersFinancialStats();
+      await fetchData();
+      alert('Saldos e comissões zerados com sucesso!');
+    } catch (error) {
+      console.error('Erro ao zerar saldos:', error);
+      alert('Erro ao zerar saldos.');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleUpdatePrizeConfig = async () => {
+    if (!activeContest || !editConfig) return;
+    
+    const total = (
+      editConfig.pctRapidinha + 
+      editConfig.pctChampion + 
+      editConfig.pctVice + 
+      editConfig.pctSeller + 
+      editConfig.pctAdmin + 
+      editConfig.pctReserve
+    );
+
+    if (Math.round(total * 100) !== 100) {
+      alert('A soma das porcentagens deve ser exatamente 100%');
+      return;
+    }
+
+    setIsSavingConfig(true);
+    try {
+      await firebaseService.updateContestPrizeConfig(activeContest.id, editConfig);
+      await fetchData();
+      setShowConfigModal(false);
+      alert('Configuração financeira atualizada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao atualizar configuração:', error);
+      alert('Erro ao atualizar configuração.');
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
 
   if (loading) return <div className="p-10 text-center text-slate-500">Carregando dados financeiros...</div>;
   if (!activeContest) return <div className="p-10 text-center text-slate-500 italic uppercase tracking-widest text-[10px] font-bold">Nenhum concurso ativo para análise financeira.</div>;
@@ -3355,13 +3420,90 @@ const FinanceiroTab: React.FC = () => {
           <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">RESUMO <span className="text-lotofacil-purple">FINANCEIRO</span></h2>
           <p className="text-[10px] sm:text-sm text-slate-600 mt-1">Concurso #{activeContest.number} • {bets.length} Apostas Validadas</p>
         </div>
-        <div className="bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-xl">
-          <p className="text-[8px] uppercase tracking-widest text-slate-400 mb-1">Total Arrecadado</p>
-          <p className="text-xl sm:text-3xl font-black text-lotofacil-yellow">
-            {totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-          </p>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setShowConfigModal(true)}
+            className="p-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl transition-all flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest border border-slate-200"
+            title="Configurar Porcentagens"
+          >
+            <Settings size={16} />
+            <span className="hidden sm:inline">Configurar</span>
+          </button>
+          <button 
+            onClick={handleResetFinancials}
+            disabled={isResetting}
+            className="p-2.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest border border-red-100 disabled:opacity-50"
+            title="Zerar Saldos de Vendedores"
+          >
+            <Trash2 size={16} />
+            <span className="hidden sm:inline">Zerar Saldos</span>
+          </button>
+          <div className="bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-xl">
+            <p className="text-[8px] uppercase tracking-widest text-slate-400 mb-1">Arrecadado Hoje</p>
+            <p className="text-xl sm:text-3xl font-black text-lotofacil-yellow">
+              {totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </p>
+          </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showConfigModal && editConfig && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-display tracking-widest uppercase text-slate-900">Configurar Porcentagens</h3>
+                <button onClick={() => setShowConfigModal(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
+              </div>
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: 'Rapidinha', key: 'pctRapidinha' },
+                    { label: 'Campeão', key: 'pctChampion' },
+                    { label: 'Vice', key: 'pctVice' },
+                    { label: 'Vendedor', key: 'pctSeller' },
+                    { label: 'Admin', key: 'pctAdmin' },
+                    { label: 'Reserva', key: 'pctReserve' },
+                  ].map(item => (
+                    <div key={item.key} className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{item.label} %</label>
+                      <input 
+                        type="number"
+                        value={Math.round((editConfig as any)[item.key] * 100)}
+                        onChange={(e) => setEditConfig({
+                          ...editConfig,
+                          [item.key]: (parseFloat(e.target.value) || 0) / 100
+                        })}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button 
+                    onClick={() => setShowConfigModal(false)}
+                    className="flex-1 py-3 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-bold uppercase tracking-widest"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={handleUpdatePrizeConfig}
+                    disabled={isSavingConfig}
+                    className="flex-1 py-3 bg-lotofacil-purple text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-lotofacil-purple/20 disabled:opacity-50"
+                  >
+                    {isSavingConfig ? 'SALVANDO...' : 'SALVAR CONFIGURAÇÃO'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
         {/* Prizes Column */}

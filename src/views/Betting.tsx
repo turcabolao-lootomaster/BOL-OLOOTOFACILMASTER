@@ -32,6 +32,7 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
   const [success, setSuccess] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastBetIds, setLastBetIds] = useState<string[]>([]);
+  const [lastBets, setLastBets] = useState<number[][]>([]);
   const [lastBetName, setLastBetName] = useState('');
   const [surpresinhaCount, setSurpresinhaCount] = useState(1);
   const [isLoadingContest, setIsLoadingContest] = useState(true);
@@ -242,6 +243,7 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
       }
       
       setLastBetIds(ids);
+      setLastBets([...pendingBets]);
       setLastBetName(cleanBetName);
       setSuccess(true);
       setShowSuccessModal(true);
@@ -268,12 +270,21 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
     const totalValue = count * 10;
     const sellerText = sellerCode ? ' pelo seu link de vendedor' : '';
     
+    // Format bets with numbers
+    const betsFormatted = lastBets.map((bet, idx) => {
+      const numbers = bet.map(n => n.toString().padStart(2, '0')).join('-');
+      const id = truncatedIds[idx] || '####';
+      return `Ticket [${id}]: ${numbers}`;
+    }).join('\n');
+    
     const message = encodeURIComponent(
-      `Olá! Fiz ${count} ${count === 1 ? 'aposta' : 'apostas'}${sellerText} e gostaria de solicitar a validação ${count === 1 ? 'dela' : 'delas'}. 🎯\n` +
-      truncatedIds.join('\n') +
-      `\n\nTotal de apostas: ${count}` +
-      `\nValor total: R$ ${totalValue.toFixed(2).replace('.', ',')}` +
-      `\n\nPoderia, por favor, confirmar o recebimento e a validação? Obrigado!`
+      `Olá! Fiz ${count} ${count === 1 ? 'aposta' : 'apostas'}${sellerText} e gostaria de confirmar a validação. 🎯\n\n` +
+      `👤 Nome (Nick): ${lastBetName}\n` +
+      `📅 Concurso: #${activeContest?.number}\n\n` +
+      `📝 DETALHES DAS APOSTAS:\n` +
+      betsFormatted +
+      `\n\n💰 VALOR TOTAL: R$ ${totalValue.toFixed(2).replace('.', ',')}\n\n` +
+      `Poderia, por favor, confirmar o recebimento e a validação? Obrigado!`
     );
     
     const targetNumber = (sellerWhatsApp || whatsappNumber).replace(/\D/g, '');
@@ -281,7 +292,7 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
   };
 
   return (
-    <div className="mobile-p lg:p-6 max-w-[850px] mx-auto space-y-2 sm:space-y-6">
+    <div className="p-1 px-[2px] sm:p-6 max-w-[850px] mx-auto space-y-1.5 sm:space-y-6">
       <AnimatePresence>
         {showInfoTip && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
@@ -423,28 +434,26 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 sm:gap-4">
-        <div className="sm:block flex items-center justify-between w-full sm:w-auto">
-          <div>
-            <h1 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 leading-none">FAZER <span className="text-lotofacil-purple uppercase">APOSTA</span></h1>
-            <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 font-medium">Selecione 10 números.</p>
-          </div>
-          <div className="sm:hidden glass-card px-3 py-1 flex items-center gap-2 bg-lotofacil-purple/5 border-lotofacil-purple/20">
-            <Ticket className="text-lotofacil-purple" size={12} />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-900">R$ 10</span>
-          </div>
+      <div className="flex items-center justify-between gap-2 px-1">
+        <div>
+          <h1 className="text-sm sm:text-2xl font-display tracking-widest text-slate-900 leading-none">FAZER <span className="text-lotofacil-purple uppercase">APOSTA</span></h1>
+          <p className="text-[8px] sm:text-xs text-slate-500 mt-0.5 font-medium">Selecione 10 números.</p>
         </div>
-        <div className="hidden sm:flex glass-card px-4 py-1.5 items-center gap-3 bg-lotofacil-purple/5 border-lotofacil-purple/20 self-start sm:self-auto">
-          <Ticket className="text-lotofacil-purple drop-shadow-[0_0_5px_rgba(107,33,168,0.3)]" size={16} />
-          <span className="text-[11px] sm:text-sm font-bold uppercase tracking-widest text-slate-900 leading-none">VALOR: R$ 10,00</span>
+
+        <div className="flex items-center gap-1.5 sm:gap-3 bg-green-400 text-black px-2 py-1 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl border border-green-500 shadow-[0_4px_10px_rgba(34,197,94,0.3)] animate-pulse-subtle">
+          <Ticket className="text-black shrink-0" size={12} />
+          <div className="flex items-center gap-1.5">
+            <span className="hidden xs:inline text-[7px] sm:text-[10px] font-black uppercase tracking-wider text-black/60">Valor:</span>
+            <span className="text-[10px] sm:text-base font-black uppercase tracking-widest text-black">R$ 10,00</span>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-16 justify-center items-start">
+      <div className="flex flex-col lg:flex-row gap-2 lg:gap-16 justify-center items-start">
         {/* Number Grid Column */}
-        <div className="w-full lg:w-[320px] space-y-4 shrink-0">
+        <div className="w-full lg:w-[320px] space-y-2 sm:space-y-4 shrink-0">
           {/* Bet Name Input - Moved inside column for alignment */}
-          <div className="space-y-1.5 px-1">
+          <div className="space-y-1 sm:space-y-1.5 px-0.5 sm:px-1">
             <div className="flex items-center justify-between ml-1">
               <label className="block text-[10px] uppercase tracking-widest text-slate-500 font-bold">
                 NOME NA APOSTA (NICK)
@@ -493,31 +502,40 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
             <button 
               onClick={registerBet}
               disabled={selectedNumbers.length !== 10}
-              className="flex-[1.2] bg-gradient-to-r from-slate-900 to-slate-800 text-white h-9 sm:h-10 flex items-center justify-center gap-1 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 rounded-lg shadow-lg hover:brightness-125 active:scale-95 transition-all border border-white/10 relative overflow-hidden group"
+              className="flex-1 bg-slate-900 text-white h-11 sm:h-12 flex flex-col items-center justify-center gap-0.5 text-[8px] sm:text-[10px] font-black uppercase tracking-widest disabled:opacity-50 rounded-xl shadow-lg hover:bg-slate-800 active:scale-95 transition-all border-b-4 border-slate-700 active:border-b-0 active:translate-y-1"
             >
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-              <Plus size={12} className="text-lotofacil-yellow" />
-              <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400">REGISTRAR</span>
+              <Plus size={14} className="text-lotofacil-yellow" />
+              <span>REGISTRAR</span>
+            </button>
+
+            <button 
+              onClick={handleAddSurpresinha}
+              className="flex-1 h-11 sm:h-12 bg-emerald-500 text-white flex flex-col items-center justify-center gap-0.5 text-[8px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all rounded-xl shadow-[0_8px_20px_rgba(16,185,129,0.3)] border-b-4 border-emerald-700 active:border-b-0 active:translate-y-1"
+            >
+              <Sparkles size={14} />
+              <span>SURPRESINHA</span>
             </button>
             
-            <div className="flex-[1.8] flex gap-1 items-center h-9 sm:h-10">
-              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-1 h-full">
+            <div className="flex-[0.9] flex flex-col items-center justify-center h-11 sm:h-12 bg-white border-2 border-lotofacil-purple rounded-xl px-1 shadow-[0_10px_25px_rgba(107,33,168,0.15)] relative group overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-lotofacil-purple/10" />
+              <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-lotofacil-purple text-white text-[7px] font-black px-2 py-0.5 rounded-full tracking-[0.2em] uppercase shadow-md z-10 scale-90">JOGOS</div>
+              <div className="flex items-center justify-between w-full px-1 relative z-10">
                 <button 
                   onClick={() => setSurpresinhaCount(Math.max(1, surpresinhaCount - 1))} 
-                  className="text-slate-400 hover:text-slate-900 p-0.5"
+                  className="text-slate-400 hover:text-lotofacil-purple p-0.5 transition-colors active:scale-90"
                 >
-                  <Minus size={10} />
+                  <Minus size={18} strokeWidth={4} />
                 </button>
-                <span className="text-[9px] sm:text-[10px] font-bold text-slate-900 w-3 text-center">{surpresinhaCount}</span>
-                <button onClick={() => setSurpresinhaCount(Math.min(30, surpresinhaCount + 1))} className="text-slate-400 hover:text-slate-900 p-0.5"><Plus size={10} /></button>
+                <div className="flex flex-col items-center">
+                   <span className="text-xl sm:text-3xl font-black text-slate-900 leading-none">{surpresinhaCount}</span>
+                </div>
+                <button 
+                  onClick={() => setSurpresinhaCount(Math.min(50, surpresinhaCount + 1))} 
+                  className="text-slate-400 hover:text-lotofacil-purple p-0.5 transition-colors active:scale-90"
+                >
+                  <Plus size={18} strokeWidth={4} />
+                </button>
               </div>
-              <button 
-                onClick={handleAddSurpresinha}
-                className="flex-1 h-full bg-orange-500 border border-orange-600 rounded-lg text-white text-[8px] sm:text-[10px] font-bold uppercase tracking-widest hover:bg-orange-600 transition-all flex items-center justify-center gap-1 shadow-md"
-              >
-                <Sparkles size={10} />
-                SURPRESINHA
-              </button>
             </div>
           </div>
 
@@ -577,8 +595,8 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-              <div className="space-y-3 sm:space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-6">
+              <div className="space-y-2 sm:space-y-4">
                 <div>
                   <label className="block text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-600 mb-1.5 ml-1 font-bold">
                     Código do Vendedor {isSellerLink ? '(Vinculado)' : '(Obrigatório)'}

@@ -160,7 +160,7 @@ const Instructions: React.FC = () => {
               <h3 className="font-bold text-slate-900 uppercase tracking-wider">Corrida dos Campeões (Constância)</h3>
             </div>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Prêmio voltado para a **constância do participante**. Sua participação em sequência gera pontos que são acumulados. Quem alcançar primeiro a marca de **160 pontos** no ranking geral ganha este prêmio especial.
+              Prêmio voltado para a **constância do participante**. Sua participação em sequência gera pontos que são acumulados. Quem alcançar primeiro a marca de **200 pontos** no ranking geral ganha este prêmio especial.
             </p>
           </div>
         </div>

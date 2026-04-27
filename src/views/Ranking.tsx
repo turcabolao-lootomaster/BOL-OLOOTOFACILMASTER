@@ -9,7 +9,7 @@ import { firebaseService } from '../services/firebaseService';
 import { Trophy, Medal, TrendingUp, Search, Share2, Crown, FileText, Lock, AlertCircle, HelpCircle, X as CloseIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../utils';
-import { RANKING_GOAL } from '../utils';
+import { RANKING_GOAL, RANKING_PRIZE } from '../utils';
 import { UserRanking, ContestStatus, Bet } from '../types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -51,13 +51,13 @@ const Ranking: React.FC = () => {
     doc.text('CORRIDA DOS CAMPEÕES', pageWidth / 2, 20, { align: 'center' });
     
     doc.setFontSize(14);
-    doc.text('RUMO AOS 160 PONTOS', pageWidth / 2, 30, { align: 'center' });
+    doc.text(`RUMO AOS ${RANKING_GOAL} PONTOS`, pageWidth / 2, 30, { align: 'center' });
 
     // Meta Info
     doc.setFillColor(147, 51, 234); // Purple 600
     doc.roundedRect(pageWidth / 2 - 60, 35, 120, 8, 2, 2, 'F');
     doc.setFontSize(10);
-    doc.text('META: 160 PONTOS | PRÊMIO: R$ 1.000,00', pageWidth / 2, 40.5, { align: 'center' });
+    doc.text(`META: ${RANKING_GOAL} PONTOS | PRÊMIO: R$ ${RANKING_PRIZE.toFixed(2).replace('.', ',')}`, pageWidth / 2, 40.5, { align: 'center' });
 
     // Footer Info
     doc.setTextColor(71, 85, 105);
@@ -104,7 +104,7 @@ const Ranking: React.FC = () => {
       didParseCell: (data) => {
         if (data.section === 'body' && data.column.index === 4) {
           const points = parseInt(data.cell.raw as string);
-          if (points >= 160) {
+          if (points >= RANKING_GOAL) {
             data.cell.styles.fillColor = [30, 58, 138]; // Dark Blue
             data.cell.styles.textColor = [255, 215, 0]; // Gold
           }
@@ -180,7 +180,7 @@ const Ranking: React.FC = () => {
           <div className="flex items-center gap-2 sm:gap-4">
             <h1 className="text-lg sm:text-4xl font-display tracking-widest text-slate-900 uppercase">
               CORRIDA DOS CAMPEÕES
-              <span className="text-lotofacil-purple"> - 160 PTS</span>
+              <span className="text-lotofacil-purple"> - {RANKING_GOAL} PTS</span>
             </h1>
             <div className="flex items-center gap-2">
               <button 
@@ -208,15 +208,15 @@ const Ranking: React.FC = () => {
             </div>
           </div>
           <p className="text-xs sm:text-sm text-slate-600 mt-1 sm:mt-2">
-            Acompanhe a corrida rumo aos 160 pontos!
+            Acompanhe a corrida rumo aos {RANKING_GOAL} pontos!
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <div className="px-3 py-1.5 bg-slate-900 text-white rounded-lg flex items-center gap-2 shadow-md border border-lotofacil-purple/30">
               <Trophy size={14} className="text-lotofacil-purple" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Meta: 160 Pontos</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">Meta: {RANKING_GOAL} Pontos</span>
             </div>
             <div className="px-3 py-1.5 bg-lotofacil-purple text-white rounded-lg flex items-center gap-2 shadow-md">
-              <span className="text-[10px] font-bold uppercase tracking-widest">Prêmio para quem alcançar primeiro: R$ 1.000</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">Prêmio para quem alcançar primeiro: R$ {RANKING_PRIZE}</span>
             </div>
           </div>
         </div>
@@ -277,15 +277,15 @@ const Ranking: React.FC = () => {
                       <span className="font-bold uppercase tracking-widest text-xs">Funcionamento</span>
                     </div>
                     <p className="text-sm text-slate-600 leading-relaxed">
-                      A Corrida 160 PTS soma os pontos de todos os concursos realizados. 
+                      A Corrida {RANKING_GOAL} PTS soma os pontos de todos os concursos realizados. 
                       Os pontos do concurso atual são adicionados automaticamente após a finalização do 3º sorteio.
                     </p>
                     <div className="flex items-center gap-2 pt-2">
                       <div className="px-3 py-1 bg-slate-900 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest">
-                        Meta: 160 Pontos
+                        Meta: {RANKING_GOAL} Pontos
                       </div>
                       <div className="px-3 py-1 bg-lotofacil-purple text-white rounded-lg text-[10px] font-bold uppercase tracking-widest">
-                        Prêmio: R$ 1.000
+                        Prêmio: R$ {RANKING_PRIZE}
                       </div>
                     </div>
                   </div>
@@ -361,7 +361,7 @@ const Ranking: React.FC = () => {
                   </span>
                 </div>
               )}
-              {p.points >= 160 && (
+              {p.points >= RANKING_GOAL && (
                 <div className="flex flex-col items-center gap-1 mt-1">
                   <span className="px-2 py-0.5 bg-slate-900 text-white text-[7px] font-bold uppercase tracking-tighter rounded flex items-center gap-1 shadow-lg ring-1 ring-lotofacil-yellow/50">
                     <Trophy size={7} className="text-lotofacil-yellow" />
@@ -381,7 +381,7 @@ const Ranking: React.FC = () => {
                 </div>
                 <div className={cn(
                   "px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold transition-all",
-                  p.points >= 160 
+                  p.points >= RANKING_GOAL 
                     ? "bg-slate-900 text-white shadow-md scale-105 ring-1 ring-lotofacil-yellow/50" 
                     : "text-lotofacil-purple"
                 )}>
@@ -472,7 +472,7 @@ const Ranking: React.FC = () => {
                       Vendedor: {p.sellerCode}
                     </span>
                   )}
-                  {p.points >= 160 && (
+                  {p.points >= RANKING_GOAL && (
                     <span className="text-[7px] sm:text-[8px] bg-slate-900 text-white font-bold uppercase tracking-tighter px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm ring-1 ring-lotofacil-purple/30">
                       <Trophy size={8} className="text-lotofacil-purple" />
                       META ALCANÇADA
@@ -508,13 +508,13 @@ const Ranking: React.FC = () => {
                   </div>
                   <div className={cn(
                     "flex flex-col items-center justify-center p-1.5 rounded-lg transition-all min-w-[40px] shrink-0",
-                    p.points >= 160 
+                    p.points >= RANKING_GOAL 
                       ? "bg-slate-900 text-white shadow-md scale-110 ring-1 ring-lotofacil-yellow/30" 
                       : "bg-slate-50 border border-slate-100"
                   )}>
                     <span className={cn(
                       "text-[10px] sm:text-xs font-bold whitespace-nowrap leading-none",
-                      p.points >= 160 ? "text-white" : "text-lotofacil-purple"
+                      p.points >= RANKING_GOAL ? "text-white" : "text-lotofacil-purple"
                     )}>
                       {p.points.toString().padStart(2, '0')}
                     </span>

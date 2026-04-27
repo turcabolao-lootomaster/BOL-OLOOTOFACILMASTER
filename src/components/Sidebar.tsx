@@ -176,6 +176,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
             )}
 
             <a 
+              href="https://wa.me/5511978193552?text=Olá! Tenho interesse em me tornar um parceiro/vendedor do Bolão." 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition-all text-[10px] font-bold uppercase tracking-widest border border-orange-400 mb-2 shadow-md shadow-orange-500/20"
+            >
+              <Users size={18} />
+              <span>Seja um Vendedor</span>
+            </a>
+
+            <a 
               href="https://wa.me/5511978193552" 
               target="_blank" 
               rel="noopener noreferrer"

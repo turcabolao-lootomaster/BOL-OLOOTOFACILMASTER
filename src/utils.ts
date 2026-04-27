@@ -23,5 +23,5 @@ export const COLORS = {
 
 export const BET_PRICE = 10; // Example price
 export const SELLER_COMMISSION_PCT = 15;
-export const RANKING_GOAL = 160;
-export const RANKING_PRIZE = 1000;
+export const RANKING_GOAL = 200;
+export const RANKING_PRIZE = 800;

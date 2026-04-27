@@ -707,6 +707,21 @@ export const firebaseService = {
     }
   },
 
+  async resetSellersFinancialStats(): Promise<void> {
+    try {
+      const sellersSnap = await getDocs(collection(db, 'sellers'));
+      for (const sellerDoc of sellersSnap.docs) {
+        await updateDoc(doc(db, 'sellers', sellerDoc.id), { 
+          totalSales: 0, 
+          totalCommission: 0 
+        });
+      }
+    } catch (error) {
+      console.error('Error resetting sellers stats:', error);
+      throw error;
+    }
+  },
+
   // Seller functions
   subscribeToSellerSales(sellerCode: string, callback: (bets: Bet[]) => void) {
     const q = query(
