@@ -19,7 +19,8 @@ import {
   orderBy,
   limit,
   serverTimestamp,
-  increment
+  increment,
+  writeBatch
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { User, Bet, Contest, Draw, UserRanking, Commission, ContestStatus, Seller, Settings, SellerRequest, PageViewStats } from '../types';
@@ -719,6 +720,37 @@ export const firebaseService = {
     } catch (error) {
       console.error('Error resetting sellers stats:', error);
       throw error;
+    }
+  },
+
+  async updateContestBasicInfo(contestId: string, number: number, betPrice: number): Promise<void> {
+    const path = `contests/${contestId}`;
+    try {
+      await updateDoc(doc(db, 'contests', contestId), {
+        number,
+        betPrice
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  },
+
+  async deleteContest(contestId: string): Promise<void> {
+    const path = `contests/${contestId}`;
+    try {
+      // Also delete all bets associated with this contest
+      const betsQuery = query(collection(db, 'bets'), where('contestId', '==', contestId));
+      const betsSnap = await getDocs(betsQuery);
+      
+      const batch = writeBatch(db);
+      for (const betDoc of betsSnap.docs) {
+        batch.delete(betDoc.ref);
+      }
+      batch.delete(doc(db, 'contests', contestId));
+      
+      await batch.commit();
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
     }
   },
 

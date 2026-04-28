@@ -1355,6 +1355,15 @@ const ContestsTab: React.FC<{
     if (!editingPrizes) return;
 
     try {
+      // Update basic info if provided
+      if ((editingPrizes as any).number !== undefined && (editingPrizes as any).betPrice !== undefined) {
+        await firebaseService.updateContestBasicInfo(
+          editingPrizes.id, 
+          (editingPrizes as any).number, 
+          (editingPrizes as any).betPrice
+        );
+      }
+
       await firebaseService.updateContestPrizes(editingPrizes.id, editingPrizes.prizes);
       if (editingPrizes.prizeConfig) {
         await firebaseService.updateContestPrizeConfig(editingPrizes.id, editingPrizes.prizeConfig);
@@ -1371,9 +1380,29 @@ const ContestsTab: React.FC<{
       }
       setEditingPrizes(null);
       await fetchContests();
+      showAlert('Sucesso', 'Concurso atualizado com sucesso!');
     } catch (error) {
       console.error('Erro ao atualizar premiações:', error);
+      showAlert('Erro', 'Erro ao atualizar concurso.');
     }
+  };
+
+  const handleDeleteContest = async (contestId: string) => {
+    showConfirm(
+      'Excluir Concurso',
+      'Tem certeza que deseja excluir este concurso? Todas as apostas associadas também serão excluídas.',
+      async () => {
+        try {
+          await firebaseService.deleteContest(contestId);
+          await fetchContests();
+          showAlert('Sucesso', 'Concurso excluído com sucesso.');
+        } catch (error) {
+          console.error('Erro ao excluir concurso:', error);
+          showAlert('Erro', 'Não foi possível excluir o concurso.');
+        }
+      },
+      'SIM, EXCLUIR'
+    );
   };
 
   const handleUpdatePublicLink = async (e: React.FormEvent) => {
@@ -1779,6 +1808,36 @@ const ContestsTab: React.FC<{
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-8 custom-scrollbar">
               <form id="prizes-form" onSubmit={handleUpdatePrizes} className="space-y-8">
+                {/* Informações Básicas */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-slate-900" />
+                    Informações Básicas
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Número do Concurso</label>
+                      <input 
+                        type="number" 
+                        value={(editingPrizes as any).number || ''}
+                        onChange={(e) => setEditingPrizes({...editingPrizes, number: parseInt(e.target.value) || 0} as any)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-900/50 transition-all font-bold"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Preço da Aposta (R$)</label>
+                      <input 
+                        type="number" 
+                        value={(editingPrizes as any).betPrice || ''}
+                        onChange={(e) => setEditingPrizes({...editingPrizes, betPrice: parseFloat(e.target.value) || 0} as any)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-900/50 transition-all font-bold"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Descrições dos Prêmios */}
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
@@ -2127,12 +2186,21 @@ const ContestsTab: React.FC<{
                     bonus27: 5000
                   },
                   startDate: c.startDate || '',
-                  startTime: c.startTime || ''
-                })}
+                  startTime: c.startTime || '',
+                  number: c.number,
+                  betPrice: c.betPrice || 10
+                } as any)}
                 className="w-8 h-8 sm:w-10 sm:h-10 bg-white text-slate-600 hover:text-lotofacil-purple border border-slate-200 rounded-lg sm:rounded-xl flex items-center justify-center transition-all shadow-sm"
                 title="Editar Premiações"
               >
                 <Trophy size={16} />
+              </button>
+              <button 
+                onClick={() => handleDeleteContest(c.id)}
+                className="w-8 h-8 sm:w-10 sm:h-10 bg-white text-slate-600 hover:text-red-600 border border-slate-200 rounded-lg sm:rounded-xl flex items-center justify-center transition-all shadow-sm"
+                title="Excluir Concurso"
+              >
+                <Trash2 size={16} />
               </button>
               {c.status === 'aberto' && (
                 <button 
