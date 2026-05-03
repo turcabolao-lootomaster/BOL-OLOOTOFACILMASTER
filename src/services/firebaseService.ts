@@ -999,14 +999,13 @@ export const firebaseService = {
     }
   },
 
-  async checkBetNameAvailability(betName: string, userId: string): Promise<{ available: boolean, message?: string }> {
+  async checkBetNameAvailability(betName: string, userId: string, contestId?: string): Promise<{ available: boolean, message?: string }> {
     if (!betName) return { available: true };
     
     const normalizedNick = betName.trim().toUpperCase();
     if (!normalizedNick) return { available: true };
 
     const key = normalizedNick.replace(/[^a-zA-Z0-9_]/g, '');
-    const path = `nick_reservations/${key}`;
     
     try {
       const reservationRef = doc(db, 'nick_reservations', key);
@@ -1015,20 +1014,36 @@ export const firebaseService = {
       if (reservationSnap.exists()) {
         const data = reservationSnap.data();
         if (data.ownerId && data.ownerId !== userId) {
-          return { 
-            available: false, 
-            message: `O nome "${normalizedNick}" já está sendo usado por outro participante. Por favor, escolha um nome diferente para garantir que seus pontos sejam computados corretamente.` 
-          };
+          // Se um contestId foi fornecido (apostando), verifique se o nick já está em uso NESTE concurso
+          if (contestId) {
+            if (data.lastContestId === contestId) {
+              return { 
+                available: false, 
+                message: `O nome "${normalizedNick}" já está sendo usado por outro participante NESTE CONCURSO. Por favor, escolha um nome diferente.` 
+              };
+            }
+            // Se foi usado em um concurso anterior mas não neste, permite "reclamar" o nick
+            return { available: true };
+          }
+          
+          // Fallback se não houver contestId (ex: editando perfil no Dashboard)
+          // Verifique o concurso ativo
+          const activeContest = await this.getActiveContest();
+          if (activeContest && data.lastContestId === activeContest.id) {
+            return { 
+              available: false, 
+              message: `O nome "${normalizedNick}" já está sendo usado por outro participante no concurso atual. Por favor, escolha um nome diferente.` 
+            };
+          }
         }
       }
       return { available: true };
     } catch (error) {
-      // If it's just a "not found" or similar, it's available
       return { available: true };
     }
   },
 
-  async reserveNick(betName: string, userId: string): Promise<void> {
+  async reserveNick(betName: string, userId: string, contestId?: string): Promise<void> {
     if (!betName || !userId) return;
     
     const normalizedNick = betName.trim().toUpperCase();
@@ -1036,21 +1051,22 @@ export const firebaseService = {
     
     try {
       const reservationRef = doc(db, 'nick_reservations', key);
-      const reservationSnap = await getDoc(reservationRef);
-      
-      if (!reservationSnap.exists()) {
-        await setDoc(reservationRef, {
-          nick: normalizedNick,
-          ownerId: userId,
-          createdAt: serverTimestamp(),
-          lastUsed: serverTimestamp()
-        });
+      const reservationData: any = {
+        nick: normalizedNick,
+        ownerId: userId,
+        lastUsed: serverTimestamp()
+      };
+
+      if (contestId) {
+        reservationData.lastContestId = contestId;
       } else {
-        // Update last used
-        await updateDoc(reservationRef, {
-          lastUsed: serverTimestamp()
-        });
+        const activeContest = await this.getActiveContest();
+        if (activeContest) {
+          reservationData.lastContestId = activeContest.id;
+        }
       }
+      
+      await setDoc(reservationRef, reservationData, { merge: true });
     } catch (error) {
       console.error('Erro ao reservar nick:', error);
     }

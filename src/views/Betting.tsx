@@ -191,17 +191,6 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
     }
 
     try {
-      // 1. Check name availability
-      const availability = await firebaseService.checkBetNameAvailability(cleanBetName, userId);
-      if (!availability.available) {
-        throw new Error(availability.message);
-      }
-
-      // 2. Link user to seller if not already linked and code is provided
-      if (user && !user.linkedSellerCode && sellerCode) {
-        await firebaseService.linkUserToSeller(user.id, sellerCode);
-      }
-
       const activeContest = await firebaseService.getActiveContest();
       if (!activeContest) {
         throw new Error('Nenhum concurso aberto no momento.');
@@ -211,6 +200,17 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
         throw new Error('As apostas para este concurso estão bloqueadas ou o concurso já foi finalizado.');
       }
 
+      // 1. Check name availability for CURRENT contest
+      const availability = await firebaseService.checkBetNameAvailability(cleanBetName, userId, activeContest.id);
+      if (!availability.available) {
+        throw new Error(availability.message);
+      }
+
+      // 2. Link user to seller if not already linked and code is provided
+      if (user && !user.linkedSellerCode && sellerCode) {
+        await firebaseService.linkUserToSeller(user.id, sellerCode);
+      }
+      
       // If sellerCode is present, try to get their WhatsApp for validation
       if (sellerCode) {
         const seller = await firebaseService.getSellerByCode(sellerCode);
@@ -237,8 +237,8 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
         });
         if (id) {
           ids.push(id);
-          // Reserve the nick for this user
-          await firebaseService.reserveNick(cleanBetName, userId);
+          // Reserve the nick for this user in THIS contest
+          await firebaseService.reserveNick(cleanBetName, userId, activeContest.id);
         }
       }
       
