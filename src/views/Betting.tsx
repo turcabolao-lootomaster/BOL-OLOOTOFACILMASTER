@@ -292,7 +292,7 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
   };
 
   return (
-    <div className="p-1 px-[2px] sm:p-6 max-w-[850px] mx-auto space-y-1.5 sm:space-y-6">
+    <div className="p-1 px-[2px] sm:p-6 max-w-[850px] mx-auto space-y-1.5 sm:space-y-6 bg-[#1c0428]">
       <AnimatePresence>
         {showInfoTip && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
@@ -436,7 +436,7 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
 
       <div className="flex items-center justify-between gap-2 px-1">
         <div>
-          <h1 className="text-sm sm:text-2xl font-display tracking-widest text-slate-900 leading-none">FAZER <span className="text-lotofacil-purple uppercase">APOSTA</span></h1>
+          <h1 className="text-sm sm:text-2xl font-display tracking-widest text-[#e2e5eb] leading-none">FAZER <span className="text-[#7a9a09] uppercase">APOSTA</span></h1>
           <p className="text-[8px] sm:text-xs text-slate-500 mt-0.5 font-medium">Selecione 10 números.</p>
         </div>
 
@@ -455,7 +455,7 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
           {/* Bet Name Input - Moved inside column for alignment */}
           <div className="space-y-1 sm:space-y-1.5 px-0.5 sm:px-1">
             <div className="flex items-center justify-between ml-1">
-              <label className="block text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+              <label className="block text-[10px] uppercase tracking-widest text-[#fdfeff] font-bold">
                 NOME NA APOSTA (NICK)
               </label>
               <button 
@@ -625,7 +625,7 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
                 <button 
                   type="submit"
                   disabled={pendingBets.length === 0 || isSubmitting || isLoadingContest || (activeContest?.status !== 'aberto') || !betName.trim() || !sellerCode}
-                  className="w-full bg-gradient-to-r from-lotofacil-purple via-accent-purple to-lotofacil-purple text-white h-14 rounded-2xl flex items-center justify-center shadow-[0_10px_30px_rgba(107,33,168,0.3)] disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm uppercase tracking-widest font-black hover:brightness-110 active:scale-95 transition-all border-2 border-white/20 relative overflow-hidden group animate-pulse-glow"
+                  className="w-full bg-[#1b56ea] text-white h-14 rounded-2xl flex items-center justify-center shadow-[0_10px_30px_rgba(27,86,234,0.3)] disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm uppercase tracking-widest font-black hover:brightness-110 active:scale-95 transition-all border-2 border-white/20 relative overflow-hidden group animate-pulse-glow"
                 >
                   <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                   <span className="flex items-center gap-2 drop-shadow-md">
