@@ -120,6 +120,38 @@ const AppContent: React.FC = () => {
     );
   }
 
+  if (systemSettings?.maintenanceMode && user?.role !== 'admin' && user?.role !== 'master') {
+    return (
+      <div className="min-h-screen bg-[#1c0428] flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+        <div className="relative mb-12">
+          <div className="absolute inset-0 bg-[#7a9a09] blur-[100px] opacity-20 animate-pulse" />
+          <div className="w-32 h-32 bg-lotofacil-yellow/10 rounded-full flex items-center justify-center border-4 border-lotofacil-yellow/20 animate-bounce">
+            <img src="https://cdn-icons-png.flaticon.com/512/3112/3112946.png" alt="Logo" className="w-16 h-16 p-1" />
+          </div>
+        </div>
+
+        <h1 className="text-4xl sm:text-6xl font-display tracking-[0.2em] text-[#e2e5eb] mb-6 uppercase">
+          AGUARDANDO <span className="text-[#7a9a09]">SORTEIO</span>
+        </h1>
+        
+        <div className="max-w-md bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2rem] shadow-2xl">
+          <p className="text-xl text-[#7a9a09] font-bold mb-4 uppercase tracking-widest">
+            {systemSettings.maintenanceMessage || "Estamos preparando os resultados do concurso atual."}
+          </p>
+          <p className="text-slate-400 text-sm leading-relaxed">
+            As apostas foram encerradas e estamos processando os dados. 
+            Em instantes a transmissão ao vivo e os resultados estarão disponíveis.
+          </p>
+        </div>
+
+        <div className="mt-12 flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
+          <div className="w-2 h-2 rounded-full bg-[#7a9a09] animate-ping" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#e2e5eb]/60">Sincronizado com o Servidor</span>
+        </div>
+      </div>
+    );
+  }
+
   const isPublicView = publicViews.includes(currentView);
 
   if (!user && !isPublicView && currentView !== 'login') {

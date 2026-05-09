@@ -213,14 +213,15 @@ export const firebaseService = {
       const contestSnap = await getDoc(contestRef);
       const oldStatus = contestSnap.data()?.status;
 
+      console.log(`Updating contest ${contestId} status from ${oldStatus} to ${status}`);
       await updateDoc(contestRef, { status });
       
       // When a contest is finalized, recalculate the general ranking and process seller bonuses
       if (status === 'encerrado' && oldStatus !== 'encerrado') {
-        await Promise.all([
-          this.recalculateGeneralRanking(),
-          this.processSellerBonuses(contestId)
-        ]);
+        console.log('Contest finalized. Triggering ranking recalculation and bonus processing...');
+        // Execute sequentially to ensure clear logs and process flow
+        await this.recalculateGeneralRanking();
+        await this.processSellerBonuses(contestId);
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
@@ -228,6 +229,7 @@ export const firebaseService = {
   },
 
   async processSellerBonuses(contestId: string): Promise<void> {
+    console.log(`Processing seller bonuses for contest ${contestId}`);
     try {
       // Fetch all validated bets for this contest
       const betsQuery = query(
@@ -238,36 +240,45 @@ export const firebaseService = {
       const betsSnap = await getDocs(betsQuery);
       const bets = betsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bet));
 
-      if (bets.length === 0) return;
+      if (bets.length === 0) {
+        console.log('No validated bets found for bonus processing.');
+        return;
+      }
 
-      // Find top winners (1st place)
+      // Find top winners (1st place) in this contest overall
       let maxPoints = -1;
       bets.forEach(b => {
         const total = (b.hits || [0, 0, 0]).reduce((sum, h) => sum + h, 0);
         if (total > maxPoints) maxPoints = total;
       });
 
-      if (maxPoints <= 0) return;
+      if (maxPoints <= 0) {
+        console.log('No points accumulated in bets. Skipping bonuses.');
+        return;
+      }
 
       const winners = bets.filter(b => (b.hits || [0, 0, 0]).reduce((sum, h) => sum + h, 0) === maxPoints);
+      console.log(`Found ${winners.length} winners with ${maxPoints} points. Each winner's seller gets a bonus share of R$ 100.`);
       
       // Bonus of R$ 100 divided among winning bets
       const bonusPerWinningBet = 100 / winners.length;
+      const batch = writeBatch(db);
 
       for (const winner of winners) {
         if (winner.sellerCode) {
-          const sellersQuery = query(collection(db, 'sellers'), where('code', '==', winner.sellerCode));
+          const sellersQuery = query(collection(db, 'sellers'), where('code', '==', winner.sellerCode.toUpperCase()));
           const sellersSnap = await getDocs(sellersQuery);
           if (!sellersSnap.empty) {
             const sellerDoc = sellersSnap.docs[0];
             const sellerData = sellerDoc.data() as Seller;
             
-            await updateDoc(doc(db, 'sellers', sellerDoc.id), {
+            batch.update(doc(db, 'sellers', sellerDoc.id), {
               totalCommission: (sellerData.totalCommission || 0) + bonusPerWinningBet
             });
 
             // Create commission record for the bonus
-            await addDoc(collection(db, 'commissions'), {
+            const commRef = doc(collection(db, 'commissions'));
+            batch.set(commRef, {
               sellerId: sellerDoc.id,
               betId: winner.id,
               amount: bonusPerWinningBet,
@@ -278,6 +289,8 @@ export const firebaseService = {
           }
         }
       }
+      await batch.commit();
+      console.log('Seller bonuses processed successfully.');
     } catch (error) {
       console.error('Error processing seller bonuses:', error);
     }
@@ -754,6 +767,30 @@ export const firebaseService = {
     }
   },
 
+  async updateMaintenanceMode(active: boolean, message: string): Promise<void> {
+    const path = 'settings/global';
+    try {
+      await updateDoc(doc(db, 'settings', 'global'), {
+        maintenanceMode: active,
+        maintenanceMessage: message,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
+  subscribeToSettings(callback: (settings: Settings) => void) {
+    const docRef = doc(db, 'settings', 'global');
+    return onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        callback(snapshot.data() as Settings);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'settings/global');
+    });
+  },
+
   // Seller functions
   subscribeToSellerSales(sellerCode: string, callback: (bets: Bet[]) => void) {
     const q = query(
@@ -1083,14 +1120,16 @@ export const firebaseService = {
           d.number === drawNumber ? { ...d, status: 'concluido', results } : d
         );
         
-        const isLastDraw = drawNumber === 3;
-        const updateData: any = { draws: updatedDraws };
-        
-        await updateDoc(docRef, updateData);
+        await updateDoc(docRef, { draws: updatedDraws });
 
-        // Update hits for all bets in this contest
+        // Update hits for all bets in this contest in batches
         const betsQuery = query(collection(db, 'bets'), where('contestId', '==', contestId));
         const betsSnap = await getDocs(betsQuery);
+        
+        console.log(`Updating hits for ${betsSnap.size} bets...`);
+        
+        let batch = writeBatch(db);
+        let count = 0;
         
         for (const betDoc of betsSnap.docs) {
           const betData = betDoc.data() as Bet;
@@ -1100,8 +1139,20 @@ export const firebaseService = {
           const drawHits = betData.numbers.filter(n => results.includes(n)).length;
           hits[drawNumber - 1] = drawHits;
           
-          await updateDoc(doc(db, 'bets', betDoc.id), { hits });
+          batch.update(doc(db, 'bets', betDoc.id), { hits });
+          count++;
+          
+          if (count === 500) {
+            await batch.commit();
+            batch = writeBatch(db);
+            count = 0;
+          }
         }
+        
+        if (count > 0) {
+          await batch.commit();
+        }
+        console.log(`Successfully updated hits for ${betsSnap.size} bets.`);
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
@@ -1111,20 +1162,29 @@ export const firebaseService = {
   async recalculateGeneralRanking(): Promise<void> {
     console.log('Starting recalculateGeneralRanking...');
     try {
-      // 1. Get all contests and filter/sort in memory to avoid composite index requirement
+      // 1. Get all closed contests
       const contestsSnap = await getDocs(collection(db, 'contests'));
-      console.log(`Found ${contestsSnap.size} total contests`);
       const closedContests = contestsSnap.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Contest))
         .filter(c => c.status === 'encerrado')
         .sort((a, b) => a.number - b.number);
       
-      console.log(`Found ${closedContests.length} closed contests`);
-      const participantTotals: { [key: string]: { betName: string, sellerCode: string, totalPoints: number, ownerId: string, numbers: number[] } } = {};
+      console.log(`Step 1: Found ${closedContests.length} closed contests to process`);
+      
+      const participantTotals: { 
+        [key: string]: { 
+          betName: string, 
+          sellerCode: string, 
+          totalPoints: number, 
+          ownerId: string, 
+          numbers: number[],
+          contestsCount: number 
+        } 
+      } = {};
 
+      // Process contests sequentially to avoid overwhelming memory/network
       for (const contest of closedContests) {
         const contestId = contest.id;
-        console.log(`Processing contest #${contest.number} (${contestId})`);
         // Get all validated bets for this contest
         const betsQuery = query(
           collection(db, 'bets'), 
@@ -1132,20 +1192,21 @@ export const firebaseService = {
           where('status', '==', 'validado')
         );
         const betsSnap = await getDocs(betsQuery);
-        console.log(`Found ${betsSnap.size} validated bets for contest #${contest.number}`);
         
-        // Group by participant (betName + sellerCode) and take the best score in this contest
-        // Rule: A participant can have multiple bets with different names (e.g., "ROMARIO" and "VALMIR").
-        // For each unique name + seller combination, only the best bet in the contest counts for the general ranking.
+        console.log(`  Processing Contest #${contest.number}: Found ${betsSnap.size} validated bets`);
+
+        // Group by participant (betName) and take the best score in this contest
         const contestBestScores: { [key: string]: { betName: string, sellerCode: string, score: number, userId: string, numbers: number[] } } = {};
         
         for (const betDoc of betsSnap.docs) {
           const betData = betDoc.data() as Bet;
           const hits = betData.hits || [0, 0, 0];
           const totalHits = hits.reduce((a, b) => a + b, 0);
-          const betName = (betData.betName || betData.userName || 'Participante').trim().toUpperCase();
+          
+          // Use normalized name for grouping to be safer
+          const betName = (betData.betName || betData.userName || 'PARTICIPANTE').trim().toUpperCase();
           const sellerCode = (betData.sellerCode || '').trim().toUpperCase();
-          const key = betName; // Use only betName as key for global ranking
+          const key = betName; 
           
           if (!key) continue;
 
@@ -1162,21 +1223,24 @@ export const firebaseService = {
               sellerCode: data.sellerCode, 
               totalPoints: 0, 
               ownerId: data.userId,
-              numbers: data.numbers
+              numbers: data.numbers,
+              contestsCount: 0
             };
           }
           participantTotals[key].totalPoints += data.score;
+          participantTotals[key].contestsCount += 1;
+          // Keep the latest numbers and seller code
+          participantTotals[key].numbers = data.numbers;
+          participantTotals[key].sellerCode = data.sellerCode;
         }
       }
 
-      console.log(`Recalculated totals for ${Object.keys(participantTotals).length} participants`);
+      console.log(`Step 2: Calculated totals for ${Object.keys(participantTotals).length} unique participants`);
 
       // 2. Clear current rankings collection and write new ones in batches
       const rankingsSnap = await getDocs(collection(db, 'rankings'));
-      const { writeBatch } = await import('firebase/firestore');
       
       // Delete old rankings in batches of 500
-      console.log(`Deleting ${rankingsSnap.size} old rankings...`);
       let batch = writeBatch(db);
       let count = 0;
       for (const rankDoc of rankingsSnap.docs) {
@@ -1189,16 +1253,33 @@ export const firebaseService = {
         }
       }
       if (count > 0) await batch.commit();
+      console.log(`Step 3: Deleted ${rankingsSnap.size} old ranking records`);
 
       // Write new rankings in batches of 500
-      console.log(`Writing ${Object.keys(participantTotals).length} new rankings...`);
       batch = writeBatch(db);
       count = 0;
-      for (const [key, data] of Object.entries(participantTotals)) {
+      const sortedParticipants = Object.values(participantTotals).sort((a, b) => b.totalPoints - a.totalPoints);
+      
+      let position = 0;
+      let lastTotal = -1;
+      
+      for (const data of sortedParticipants) {
+        const key = data.betName;
         if (!key) continue;
-        batch.set(doc(db, 'rankings', key), {
+
+        // Calculate position with ties
+        if (data.totalPoints !== lastTotal) {
+          position++;
+          lastTotal = data.totalPoints;
+        }
+        
+        // Clean key for document ID safety (though betName should be safe enough)
+        const safeId = key.replace(/[^a-zA-Z0-9_ ]/g, '');
+        
+        batch.set(doc(db, 'rankings', safeId), {
           ...data,
-          createdAt: serverTimestamp(),
+          position,
+          // totalPoints is already in data, and subscribeToRanking uses it
           lastUpdated: serverTimestamp()
         });
         count++;
@@ -1209,7 +1290,8 @@ export const firebaseService = {
         }
       }
       if (count > 0) await batch.commit();
-      console.log('RecalculateGeneralRanking completed successfully!');
+      
+      console.log('Step 4: Ranking recalculation finished.');
     } catch (error) {
       console.error('Error in recalculateGeneralRanking:', error);
       handleFirestoreError(error, OperationType.UPDATE, 'rankings');

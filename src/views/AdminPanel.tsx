@@ -36,12 +36,15 @@ import {
   Pencil,
   MessageCircle,
   Calendar,
-  Clock
+  Clock,
+  Crown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
 import { cn, RANKING_GOAL } from '../utils';
 import { Bet, Contest, ContestStatus, Seller, User as AppUser, SellerRequest } from '../types';
+import autoTable from 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
 
 const AdminPanel: React.FC = () => {
   const { user } = useAuth();
@@ -71,6 +74,7 @@ const AdminPanel: React.FC = () => {
     { id: 'usuarios', label: 'Usuários', icon: ShieldCheck },
     { id: 'relatorios', label: 'Relatórios', icon: BarChart3 },
     { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
+    { id: 'ganhadores', label: 'Ganhadores', icon: Crown },
     { id: 'config', label: 'Config', icon: Save },
   ];
 
@@ -125,6 +129,7 @@ const AdminPanel: React.FC = () => {
           {activeTab === 'usuarios' && <UsersTab showAlert={showAlert} showConfirm={showConfirm} />}
           {activeTab === 'relatorios' && <ReportsTab />}
           {activeTab === 'financeiro' && <FinanceiroTab />}
+          {activeTab === 'ganhadores' && <WinnersTab />}
           {activeTab === 'config' && <ConfigTab showAlert={showAlert} />}
         </motion.div>
       </AnimatePresence>
@@ -3189,6 +3194,8 @@ const ConfigTab: React.FC<{
   const [poolStartDate, setPoolStartDate] = useState('');
   const [poolStartTime, setPoolStartTime] = useState('');
   const [isPoolActive, setIsPoolActive] = useState(true);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -3199,7 +3206,9 @@ const ConfigTab: React.FC<{
         setWhatsappNumber(settings.whatsappNumber || '');
         setPoolStartDate(settings.poolStartDate || '');
         setPoolStartTime(settings.poolStartTime || '');
-        setIsPoolActive(settings.isPoolActive !== false); // Default to true
+        setIsPoolActive(settings.isPoolActive !== false);
+        setMaintenanceMode(settings.maintenanceMode || false);
+        setMaintenanceMessage(settings.maintenanceMessage || '');
       }
     };
     fetchSettings();
@@ -3213,7 +3222,9 @@ const ConfigTab: React.FC<{
         whatsappNumber,
         poolStartDate,
         poolStartTime,
-        isPoolActive
+        isPoolActive,
+        maintenanceMode,
+        maintenanceMessage
       });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -3239,6 +3250,47 @@ const ConfigTab: React.FC<{
 
       <form onSubmit={handleSave} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Maintenance Mode Config */}
+          <div className="space-y-4 md:col-span-2 p-4 bg-lotofacil-purple/5 border border-lotofacil-purple/20 rounded-2xl">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-lotofacil-purple flex items-center gap-2">
+              <div className="w-1 h-1 rounded-full bg-lotofacil-purple" />
+              Modo Aguardando Sorteio
+            </h3>
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Ativar Tela de Espera?</p>
+                <p className="text-[9px] text-slate-500 font-medium">Bloqueia o app para usuários com uma tela de "Aguardando Sorteio".</p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setMaintenanceMode(!maintenanceMode)}
+                className={cn(
+                  "relative w-12 h-6 rounded-full transition-colors",
+                  maintenanceMode ? "bg-lotofacil-purple" : "bg-slate-300"
+                )}
+              >
+                <div className={cn(
+                  "absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm",
+                  maintenanceMode ? "translate-x-6" : "translate-x-0"
+                )} />
+              </button>
+            </div>
+
+            {maintenanceMode && (
+              <div className="space-y-2 animate-fade-in">
+                <label className="block text-[10px] uppercase tracking-widest text-slate-900 font-bold ml-1">Mensagem na Tela</label>
+                <input 
+                  type="text" 
+                  value={maintenanceMessage}
+                  onChange={(e) => setMaintenanceMessage(e.target.value)}
+                  placeholder="Ex: Prepare-se! O sorteio começará em instantes."
+                  className="w-full bg-white border border-slate-200 rounded-xl py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-sm text-slate-900 font-bold"
+                />
+              </div>
+            )}
+          </div>
+
           {/* WhatsApp Config */}
           <div className="space-y-4 md:col-span-2">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
@@ -3695,6 +3747,325 @@ const FinanceiroTab: React.FC = () => {
           </p>
         </div>
       </div>
+    </div>
+  );
+};
+
+// --- NOVA TAB DE GANHADORES ---
+const WinnersTab: React.FC = () => {
+  const [contests, setContests] = useState<Contest[]>([]);
+  const [selectedContest, setSelectedContest] = useState<Contest | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [reportData, setReportData] = useState<any[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    const fetchContests = async () => {
+      const all = await firebaseService.getAllContests();
+      const finished = all.filter(c => c.status === 'encerrado').sort((a,b) => b.number - a.number);
+      setContests(finished);
+      if (finished.length > 0) {
+        handleSelectContest(finished[0]);
+      } else {
+        setLoading(false);
+      }
+    };
+    fetchContests();
+  }, []);
+
+  const handleSelectContest = async (contest: Contest) => {
+    setSelectedContest(contest);
+    setLoading(true);
+    try {
+      const bets = await firebaseService.getContestBets(contest.id);
+      
+      const winnersByDraw: any[] = [];
+
+      // Loop through 3 draws
+      const totalRevenue = bets.length * (contest.betPrice || 10);
+      
+      for (let i = 1; i <= 3; i++) {
+        const drawWinners = bets.filter(b => b.hits && b.hits[i-1] === 10);
+        if (drawWinners.length > 0) {
+          const displayPrize = (contest.displayPrizes as any)?.[`draw${i}`];
+          const prizeValue = displayPrize !== undefined ? parseFloat(displayPrize) : parseFloat((contest.prizeConfig as any)?.[`fixed10PtsDraw${i}`] || 0);
+          const perWinner = prizeValue / drawWinners.length;
+          
+          drawWinners.forEach(w => {
+            winnersByDraw.push({
+              draw: `Sorteio ${i}`,
+              name: w.betName || w.userName,
+              code: w.sellerCode || '-',
+              hits: 10,
+              prize: perWinner,
+              type: '10 Pontos'
+            });
+          });
+        }
+      }
+
+      // RAPIDINHA (Highest hits in S1)
+      const sortedByS1 = [...bets].sort((a, b) => (b.hits?.[0] || 0) - (a.hits?.[0] || 0));
+      const maxS1Hits = sortedByS1[0]?.hits?.[0] || 0;
+      
+      if (maxS1Hits > 0) {
+        const rapidinhaWinners = bets.filter(b => (b.hits?.[0] || 0) === maxS1Hits);
+        const rapidinhaPrize = (contest.displayPrizes as any)?.rapidinha !== undefined 
+          ? parseFloat((contest.displayPrizes as any).rapidinha)
+          : (totalRevenue * (contest.prizeConfig?.pctRapidinha || 0.10));
+        const perRapidinha = rapidinhaPrize / rapidinhaWinners.length;
+
+        rapidinhaWinners.forEach(w => {
+          winnersByDraw.push({
+            draw: 'Rapidinha',
+            name: w.betName || w.userName,
+            code: w.sellerCode || '-',
+            hits: maxS1Hits,
+            prize: perRapidinha,
+            type: 'MAIOR PONTUAÇÃO S1'
+          });
+        });
+      }
+
+      // Champion and Vice (General Ranking)
+      const participantBestInContest: { [key: string]: { betName: string, sellerCode: string, score: number, numbers: number[] } } = {};
+      
+      bets.forEach(b => {
+        const total = (b.hits || [0, 0, 0]).reduce((acc, h) => acc + h, 0);
+        const name = (b.betName || b.userName || 'PARTICIPANTE').trim().toUpperCase();
+        if (!participantBestInContest[name] || total > participantBestInContest[name].score) {
+          participantBestInContest[name] = { 
+            betName: name, 
+            sellerCode: b.sellerCode || '', 
+            score: total,
+            numbers: b.numbers
+          };
+        }
+      });
+
+      const sortedParticipants = Object.values(participantBestInContest).sort((a,b) => b.score - a.score);
+      
+      if (sortedParticipants.length > 0) {
+        const maxScore = sortedParticipants[0].score;
+        const champions = sortedParticipants.filter(p => p.score === maxScore);
+        
+        // Prize logic
+        const displayChampion = (contest.displayPrizes as any)?.champion;
+        const championPrizeTotal = displayChampion !== undefined 
+          ? parseFloat(displayChampion)
+          : (totalRevenue * (contest.prizeConfig?.pctChampion || 0.45));
+        const perChampion = championPrizeTotal / champions.length;
+
+        champions.forEach(c => {
+          winnersByDraw.push({
+            draw: 'Geral',
+            name: c.betName,
+            code: c.sellerCode,
+            hits: c.score,
+            prize: perChampion,
+            type: 'CAMPEÃO'
+          });
+        });
+
+        // Vice
+        const nextScores = sortedParticipants.filter(p => p.score < maxScore);
+        if (nextScores.length > 0) {
+          const viceScore = nextScores[0].score;
+          const vices = nextScores.filter(p => p.score === viceScore);
+          const displayVice = (contest.displayPrizes as any)?.vice;
+          const vicePrizeTotal = displayVice !== undefined
+            ? parseFloat(displayVice)
+            : (totalRevenue * (contest.prizeConfig?.pctVice || 0.15));
+          const perVice = vicePrizeTotal / vices.length;
+
+          vices.forEach(v => {
+            winnersByDraw.push({
+              draw: 'Geral',
+              name: v.betName,
+              code: v.sellerCode,
+              hits: v.score,
+              prize: perVice,
+              type: 'VICE-CAMPEÃO'
+            });
+          });
+        }
+      }
+
+      setReportData(winnersByDraw);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generatePDF = () => {
+    if (!selectedContest) return;
+    setIsGenerating(true);
+    
+    try {
+      const doc = new jsPDF();
+      
+      // Header
+      doc.setFillColor(28, 4, 40);
+      doc.rect(0, 0, 210, 40, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.text('BOLÃO LOTOFÁCIL PREMIADA', 105, 20, { align: 'center' });
+      doc.setFontSize(10);
+      doc.text(`RELATÓRIO DE GANHADORES - CONCURSO #${selectedContest.number}`, 105, 30, { align: 'center' });
+
+      let currentY = 50;
+
+      const categories = [
+        { title: 'RAPIDINHA', filter: (w: any) => w.draw === 'Rapidinha' },
+        { title: '10 PONTOS', filter: (w: any) => w.type === '10 Pontos' },
+        { title: 'CAMPEÃO 1º LUGAR GERAL', filter: (w: any) => w.type === 'CAMPEÃO' },
+        { title: 'VICE-CAMPEÃO 2º LUGAR GERAL', filter: (w: any) => w.type === 'VICE-CAMPEÃO' }
+      ];
+
+      categories.forEach(cat => {
+        const filtered = reportData.filter(cat.filter);
+        if (filtered.length > 0) {
+          // Add new page if space is low
+          if (currentY > 250) {
+            doc.addPage();
+            currentY = 20;
+          }
+
+          doc.setTextColor(28, 4, 40);
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'bold');
+          doc.text(cat.title, 14, currentY);
+          currentY += 5;
+
+          const tableData = filtered.map(w => [
+            w.draw,
+            w.name,
+            w.code,
+            w.hits,
+            w.prize.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+          ]);
+
+          autoTable(doc, {
+            startY: currentY,
+            head: [['CATEGORIA', 'PARTICIPANTE', 'VENDEDOR', 'PONTOS', 'PRÊMIO']],
+            body: tableData,
+            theme: 'striped',
+            headStyles: { 
+              fillColor: [122, 154, 9],
+              textColor: [255, 255, 255],
+              fontSize: 8,
+              fontStyle: 'bold',
+              halign: 'center'
+            },
+            columnStyles: {
+              4: { halign: 'right', fontStyle: 'bold' },
+              3: { halign: 'center' }
+            },
+            styles: { fontSize: 8, cellPadding: 4 }
+          });
+
+          currentY = (doc as any).lastAutoTable.finalY + 15;
+        }
+      });
+
+      doc.save(`Ganhadores_Concurso_${selectedContest.number}.pdf`);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="text-center sm:text-left">
+          <h2 className="text-xl sm:text-2xl font-display tracking-widest text-slate-900 uppercase">LISTA DE <span className="text-lotofacil-purple">GANHADORES</span></h2>
+          <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-widest">Visualize e baixe o relatório de prêmios por concurso.</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <select 
+            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-lotofacil-purple"
+            onChange={(e) => {
+              const contest = contests.find(c => c.id === e.target.value);
+              if (contest) handleSelectContest(contest);
+            }}
+            value={selectedContest?.id || ''}
+          >
+            {contests.map(c => (
+              <option key={c.id} value={c.id}>Concurso #{c.number}</option>
+            ))}
+          </select>
+
+          <button 
+            onClick={generatePDF}
+            disabled={reportData.length === 0 || isGenerating}
+            className="flex items-center gap-2 bg-[#7a9a09] text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#7a9a09]/20 disabled:opacity-50"
+          >
+            <Download size={14} />
+            {isGenerating ? 'GERANDO...' : 'BAIXAR PDF'}
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="w-10 h-10 border-4 border-lotofacil-purple/20 border-t-lotofacil-purple rounded-full animate-spin" />
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Processando resultados...</p>
+        </div>
+      ) : reportData.length > 0 ? (
+        <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xl shadow-slate-200/50">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Categoria</th>
+                  <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Tipo</th>
+                  <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Ganhador</th>
+                  <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Vendedor</th>
+                  <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Pontos</th>
+                  <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-right">Prêmio</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {reportData.map((w, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50 transition-all">
+                    <td className="px-6 py-4">
+                      <span className={cn(
+                        "px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border",
+                        w.draw === 'Rapidinha' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                        w.draw.includes('Sorteio') ? "bg-emerald-50 text-emerald-600 border-emerald-100" : 
+                        "bg-lotofacil-purple/5 text-lotofacil-purple border-lotofacil-purple/10"
+                      )}>
+                        {w.draw}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase">{w.type}</td>
+                    <td className="px-6 py-4 font-bold text-slate-900">{w.name}</td>
+                    <td className="px-6 py-4 text-center font-medium text-slate-500">{w.code}</td>
+                    <td className="px-6 py-4 text-center font-black text-slate-900">{w.hits}</td>
+                    <td className="px-6 py-4 text-right font-black text-emerald-600">
+                      {w.prize.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center">
+          <div className="w-16 h-16 bg-slate-200 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Trophy size={32} />
+          </div>
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Nenhum ganhador nesta seleção</h3>
+          <p className="text-xs text-slate-500 mt-1">Selecione outro concurso ou verifique se este concurso possui prêmios configurados.</p>
+        </div>
+      )}
     </div>
   );
 };

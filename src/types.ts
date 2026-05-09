@@ -138,6 +138,8 @@ export interface Settings {
   poolStartDate?: string;
   poolStartTime?: string;
   isPoolActive?: boolean;
+  maintenanceMode?: boolean;
+  maintenanceMessage?: string;
   updatedAt: any;
 }
 
