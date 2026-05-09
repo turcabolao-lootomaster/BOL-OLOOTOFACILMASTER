@@ -67,7 +67,7 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && (
-        (request.auth.token.email == 'turcabolao@gmail.com' && request.auth.token.email_verified == true) ||
+        request.auth.token.email == 'turcabolao@gmail.com' ||
         hasRole('admin') || 
         hasRole('master')
       );
@@ -75,7 +75,7 @@ service cloud.firestore {
     
     function isMaster() {
       return isAuthenticated() && (
-        (request.auth.token.email == 'turcabolao@gmail.com' && request.auth.token.email_verified == true) ||
+        request.auth.token.email == 'turcabolao@gmail.com' ||
         hasRole('master')
       );
     }

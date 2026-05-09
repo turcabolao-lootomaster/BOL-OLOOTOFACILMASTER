@@ -120,7 +120,8 @@ const AppContent: React.FC = () => {
     );
   }
 
-  if (systemSettings?.maintenanceMode && user?.role !== 'admin' && user?.role !== 'master') {
+  const isAdminOrMaster = user?.role === 'admin' || user?.role === 'master' || user?.email === 'turcabolao@gmail.com';
+  if (systemSettings?.maintenanceMode && !isAdminOrMaster) {
     return (
       <div className="min-h-screen bg-[#1c0428] flex flex-col items-center justify-center p-6 text-center animate-fade-in">
         <div className="relative mb-12">
