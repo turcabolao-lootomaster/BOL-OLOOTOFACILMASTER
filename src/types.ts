@@ -62,7 +62,7 @@ export interface Contest {
     fixed10PtsDraw2: number;
     fixed10PtsDraw3: number;
     fixed25PlusTotal: number;
-    fixed27PlusTotal: number;
+    fixed28PlusTotal: number;
     pctRapidinha: number;
     pctChampion: number;
     pctVice: number;
@@ -78,7 +78,7 @@ export interface Contest {
     champion?: number;
     vice?: number;
     bonus25?: number;
-    bonus27?: number;
+    bonus28?: number;
   };
   publicLink?: string;
   startDate?: string;

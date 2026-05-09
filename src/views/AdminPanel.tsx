@@ -1241,7 +1241,7 @@ const ContestsTab: React.FC<{
     fixed10PtsDraw2: 300,
     fixed10PtsDraw3: 300,
     fixed25PlusTotal: 2000,
-    fixed27PlusTotal: 5000,
+    fixed28PlusTotal: 7000,
     pctRapidinha: 0.10,
     pctChampion: 0.45,
     pctVice: 0.15,
@@ -1258,7 +1258,7 @@ const ContestsTab: React.FC<{
     champion: 0,
     vice: 0,
     bonus25: 2000,
-    bonus27: 5000
+    bonus28: 7000
   });
 
   const [editingPrizes, setEditingPrizes] = useState<{ 
@@ -1330,7 +1330,7 @@ const ContestsTab: React.FC<{
         fixed10PtsDraw2: 300,
         fixed10PtsDraw3: 300,
         fixed25PlusTotal: 2000,
-        fixed27PlusTotal: 5000,
+        fixed28PlusTotal: 7000,
         pctRapidinha: 0.10,
         pctChampion: 0.45,
         pctVice: 0.15,
@@ -1346,7 +1346,7 @@ const ContestsTab: React.FC<{
         champion: 0,
         vice: 0,
         bonus25: 2000,
-        bonus27: 5000
+        bonus28: 7000
       });
       setIsCreating(false);
       await fetchContests();
@@ -1659,7 +1659,7 @@ const ContestsTab: React.FC<{
                   { label: '10 Pts (S2)', key: 'fixed10PtsDraw2' },
                   { label: '10 Pts (S3)', key: 'fixed10PtsDraw3' },
                   { label: 'Bônus 25 Pts', key: 'fixed25PlusTotal' },
-                  { label: 'Super 27 Pts', key: 'fixed27PlusTotal' },
+                  { label: 'Super 28 Pts', key: 'fixed28PlusTotal' },
                 ].map(item => (
                   <div key={item.key} className="space-y-1.5">
                     <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">{item.label}</label>
@@ -1696,7 +1696,7 @@ const ContestsTab: React.FC<{
                   { label: 'Campeão', key: 'champion' },
                   { label: 'Vice', key: 'vice' },
                   { label: 'Bônus 25', key: 'bonus25' },
-                  { label: 'Super 27', key: 'bonus27' },
+                  { label: 'Super 28', key: 'bonus28' },
                 ].map(item => (
                   <div key={item.key} className="space-y-1.5">
                     <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">{item.label}</label>
@@ -1938,7 +1938,7 @@ const ContestsTab: React.FC<{
                       { label: '10 Pts (S2)', key: 'fixed10PtsDraw2' },
                       { label: '10 Pts (S3)', key: 'fixed10PtsDraw3' },
                       { label: 'Bônus 25 Pts', key: 'fixed25PlusTotal' },
-                      { label: 'Super 27 Pts', key: 'fixed27PlusTotal' },
+                      { label: 'Super 28 Pts', key: 'fixed28PlusTotal' },
                     ].map(item => (
                       <div key={item.key} className="space-y-1.5">
                         <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">{item.label}</label>
@@ -1978,7 +1978,7 @@ const ContestsTab: React.FC<{
                       { label: 'Campeão', key: 'champion' },
                       { label: 'Vice', key: 'vice' },
                       { label: 'Bônus 25', key: 'bonus25' },
-                      { label: 'Super 27', key: 'bonus27' },
+                      { label: 'Super 28', key: 'bonus28' },
                     ].map(item => (
                       <div key={item.key} className="space-y-1.5">
                         <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">{item.label}</label>
@@ -2172,7 +2172,7 @@ const ContestsTab: React.FC<{
                     fixed10PtsDraw2: 300,
                     fixed10PtsDraw3: 300,
                     fixed25PlusTotal: 2000,
-                    fixed27PlusTotal: 5000,
+                    fixed28PlusTotal: 7000,
                     pctRapidinha: 0.10,
                     pctChampion: 0.45,
                     pctVice: 0.15,
@@ -2188,7 +2188,7 @@ const ContestsTab: React.FC<{
                     champion: 0,
                     vice: 0,
                     bonus25: 2000,
-                    bonus27: 5000
+                    bonus28: 7000
                   },
                   startDate: c.startDate || '',
                   startTime: c.startTime || '',
@@ -3424,11 +3424,11 @@ const FinanceiroTab: React.FC = () => {
       const contestBets = await firebaseService.getContestBets(contest.id);
       setBets(contestBets);
       setEditConfig(contest.prizeConfig || {
-        fixed10PtsDraw1: 10,
-        fixed10PtsDraw2: 10,
-        fixed10PtsDraw3: 10,
-        fixed25PlusTotal: 50,
-        fixed27PlusTotal: 100,
+        fixed10PtsDraw1: 300,
+        fixed10PtsDraw2: 300,
+        fixed10PtsDraw3: 300,
+        fixed25PlusTotal: 2000,
+        fixed28PlusTotal: 7000,
         pctRapidinha: 0.10,
         pctChampion: 0.45,
         pctVice: 0.15,
@@ -3673,7 +3673,7 @@ const FinanceiroTab: React.FC = () => {
                   <span className="text-[10px] font-bold text-slate-900">R$ 500,00</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-slate-600">27+ PTS (Total)</span>
+                  <span className="text-[10px] text-slate-600">28+ PTS (Total)</span>
                   <span className="text-[10px] font-bold text-slate-900">R$ 5.000,00</span>
                 </div>
               </div>
@@ -3891,6 +3891,47 @@ const WinnersTab: React.FC = () => {
         }
       }
 
+      // Bonus 25/28
+      const topBets = sortedParticipants.filter(p => p.score >= 25);
+      if (topBets.length > 0) {
+        const topScore = topBets[0].score;
+        if (topScore >= 28) {
+          const winners28 = topBets.filter(p => p.score === topScore);
+          const prize28 = (contest.displayPrizes as any)?.bonus28 !== undefined 
+            ? parseFloat((contest.displayPrizes as any).bonus28)
+            : (contest.prizeConfig?.fixed28PlusTotal || 7000);
+          
+          const perWinner = prize28 / winners28.length;
+          winners28.forEach(w => {
+            winnersByDraw.push({
+              draw: 'Bônus',
+              name: w.betName,
+              code: w.sellerCode,
+              hits: w.score,
+              prize: perWinner,
+              type: 'SUPER BÔNUS 28'
+            });
+          });
+        } else if (topScore >= 25) {
+          const winners25 = topBets.filter(p => p.score === topScore);
+          const prize25 = (contest.displayPrizes as any)?.bonus25 !== undefined 
+            ? parseFloat((contest.displayPrizes as any).bonus25)
+            : (contest.prizeConfig?.fixed25PlusTotal || 2000);
+          
+          const perWinner = prize25 / winners25.length;
+          winners25.forEach(w => {
+            winnersByDraw.push({
+              draw: 'Bônus',
+              name: w.betName,
+              code: w.sellerCode,
+              hits: w.score,
+              prize: perWinner,
+              type: 'BÔNUS 25'
+            });
+          });
+        }
+      }
+
       setReportData(winnersByDraw);
     } catch (error) {
       console.error(error);
@@ -3922,6 +3963,7 @@ const WinnersTab: React.FC = () => {
         { title: 'RAPIDINHA', filter: (w: any) => w.draw === 'Rapidinha' },
         { title: '10 PONTOS', filter: (w: any) => w.type === '10 Pontos' },
         { title: 'CAMPEÃO 1º LUGAR GERAL', filter: (w: any) => w.type === 'CAMPEÃO' },
+        { title: 'BÔNUS ESPECIAIS', filter: (w: any) => w.draw === 'Bônus' },
         { title: 'VICE-CAMPEÃO 2º LUGAR GERAL', filter: (w: any) => w.type === 'VICE-CAMPEÃO' }
       ];
 

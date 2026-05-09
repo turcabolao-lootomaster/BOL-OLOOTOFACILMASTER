@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { firebaseService } from '../services/firebaseService';
-import { Trophy, Medal, Search, Share2, DollarSign, TrendingUp, Info, Zap, Download, X, Lock, ChevronRight, FileText, Pencil, Trash2 } from 'lucide-react';
+import { Trophy, Medal, Search, Share2, DollarSign, TrendingUp, Info, Zap, Download, X, Lock, ChevronRight, FileText, Pencil, Trash2, Crown, Target, Gift, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
@@ -29,6 +29,8 @@ const Participants: React.FC = () => {
   const [editBetName, setEditBetName] = useState('');
   const [editBetNumbers, setEditBetNumbers] = useState<number[]>([]);
   const [isUpdatingBet, setIsUpdatingBet] = useState(false);
+
+  const [showPrizesModal, setShowPrizesModal] = useState(false);
 
   useEffect(() => {
     let unsubscribeBets: () => void = () => {};
@@ -68,7 +70,7 @@ const Participants: React.FC = () => {
   }, [totalRevenue, contest]);
 
   const winners = useMemo(() => {
-    if (bets.length === 0) return { rapidinha: [], champion: [], vice: [], draws10: [[], [], []], total25: [], total27: [] };
+    if (bets.length === 0) return { rapidinha: [], champion: [], vice: [], draws10: [[], [], []], total25: [], total28: [] };
 
     const sortedByS1 = [...bets].sort((a, b) => (b.hits?.[0] || 0) - (a.hits?.[0] || 0));
     const maxS1 = sortedByS1[0]?.hits?.[0] || 0;
@@ -95,9 +97,9 @@ const Participants: React.FC = () => {
     ];
 
     const total25 = bets.filter(b => (b.hits || []).reduce((sum, h) => sum + h, 0) >= 25).map(b => b.id);
-    const total27 = bets.filter(b => (b.hits || []).reduce((sum, h) => sum + h, 0) >= 27).map(b => b.id);
+    const total28 = bets.filter(b => (b.hits || []).reduce((sum, h) => sum + h, 0) >= 28).map(b => b.id);
 
-    return { rapidinha: rapidinhaWinners, champion: championWinners, vice: viceWinners, draws10, total25, total27 };
+    return { rapidinha: rapidinhaWinners, champion: championWinners, vice: viceWinners, draws10, total25, total28 };
   }, [bets]);
 
   const filteredBets = useMemo(() => {
@@ -335,17 +337,17 @@ const Participants: React.FC = () => {
 
     // Prize Cards in Header (Grid Layout matching the app)
     const prizeCards = [
-      { label: '1º SORTEIO 10 PTS', value: contest?.prizeConfig?.fixed10PtsDraw1 || 500, color: [255, 247, 237], textColor: [234, 88, 12] },
-      { label: '2º SORTEIO 10 PTS', value: contest?.prizeConfig?.fixed10PtsDraw2 || 500, color: [255, 247, 237], textColor: [234, 88, 12] },
-      { label: '3º SORTEIO 10 PTS', value: contest?.prizeConfig?.fixed10PtsDraw3 || 500, color: [255, 247, 237], textColor: [234, 88, 12] },
       { label: 'RAPIDINHA', value: prizes.rapidinha, color: [255, 251, 235], textColor: [217, 119, 6] },
       { label: '1º LUGAR', value: prizes.champion, color: [245, 243, 255], textColor: [124, 58, 237] },
-      { label: '2º LUGAR', value: prizes.vice, color: [239, 246, 255], textColor: [37, 99, 235] }
+      { label: '2º LUGAR', value: prizes.vice, color: [239, 246, 255], textColor: [37, 99, 235] },
+      { label: '1º SORTEIO 10 PTS', value: contest?.prizeConfig?.fixed10PtsDraw1 || 500, color: [255, 247, 237], textColor: [234, 88, 12] },
+      { label: '2º SORTEIO 10 PTS', value: contest?.prizeConfig?.fixed10PtsDraw2 || 500, color: [255, 247, 237], textColor: [234, 88, 12] },
+      { label: '3º SORTEIO 10 PTS', value: contest?.prizeConfig?.fixed10PtsDraw3 || 500, color: [255, 247, 237], textColor: [234, 88, 12] }
     ];
 
     const bonusCards = [
-      { label: 'BÔNUS 25', value: contest?.prizeConfig?.fixed25PlusTotal || 2000, color: [16, 185, 129], sub: '25 PTS NA SOMA TOTAL' },
-      { label: 'SUPER BÔNUS 27', value: contest?.prizeConfig?.fixed27PlusTotal || 5000, color: [15, 23, 42], sub: '27 PTS NA SOMA TOTAL' }
+      { label: 'SUPER BÔNUS 28', value: contest?.prizeConfig?.fixed28PlusTotal || 7000, color: [15, 23, 42], sub: '28 PTS NA SOMA TOTAL', isSuper: true },
+      { label: 'BÔNUS 25', value: contest?.prizeConfig?.fixed25PlusTotal || 2000, color: [16, 185, 129], sub: '25 PTS NA SOMA TOTAL', isSuper: false }
     ];
 
     const cardWidth = (pageWidth - 40) / 3;
@@ -353,11 +355,32 @@ const Participants: React.FC = () => {
     const startX = 15;
     const startY = 50;
 
+    // Drawing Bonus Cards First
+    bonusCards.forEach((card, i) => {
+      const y = startY + (16 + 3) * i;
+      doc.setFillColor(card.color[0], card.color[1], card.color[2]);
+      doc.roundedRect(startX, y, pageWidth - 30, 16, 3, 3, 'F');
+      
+      doc.setFontSize(10);
+      doc.setTextColor(255, 255, 255);
+      doc.text(card.isSuper ? `COROA SUPER BÔNUS 28` : card.label, startX + 25, y + 7);
+      
+      doc.setFontSize(6);
+      doc.setTextColor(255, 255, 255);
+      doc.text(card.sub, startX + 25, y + 12);
+      
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
+      doc.text(card.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), pageWidth - 20, y + 10, { align: 'right' });
+    });
+
+    const prizeCardsStartY = startY + (16 + 3) * 2 + 5;
+
     prizeCards.forEach((card, i) => {
       const row = Math.floor(i / 3);
       const col = i % 3;
       const x = startX + (cardWidth + 5) * col;
-      const y = startY + (cardHeight + 5) * row;
+      const y = prizeCardsStartY + (cardHeight + 5) * row;
 
       doc.setFillColor(255, 255, 255);
       doc.setDrawColor(226, 232, 240);
@@ -383,25 +406,6 @@ const Participants: React.FC = () => {
       doc.setFontSize(4);
       doc.setTextColor(148, 163, 184);
       doc.text('0 GANHADOR(ES) NO...', x + cardWidth - 5, y + 20, { align: 'right' });
-    });
-
-    // Bonus Cards
-    bonusCards.forEach((card, i) => {
-      const y = startY + (cardHeight + 5) * 2 + (16 + 3) * i;
-      doc.setFillColor(card.color[0], card.color[1], card.color[2]);
-      doc.roundedRect(startX, y, pageWidth - 30, 16, 3, 3, 'F');
-      
-      doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      doc.text(card.label, startX + 25, y + 7);
-      
-      doc.setFontSize(6);
-      doc.setTextColor(255, 255, 255);
-      doc.text(card.sub, startX + 25, y + 12);
-      
-      doc.setFontSize(12);
-      doc.setTextColor(255, 255, 255);
-      doc.text(card.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), pageWidth - 20, y + 10, { align: 'right' });
     });
 
     // Subheader Info - Centralized
@@ -471,7 +475,7 @@ const Participants: React.FC = () => {
       if (winners.vice.includes(b.id)) prizeLabels.push('[2º LUGAR]');
       if (winners.rapidinha.includes(b.id)) prizeLabels.push('[RAPIDINHA]');
       if (winners.draws10.some(d => d.includes(b.id))) prizeLabels.push('[10 PONTOS]');
-      if (winners.total27.includes(b.id)) prizeLabels.push('[27+ PONTOS]');
+      if (winners.total28.includes(b.id)) prizeLabels.push('[28+ PONTOS]');
       else if (winners.total25.includes(b.id)) prizeLabels.push('[25 PONTOS]');
 
       const nameWithPrizes = `${(b.betName || b.userName).toUpperCase()} ${prizeLabels.join(' ')}`.trim();
@@ -520,7 +524,7 @@ const Participants: React.FC = () => {
                            winners.champion.includes(betId) || 
                            winners.vice.includes(betId) || 
                            winners.total25.includes(betId) || 
-                           winners.total27.includes(betId) ||
+                           winners.total28.includes(betId) ||
                            winners.draws10.some(d => d.includes(betId));
 
           if (isWinner && data.column.index <= 2) {
@@ -665,73 +669,229 @@ const Participants: React.FC = () => {
         </div>
       </div>
 
-      {/* Prize Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <PrizeCard 
-          title="Rapidinha (1º Sorteio)" 
-          value={prizes.rapidinha} 
-          winnersCount={winners.rapidinha.length} 
-          icon={<TrendingUp size={16} />}
-          color="bg-blue-600"
-        />
-        <PrizeCard 
-          title="1º Lugar (Campeão)" 
-          value={prizes.champion} 
-          winnersCount={winners.champion.length} 
-          icon={<Trophy size={16} />}
-          color="bg-lotofacil-purple"
-        />
-        <PrizeCard 
-          title="2º Lugar (Vice)" 
-          value={prizes.vice} 
-          winnersCount={winners.vice.length} 
-          icon={<Medal size={16} />}
-          color="bg-slate-600"
-        />
+      {/* Botão Premiações */}
+      <div className="flex justify-center -mt-2">
+        <motion.button 
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setShowPrizesModal(true)}
+          className="group relative flex items-center gap-4 px-8 py-4 bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100 hover:border-lotofacil-purple/30 transition-all overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-lotofacil-purple/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="w-12 h-12 bg-lotofacil-purple text-white rounded-2xl flex items-center justify-center shadow-lg shadow-purple-200 shrink-0 group-hover:rotate-12 transition-transform duration-500">
+            <Gift size={24} />
+          </div>
+          <div className="text-left">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none mb-1">Confira os Prêmios</p>
+            <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase leading-none">Premiações</h3>
+          </div>
+          <div className="ml-4 w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-lotofacil-purple group-hover:text-white transition-all">
+            <ChevronRight size={18} />
+          </div>
+        </motion.button>
       </div>
 
-      {/* Fixed Prizes Info */}
-      <div className="space-y-2">
-        {/* Bônus 25 */}
-        <div className="max-w-4xl mx-auto w-full">
-          <div className="bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-600 text-white p-3 sm:p-5 rounded-2xl shadow-[0_15px_35px_rgba(16,185,129,0.25)] border border-emerald-400/20 flex flex-row items-center justify-between gap-4 sm:gap-8 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-[60px] pointer-events-none" />
-            <div className="flex items-center gap-3 sm:gap-6 relative z-10">
-              <div className="w-10 h-10 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg rotate-3 shrink-0">
-                <Medal size={24} className="text-white" />
+      <AnimatePresence>
+        {showPrizesModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPrizesModal(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 30 }}
+              className="relative w-full max-w-5xl max-h-[92vh] overflow-hidden bg-[#f8fafc] rounded-[40px] shadow-2xl flex flex-col border border-white"
+            >
+              {/* Modal Header */}
+              <div className="p-6 sm:p-10 flex items-center justify-between bg-white border-b border-slate-100 relative overflow-hidden">
+                <div className="flex items-center gap-5">
+                  <div className="w-14 h-14 bg-lotofacil-purple/10 text-lotofacil-purple rounded-[20px] flex items-center justify-center shadow-inner">
+                    <Gift size={28} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-display tracking-[0.2em] text-slate-900 uppercase">Premiações do Concurso</h2>
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Concurso {contest ? `#${contest.number}` : '...'}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowPrizesModal(false)}
+                  className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-900"
+                >
+                  <X size={24} />
+                </button>
               </div>
-              <div>
-                <p className="text-[8px] sm:text-xs font-black uppercase tracking-[0.2em] text-emerald-100">🔥 BÔNUS 25</p>
-                <h3 className="text-sm sm:text-2xl font-black text-white mt-0.5 tracking-tight">25 PTS: <span className="text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">R$ 2.000,00</span></h3>
-              </div>
-            </div>
-            <div className="text-right relative z-10">
-              <p className="text-[6px] sm:text-[10px] uppercase tracking-widest text-emerald-100 font-bold mb-0.5">Prêmio Garantido</p>
-              <p className="text-[8px] sm:text-sm font-black text-white">SOMA DOS 3 SORTEIOS</p>
-            </div>
-          </div>
-        </div>
 
-        {/* Super Bônus 27 */}
-        <div className="max-w-4xl mx-auto w-full">
-          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-3 sm:p-5 rounded-2xl shadow-[0_15px_35px_rgba(0,0,0,0.5)] border border-lotofacil-purple/20 flex flex-row items-center justify-between gap-4 sm:gap-8 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-lotofacil-purple/10 rounded-full -mr-24 -mt-24 blur-[60px] pointer-events-none" />
-            <div className="flex items-center gap-3 sm:gap-6 relative z-10">
-              <div className="w-10 h-10 sm:w-16 sm:h-16 bg-lotofacil-purple rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(147,51,234,0.4)] rotate-3 shrink-0">
-                <DollarSign size={24} className="text-white" />
+              {/* Modal Content */}
+              <div className="p-4 sm:p-10 overflow-y-auto no-scrollbar space-y-10 custom-scrollbar">
+                {/* Special Bonus Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 px-2 text-slate-400 font-black text-[10px] uppercase tracking-widest">
+                    <Crown size={14} />
+                    Bônus Especiais
+                  </div>
+                  <div className="grid grid-cols-1 gap-6">
+                    {/* Bônus 25 */}
+                    <div className="group bg-emerald-50 text-slate-900 p-6 rounded-[32px] border border-emerald-500/20 flex flex-row items-center justify-between gap-4 relative overflow-hidden transition-all hover:scale-[1.01]">
+                      <div className="flex items-center gap-6 relative z-10 w-full">
+                        <div className="w-16 h-16 bg-[#10b981] text-white rounded-[24px] flex items-center justify-center shadow-emerald-500/30">
+                          <Medal size={32} />
+                        </div>
+                        <div className="flex flex-row items-center justify-between w-full min-w-0">
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">🔥 BÔNUS 25</p>
+                            <h3 className="text-sm sm:text-xl font-black text-slate-900 mt-0.5">25 PTS NA SOMA TOTAL</h3>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xl sm:text-3xl font-black text-[#10b981]">
+                              {(contest?.prizeConfig?.fixed25PlusTotal || 2000).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Super Bônus 28 */}
+                    <div className="group bg-slate-950 text-white p-6 rounded-[32px] border border-lotofacil-yellow/30 flex flex-row items-center justify-between gap-4 relative overflow-hidden transition-all hover:scale-[1.01]">
+                      <div className="flex items-center gap-6 relative z-10 w-full">
+                        <div className="w-16 h-16 bg-black text-lotofacil-yellow rounded-[24px] border border-lotofacil-yellow/50 flex items-center justify-center shadow-2xl">
+                          <Crown size={32} />
+                        </div>
+                        <div className="flex flex-row items-center justify-between w-full min-w-0">
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-lotofacil-yellow">👑 SUPER BÔNUS 28</p>
+                            <h3 className="text-sm sm:text-xl font-black text-white mt-0.5">28 PTS NA SOMA TOTAL</h3>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xl sm:text-3xl font-black text-lotofacil-yellow">
+                              {(contest?.prizeConfig?.fixed28PlusTotal || 7000).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Grid */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 px-2 text-slate-400 font-black text-[10px] uppercase tracking-widest">
+                    <Trophy size={14} />
+                    Premiação por Ranking
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Premium Rapidinha Card */}
+                    <motion.div 
+                      whileHover={{ y: -4 }}
+                      className="bg-blue-50 p-6 sm:p-8 rounded-[32px] border border-blue-100 shadow-sm space-y-6 relative overflow-hidden group"
+                    >
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400 opacity-5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150" />
+                      <div className="flex items-center justify-between relative z-10">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white text-blue-600 rounded-[24px] flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform">
+                          <TrendingUp size={36} />
+                        </div>
+                        <div className="text-right">
+                          <div className="px-5 py-3 sm:px-8 sm:py-5 bg-white rounded-[24px] sm:rounded-[32px] shadow-xl border border-blue-50">
+                            <p className="text-[10px] sm:text-[12px] uppercase tracking-[0.2em] text-slate-400 font-black mb-1">Estimativa</p>
+                            <p className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tighter">
+                              {prizes.rapidinha.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-sm sm:text-lg font-black uppercase tracking-widest text-blue-800 relative z-10 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                        ⚡ RAPIDINHA (S1)
+                      </p>
+                    </motion.div>
+
+                    {/* Premium Champion Card */}
+                    <motion.div 
+                      whileHover={{ y: -4 }}
+                      className="bg-lotofacil-purple/5 p-6 sm:p-8 rounded-[32px] border border-lotofacil-purple/10 shadow-sm space-y-6 relative overflow-hidden group"
+                    >
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-lotofacil-purple opacity-5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150" />
+                      <div className="flex items-center justify-between relative z-10 text-lotofacil-purple">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white text-lotofacil-purple rounded-[24px] flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform">
+                          <Trophy size={36} />
+                        </div>
+                        <div className="text-right">
+                          <div className="px-5 py-3 sm:px-8 sm:py-5 bg-white rounded-[24px] sm:rounded-[32px] shadow-xl border border-purple-50">
+                            <p className="text-[10px] sm:text-[12px] uppercase tracking-[0.2em] text-slate-400 font-black mb-1">Estimativa</p>
+                            <p className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tighter">
+                              {prizes.champion.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-sm sm:text-lg font-black uppercase tracking-widest text-lotofacil-purple relative z-10 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-lotofacil-purple animate-pulse" />
+                        🏆 1º LUGAR (CAMPEÃO)
+                      </p>
+                    </motion.div>
+
+                    {/* Premium Vice Card */}
+                    <motion.div 
+                      whileHover={{ y: -4 }}
+                      className="bg-slate-50 p-6 sm:p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6 relative overflow-hidden group"
+                    >
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-slate-400 opacity-5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150" />
+                      <div className="flex items-center justify-between relative z-10">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white text-slate-600 rounded-[24px] flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform">
+                          <Medal size={36} />
+                        </div>
+                        <div className="text-right">
+                          <div className="px-5 py-3 sm:px-8 sm:py-5 bg-white rounded-[24px] sm:rounded-[32px] shadow-xl border border-slate-100">
+                            <p className="text-[10px] sm:text-[12px] uppercase tracking-[0.2em] text-slate-400 font-black mb-1">Estimativa</p>
+                            <p className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tighter">
+                              {prizes.vice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-sm sm:text-lg font-black uppercase tracking-widest text-slate-600 relative z-10 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-slate-400 animate-pulse" />
+                        🥈 2º LUGAR (VICE)
+                      </p>
+                    </motion.div>
+
+                    {[1, 2, 3].map(n => (
+                      <motion.div 
+                        key={n} 
+                        whileHover={{ y: -4 }}
+                        className="bg-orange-50 p-6 sm:p-8 rounded-[32px] border border-orange-100 shadow-sm space-y-6 relative overflow-hidden group"
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-400 opacity-5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150" />
+                        <div className="flex items-center justify-between relative z-10">
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white text-orange-600 rounded-[24px] flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform">
+                            <Target size={36} />
+                          </div>
+                          <div className="text-right">
+                            <div className="px-5 py-3 sm:px-8 sm:py-5 bg-white rounded-[24px] sm:rounded-[32px] shadow-xl border border-orange-100">
+                              <p className="text-[10px] sm:text-[12px] uppercase tracking-[0.2em] text-slate-400 font-black mb-1">Prêmio Fixo</p>
+                              <p className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tighter">
+                                {(n === 1 ? contest?.prizeConfig?.fixed10PtsDraw1 : n === 2 ? contest?.prizeConfig?.fixed10PtsDraw2 : contest?.prizeConfig?.fixed10PtsDraw3 || 500).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-sm sm:text-lg font-black uppercase tracking-widest text-orange-700 relative z-10 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                          🎯 S{n} | 10 PTS
+                        </p>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-[8px] sm:text-xs font-black uppercase tracking-[0.2em] text-lotofacil-purple">🏆 Super Bônus 27</p>
-                <h3 className="text-sm sm:text-2xl font-black text-white mt-0.5 tracking-tight">27 PTS: <span className="text-lotofacil-purple drop-shadow-[0_0_10px_rgba(147,51,234,0.5)]">R$ 5.000,00</span></h3>
-              </div>
-            </div>
-            <div className="text-right relative z-10">
-              <p className="text-[6px] sm:text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-0.5">Prêmio Especial</p>
-              <p className="text-[8px] sm:text-sm font-black text-white">SOMA DOS 3 SORTEIOS</p>
-            </div>
+            </motion.div>
           </div>
-        </div>
-      </div>
+        )}
+      </AnimatePresence>
 
       {/* Ranking Table */}
       <div className="glass-card overflow-hidden border-slate-200 shadow-xl">
@@ -775,7 +935,7 @@ const Participants: React.FC = () => {
                 const isRapidinha = winners.rapidinha.includes(b.id);
                 const isChampion = winners.champion.includes(b.id);
                 const isVice = winners.vice.includes(b.id);
-                const is27Plus = total >= 27;
+                const is28Plus = total >= 28;
                 const isExpanded = expandedBetId === b.id;
                 
                 return (
@@ -859,7 +1019,7 @@ const Participants: React.FC = () => {
                             {isRapidinha && <WinnerBadge label="Rapidinha" color={isExpanded ? "bg-white/20" : "bg-blue-600"} />}
                             {isChampion && <WinnerBadge label="Campeão" color={isExpanded ? "bg-white/20" : "bg-lotofacil-purple"} />}
                             {isVice && <WinnerBadge label="Vice" color={isExpanded ? "bg-white/20" : "bg-slate-600"} />}
-                            {is27Plus && <WinnerBadge label="27+ Pontos" color={isExpanded ? "bg-white/20" : "bg-slate-900"} />}
+                            {is28Plus && <WinnerBadge label="28+ Pontos" color={isExpanded ? "bg-white/20" : "bg-slate-900"} />}
                             {hits.some((h, i) => h >= 10) && <WinnerBadge label="10 Pts" color={isExpanded ? "bg-white/20" : "bg-lotofacil-purple"} />}
                           </div>
                         </div>
@@ -903,12 +1063,12 @@ const Participants: React.FC = () => {
                         <div className={cn(
                           "inline-flex flex-col items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded-xl border transition-all shadow-sm",
                           isExpanded ? "bg-white/10 border-white/20" :
-                          total >= 27 ? "bg-slate-900 border-slate-900 shadow-lg scale-110" :
+                          total >= 28 ? "bg-slate-900 border-slate-900 shadow-lg scale-110" :
                           idx < 3 ? "bg-white border-lotofacil-purple/30" : "bg-white border-white/10"
                         )}>
                           <span className={cn(
                             "text-xs sm:text-lg font-display tracking-tighter leading-none",
-                            isExpanded ? "text-white" : total >= 27 ? "text-white" : "text-[#ffd700]"
+                            isExpanded ? "text-white" : total >= 28 ? "text-white" : "text-[#ffd700]"
                           )}>
                             {total.toString().padStart(2, '0')}
                           </span>
@@ -1017,7 +1177,7 @@ const Participants: React.FC = () => {
           <p className="text-[10px] text-blue-700 leading-relaxed">
             Os prêmios de porcentagem (Rapidinha, Campeão e Vice) são calculados sobre o total arrecadado. 
             Em caso de empate, o prêmio é dividido igualmente entre os ganhadores daquela categoria. 
-            Prêmios fixos (10 PTS e 27+ PTS) são garantidos para cada aposta que atingir a pontuação.
+            Prêmios fixos (10 PTS e 28+ PTS) são garantidos para cada aposta que atingir a pontuação.
           </p>
         </div>
       </div>
@@ -1188,31 +1348,34 @@ const Participants: React.FC = () => {
 };
 
 const PrizeCard = ({ title, value, winnersCount, icon, color }: { title: string, value: number, winnersCount: number, icon: React.ReactNode, color: string }) => (
-  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 relative overflow-hidden group">
-    <div className={cn("absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-5 transition-transform group-hover:scale-110", color)} />
-    <div className="flex items-center justify-between">
-      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg", color)}>
-        {icon}
+  <motion.div 
+    whileHover={{ y: -4, scale: 1.01 }}
+    className="bg-white p-6 sm:p-8 rounded-[32px] border border-slate-100 shadow-xl space-y-6 relative overflow-hidden group"
+  >
+    <div className={cn("absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-10 transition-transform group-hover:scale-150", color)} />
+    <div className="flex items-center justify-between relative z-10">
+      <div className={cn("w-16 h-16 sm:w-20 sm:h-20 rounded-[24px] flex items-center justify-center text-white shadow-2xl transition-transform group-hover:rotate-6", color)}>
+        {React.cloneElement(icon as React.ReactElement, { size: 36 } as any)}
       </div>
       <div className="text-right">
-        <p className="text-[8px] uppercase tracking-widest text-slate-400 font-bold">Estimativa</p>
-        <p className="text-lg font-black text-slate-900">
-          {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+        <div className="px-5 py-3 sm:px-8 sm:py-5 bg-slate-50/50 rounded-[24px] sm:rounded-[32px] border border-slate-100">
+          <p className="text-[10px] sm:text-[12px] uppercase tracking-widest text-slate-400 font-black mb-1">Estimativa</p>
+          <p className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tighter">
+            {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </p>
+        </div>
+      </div>
+    </div>
+    <div className="flex items-center justify-between relative z-10">
+      <h3 className="text-sm sm:text-lg font-black text-slate-600 uppercase tracking-widest">{title}</h3>
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-slate-100 shadow-sm">
+        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+        <p className="text-[10px] sm:text-[12px] font-black text-slate-600 uppercase tracking-widest">
+          {winnersCount || 0} Ganhadores
         </p>
       </div>
     </div>
-    <div className="flex items-end justify-between gap-4">
-      <div>
-        <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{title}</p>
-      </div>
-      <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded-full border border-slate-100 shadow-sm">
-        <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-        <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">
-          {winnersCount || 0} GANHADORES
-        </p>
-      </div>
-    </div>
-  </div>
+  </motion.div>
 );
 
 const WinnerBadge = ({ label, color }: { label: string, color: string }) => (

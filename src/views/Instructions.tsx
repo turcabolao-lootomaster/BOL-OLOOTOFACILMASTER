@@ -91,10 +91,10 @@ const Instructions: React.FC = () => {
                   <div className="absolute top-0 left-0 w-1 h-full bg-lotofacil-yellow" />
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Prioridade 1</span>
-                    <span className="text-xs font-black text-slate-900 uppercase">SUPER BÔNUS 27</span>
+                    <span className="text-xs font-black text-slate-900 uppercase">SUPER BÔNUS 28</span>
                   </div>
-                  <p className="text-[11px] font-bold text-slate-700">R$ 5.000,00 Estimados</p>
-                  <p className="text-[9px] text-slate-500">Pago ao líder que atingir 27 pontos (Já incluso prêmio de 1º lugar).</p>
+                  <p className="text-[11px] font-bold text-slate-700">R$ 7.000,00 Estimados</p>
+                  <p className="text-[9px] text-slate-500">Pago ao líder que atingir 28 pontos (Já incluso prêmio de 1º lugar).</p>
                 </div>
 
                 <div className="p-3 bg-white border border-emerald-100 rounded-xl relative overflow-hidden">
@@ -104,7 +104,7 @@ const Instructions: React.FC = () => {
                     <span className="text-xs font-black text-slate-900 uppercase">BÔNUS 25</span>
                   </div>
                   <p className="text-[11px] font-bold text-slate-700">R$ 2.000,00 Estimados</p>
-                  <p className="text-[9px] text-slate-500">Pago ao líder (25+ pts) SE NÃO HOUVER ganhador do 27 (Já incluso prêmio de 1º lugar).</p>
+                  <p className="text-[9px] text-slate-500">Pago ao líder (25+ pts) SE NÃO HOUVER ganhador do 28 (Já incluso prêmio de 1º lugar).</p>
                 </div>
 
                 <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
@@ -113,7 +113,7 @@ const Instructions: React.FC = () => {
                     Regra de Unificação
                   </p>
                   <p className="text-[11px] text-amber-800 leading-relaxed italic">
-                    Somente o líder do ranking tem direito a receber o bônus, e apenas um bônus é pago por edição. Se houver 27 pontos, o bônus de 25 fica automaticamente acumulado para a próxima edição.
+                    Somente o líder do ranking tem direito a receber o bônus, e apenas um bônus é pago por edição. Se houver 28 pontos, o bônus de 25 fica automaticamente acumulado para a próxima edição.
                   </p>
                 </div>
               </div>

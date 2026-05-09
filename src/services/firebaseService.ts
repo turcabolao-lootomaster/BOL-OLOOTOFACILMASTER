@@ -1334,19 +1334,6 @@ export const firebaseService = {
     }
   },
 
-  subscribeToSettings(callback: (settings: Settings | null) => void) {
-    const docRef = doc(db, 'settings', 'global');
-    return onSnapshot(docRef, (doc) => {
-      if (doc.exists()) {
-        callback(doc.data() as Settings);
-      } else {
-        callback(null);
-      }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'settings/global');
-    });
-  },
-
   async getSellerByCode(code: string): Promise<Seller | null> {
     const path = 'sellers';
     try {

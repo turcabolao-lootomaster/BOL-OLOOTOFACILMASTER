@@ -19,7 +19,7 @@ import Instructions from './views/Instructions';
 import SellerPanel from './views/SellerPanel';
 import AdminPanel from './views/AdminPanel';
 import SystemStartModal from './components/SystemStartModal';
-import { Menu, LogOut } from 'lucide-react';
+import { Menu, LogOut, Lock } from 'lucide-react';
 import { cn } from './utils';
 import { firebaseService } from './services/firebaseService';
 import { Settings } from './types';
@@ -123,7 +123,16 @@ const AppContent: React.FC = () => {
   const isAdminOrMaster = user?.role === 'admin' || user?.role === 'master' || user?.email === 'turcabolao@gmail.com';
   if (systemSettings?.maintenanceMode && !isAdminOrMaster) {
     return (
-      <div className="min-h-screen bg-[#1c0428] flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+      <div className="min-h-screen bg-[#1c0428] flex flex-col items-center justify-center p-6 text-center animate-fade-in relative">
+        {/* Botão de Login para Admin */}
+        <button 
+          onClick={() => setView('login')}
+          className="absolute top-6 right-6 p-3 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 text-white/40 hover:text-[#7a9a09] transition-all group shadow-xl"
+          title="Acesso Administrador"
+        >
+          <Lock size={20} className="group-hover:scale-110 transition-transform" />
+        </button>
+
         <div className="relative mb-12">
           <div className="absolute inset-0 bg-[#7a9a09] blur-[100px] opacity-20 animate-pulse" />
           <div className="w-32 h-32 bg-lotofacil-yellow/10 rounded-full flex items-center justify-center border-4 border-lotofacil-yellow/20 animate-bounce">

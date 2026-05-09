@@ -62,7 +62,7 @@ const LiveRanking: React.FC = () => {
     fixed10PtsDraw2: 500,
     fixed10PtsDraw3: 500,
     fixed25PlusTotal: 2000,
-    fixed27PlusTotal: 5000,
+    fixed28PlusTotal: 7000,
     pctRapidinha: 0.10,
     pctChampion: 0.45,
     pctVice: 0.15,
@@ -84,7 +84,8 @@ const LiveRanking: React.FC = () => {
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showPrizesInfoModal, setShowPrizesInfoModal] = useState(false);
   const [prizeInfoType, setPrizeInfoType] = useState<'draw1' | 'bonus' | null>(null);
-  const [showStartBubble, setShowStartBubble] = useState(true);
+  const [showPrizesModal, setShowPrizesModal] = useState(false);
+  const [showDownloadOptionsModal, setShowDownloadOptionsModal] = useState(false);
 
   useEffect(() => {
     let unsubscribeContest: (() => void) | undefined;
@@ -166,7 +167,7 @@ const LiveRanking: React.FC = () => {
     fixed10PtsDraw2: 500,
     fixed10PtsDraw3: 500,
     fixed25PlusTotal: 2000,
-    fixed27PlusTotal: 5000
+    fixed28PlusTotal: 7000
   };
 
   const prizes = {
@@ -177,7 +178,7 @@ const LiveRanking: React.FC = () => {
     fixed10PtsDraw2: activeContest.displayPrizes?.draw2 ?? (prizeConfig.fixed10PtsDraw2 || 300),
     fixed10PtsDraw3: activeContest.displayPrizes?.draw3 ?? (prizeConfig.fixed10PtsDraw3 || 300),
     fixed25Plus: activeContest.displayPrizes?.bonus25 ?? (prizeConfig.fixed25PlusTotal || 2000),
-    fixed27Plus: activeContest.displayPrizes?.bonus27 ?? (prizeConfig.fixed27PlusTotal || 5000)
+    fixed28Plus: activeContest.displayPrizes?.bonus28 ?? (prizeConfig.fixed28PlusTotal || 7000)
   };
 
   // Process ranking data - Show all bets individually (No grouping in Live Ranking)
@@ -222,8 +223,8 @@ const LiveRanking: React.FC = () => {
 
   const rapidinhaWinnersCount = bets.filter(b => (b.hits?.[0] || 0) === maxS1Hits && maxS1Hits > 0).length;
 
-  const winners27Plus = rankingWithRanks.filter(b => b.rank === 1 && b.totalHits >= 27);
-  const winners25Plus = rankingWithRanks.filter(b => b.rank === 1 && b.totalHits >= 25 && b.totalHits < 27);
+  const winners28Plus = rankingWithRanks.filter(b => b.rank === 1 && b.totalHits >= 28);
+  const winners25Plus = rankingWithRanks.filter(b => b.rank === 1 && b.totalHits >= 25 && b.totalHits < 28);
 
   const isDraw1Finished = activeContest.draws?.[0]?.status === 'concluido';
   const isDraw2Finished = activeContest.draws?.[1]?.status === 'concluido';
@@ -446,17 +447,17 @@ const LiveRanking: React.FC = () => {
 
     // Prize Cards in Header (Grid Layout matching the app)
     const prizeCards = [
-      { label: '1º SORTEIO 10 PTS', value: prizes.fixed10PtsDraw1, color: [255, 247, 237], textColor: [234, 88, 12] },
-      { label: '2º SORTEIO 10 PTS', value: prizes.fixed10PtsDraw2, color: [255, 247, 237], textColor: [234, 88, 12] },
-      { label: '3º SORTEIO 10 PTS', value: prizes.fixed10PtsDraw3, color: [255, 247, 237], textColor: [234, 88, 12] },
       { label: 'RAPIDINHA', value: prizes.rapidinha, color: [255, 251, 235], textColor: [217, 119, 6] },
       { label: '1º LUGAR', value: prizes.campeao, color: [245, 243, 255], textColor: [124, 58, 237] },
-      { label: '2º LUGAR', value: prizes.vice, color: [239, 246, 255], textColor: [37, 99, 235] }
+      { label: '2º LUGAR', value: prizes.vice, color: [239, 246, 255], textColor: [37, 99, 235] },
+      { label: '1º SORTEIO 10 PTS', value: prizes.fixed10PtsDraw1, color: [255, 247, 237], textColor: [234, 88, 12] },
+      { label: '2º SORTEIO 10 PTS', value: prizes.fixed10PtsDraw2, color: [255, 247, 237], textColor: [234, 88, 12] },
+      { label: '3º SORTEIO 10 PTS', value: prizes.fixed10PtsDraw3, color: [255, 247, 237], textColor: [234, 88, 12] }
     ];
 
     const bonusCards = [
-      { label: 'BÔNUS 25', value: prizes.fixed25Plus, color: [16, 185, 129], sub: '25 PTS NA SOMA TOTAL' },
-      { label: 'SUPER BÔNUS 27', value: prizes.fixed27Plus, color: [15, 23, 42], sub: '27 PTS NA SOMA TOTAL' }
+      { label: 'SUPER BÔNUS 28', value: prizes.fixed28Plus, color: [15, 23, 42], sub: '28 PTS NA SOMA TOTAL', isSuper: true },
+      { label: 'BÔNUS 25', value: prizes.fixed25Plus, color: [16, 185, 129], sub: '25 PTS NA SOMA TOTAL', isSuper: false }
     ];
 
     const cardWidth = (pageWidth - 40) / 3;
@@ -464,11 +465,32 @@ const LiveRanking: React.FC = () => {
     const startX = 15;
     const startY = 50;
 
+    // Drawing Bonus Cards First
+    bonusCards.forEach((card, i) => {
+      const y = startY + (16 + 3) * i;
+      doc.setFillColor(card.color[0], card.color[1], card.color[2]);
+      doc.roundedRect(startX, y, pageWidth - 30, 16, 3, 3, 'F');
+      
+      doc.setFontSize(10);
+      doc.setTextColor(255, 255, 255);
+      doc.text(card.isSuper ? `COROA SUPER BÔNUS 28` : card.label, startX + 25, y + 7);
+      
+      doc.setFontSize(6);
+      doc.setTextColor(255, 255, 255);
+      doc.text(card.sub, startX + 25, y + 12);
+      
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
+      doc.text(card.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), pageWidth - 20, y + 10, { align: 'right' });
+    });
+
+    const prizeCardsStartY = startY + (16 + 3) * 2 + 5;
+
     prizeCards.forEach((card, i) => {
       const row = Math.floor(i / 3);
       const col = i % 3;
       const x = startX + (cardWidth + 5) * col;
-      const y = startY + (cardHeight + 5) * row;
+      const y = prizeCardsStartY + (cardHeight + 5) * row;
 
       doc.setFillColor(255, 255, 255);
       doc.setDrawColor(226, 232, 240);
@@ -494,25 +516,6 @@ const LiveRanking: React.FC = () => {
       doc.setFontSize(4);
       doc.setTextColor(148, 163, 184);
       doc.text('0 GANHADOR(ES) NO...', x + cardWidth - 5, y + 20, { align: 'right' });
-    });
-
-    // Bonus Cards
-    bonusCards.forEach((card, i) => {
-      const y = startY + (cardHeight + 5) * 2 + (16 + 3) * i;
-      doc.setFillColor(card.color[0], card.color[1], card.color[2]);
-      doc.roundedRect(startX, y, pageWidth - 30, 16, 3, 3, 'F');
-      
-      doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      doc.text(card.label, startX + 25, y + 7);
-      
-      doc.setFontSize(6);
-      doc.setTextColor(255, 255, 255);
-      doc.text(card.sub, startX + 25, y + 12);
-      
-      doc.setFontSize(12);
-      doc.setTextColor(255, 255, 255);
-      doc.text(card.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), pageWidth - 20, y + 10, { align: 'right' });
     });
 
     // Subheader Info - Centralized
@@ -592,14 +595,14 @@ const LiveRanking: React.FC = () => {
       const isVice = b.totalHits === secondMaxTotalHits && secondMaxTotalHits > 0;
       const isRapidinha = hits[0] === maxS1Hits && maxS1Hits > 0;
       const has10Pts = hits[0] >= 10 || hits[1] >= 10 || hits[2] >= 10;
-      const has27Plus = b.totalHits >= 27;
+      const has28Plus = b.totalHits >= 28;
 
       const prizeLabels = [];
       if (isChampion) prizeLabels.push('[1º LUGAR]');
       if (isVice) prizeLabels.push('[2º LUGAR]');
       if (isRapidinha) prizeLabels.push('[RAPIDINHA]');
       if (has10Pts) prizeLabels.push('[10 PONTOS]');
-      if (has27Plus) prizeLabels.push('[27+ PONTOS]');
+      if (has28Plus) prizeLabels.push('[28+ PONTOS]');
 
       const nameWithPrizes = `${(b.betName || b.userName).toUpperCase()} ${prizeLabels.join(' ')}`.trim();
       
@@ -657,7 +660,7 @@ const LiveRanking: React.FC = () => {
               const isOtherWinner = winners10Pts.some(w => w.some(wb => wb.id === betId)) || 
                                    rapidinhaLeader?.id === betId || 
                                    winners25Plus.some(w => w.id === betId) || 
-                                   winners27Plus.some(w => w.id === betId);
+                                   winners28Plus.some(w => w.id === betId);
               
               if (isOtherWinner) {
                 data.cell.styles.fillColor = [241, 245, 249]; // Slate 50
@@ -802,7 +805,7 @@ const LiveRanking: React.FC = () => {
               <p>• <span className="font-bold text-slate-900">Sorteio 1:</span> Marque 10 pontos e ganhe o prêmio fixo.</p>
               <p>• <span className="font-bold text-slate-900">Rapidinha:</span> Quem tiver mais pontos no 1º sorteio leva.</p>
               <p>• <span className="font-bold text-slate-900">Total:</span> Maior pontuação acumulada (S1+S2+S3) vence o Bolão.</p>
-              <p>• <span className="font-bold text-slate-900">Bônus:</span> 25 ou 27 pontos no total garantem prêmios especiais.</p>
+              <p>• <span className="font-bold text-slate-900">Bônus:</span> 25 ou 28 pontos no total garantem prêmios especiais.</p>
             </div>
           </motion.div>
         )}
@@ -870,11 +873,11 @@ const LiveRanking: React.FC = () => {
                       <div className="space-y-3 text-left">
                         <div className="flex gap-3">
                           <div className="flex-shrink-0 w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-[10px] font-bold">1</div>
-                          <p className="text-xs text-slate-700 leading-tight">Se o líder fizer <span className="font-bold">27 PONTOS</span>, ele leva o <span className="font-bold text-lotofacil-yellow-dark">SUPER BÔNUS 27</span>.</p>
+                          <p className="text-xs text-slate-700 leading-tight">Se o líder fizer <span className="font-bold">28 PONTOS</span>, ele leva o <span className="font-bold text-lotofacil-yellow-dark">SUPER BÔNUS 28</span>.</p>
                         </div>
                         <div className="flex gap-3">
                           <div className="flex-shrink-0 w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-[10px] font-bold">2</div>
-                          <p className="text-xs text-slate-700 leading-tight">O <span className="font-bold text-emerald-600">BÔNUS 25</span> é válido se <span className="font-black underline">NÃO</span> houver ganhador do 27.</p>
+                          <p className="text-xs text-slate-700 leading-tight">O <span className="font-bold text-emerald-600">BÔNUS 25</span> é válido se <span className="font-black underline">NÃO</span> houver ganhador do 28.</p>
                         </div>
                         <div className="flex gap-3">
                           <div className="flex-shrink-0 w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-[10px] font-bold">3</div>
@@ -893,8 +896,8 @@ const LiveRanking: React.FC = () => {
                         <span className="font-bold text-lotofacil-yellow-dark">{prizes.rapidinha.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                       </div>
                       <div className="flex justify-between items-center text-[10px] border-b border-slate-50 pb-1">
-                        <span className="text-slate-500">Bônus 27+:</span>
-                        <span className="font-bold text-slate-900">{prizes.fixed27Plus.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        <span className="text-slate-500">Bônus 28+:</span>
+                        <span className="font-bold text-slate-900">{prizes.fixed28Plus.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                       </div>
                       <p className="text-[8px] text-slate-400 italic text-center mt-2">Valores calculados com base nas apostas validadas.</p>
                     </div>
@@ -911,240 +914,316 @@ const LiveRanking: React.FC = () => {
             </motion.div>
           </div>
         )}
-        {/* Balão de Fala Verde - Data de Início */}
-        {showStartBubble && systemSettings?.poolStartDate && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.8, y: 10, x: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="fixed top-20 right-6 z-[160] max-w-[200px]"
-          >
-            <div className="bg-emerald-500 text-white p-3 rounded-2xl shadow-xl relative animate-bounce-subtle">
-              <button 
-                onClick={() => setShowStartBubble(false)}
-                className="absolute -top-2 -right-2 w-5 h-5 bg-white text-emerald-500 rounded-full flex items-center justify-center shadow-md hover:bg-emerald-50 transition-colors border border-emerald-100"
-              >
-                <X size={10} strokeWidth={3} />
-              </button>
-              
-              <div className="flex items-start gap-2">
-                <Calendar size={14} className="shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <p className="text-[9px] font-black uppercase tracking-tighter opacity-80">Início do Bolão</p>
-                  <p className="text-[11px] font-bold leading-tight">
-                    {systemSettings.poolStartDate.split('-').reverse().join('/')} às {systemSettings.poolStartTime || '20:00'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Speech Bubble Tail */}
-              <div className="absolute -bottom-2 right-6 w-4 h-4 bg-emerald-500 rotate-45 transform origin-center" />
-            </div>
-          </motion.div>
-        )}
       </AnimatePresence>
 
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 relative">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="px-1.5 py-0.5 rounded-sm bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.4)]">
-              <span className="text-[8px] font-black text-white uppercase tracking-widest">LIVE</span>
+      {/* Optimized Header Section */}
+      <div className="flex flex-col gap-4 sm:gap-6 pt-2">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="px-1.5 py-0.5 bg-emerald-500 text-white rounded-md text-[8px] font-black uppercase tracking-widest animate-pulse shadow-sm">Live</div>
+              <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em]">Tempo Real</p>
             </div>
-            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Tempo Real</span>
-          </div>
-          <h1 className="text-lg sm:text-4xl font-display tracking-widest text-slate-900 uppercase">
-            CLASSIFICAÇÃO <span className="text-emerald-500">AO VIVO</span>
-          </h1>
-          <p className="text-[10px] sm:text-sm text-slate-600 mt-1">
-            Concurso #{activeContest.number} • {bets.length} Apostas Validadas
-          </p>
-          
-          {isAdmin && (
-            <div className="flex flex-wrap items-center gap-2 mt-4">
-              <button 
-                onClick={() => setShowPrizeEditModal(true)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-lotofacil-purple/10 text-lotofacil-purple rounded-lg hover:bg-lotofacil-purple/20 transition-all text-[10px] font-bold uppercase tracking-widest border border-lotofacil-purple/20"
-              >
-                <Trophy size={14} />
-                Editar Premiações
-              </button>
-              <button 
-                onClick={() => setShowFinalizeConfirm(true)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all text-[10px] font-bold uppercase tracking-widest border border-red-100"
-              >
-                <X size={14} />
-                Finalizar Concurso
-              </button>
-            </div>
-          )}
-        </div>
-        
-        <div className="flex flex-col gap-2">
-          {/* Botões de Informação Rápida */}
-          <div className="flex items-center justify-end gap-2 mb-2">
-            <button 
-              onClick={() => setShowRulesModal(true)}
-              className="p-2 bg-white/50 hover:bg-lotofacil-purple/10 text-slate-500 hover:text-lotofacil-purple rounded-full transition-all border border-slate-200"
-              title="Regras"
-            >
-              <HelpCircle size={18} />
-            </button>
-            <button 
-              onClick={() => setShowPrizesInfoModal(true)}
-              className="p-2 bg-white/50 hover:bg-lotofacil-yellow/20 text-slate-500 hover:text-lotofacil-yellow-dark rounded-full transition-all border border-slate-200"
-              title="Premiação"
-            >
-              <Gift size={18} />
-            </button>
-            {!showStartBubble && systemSettings?.poolStartDate && (
-              <button 
-                onClick={() => setShowStartBubble(true)}
-                className="p-2 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 rounded-full transition-all border border-emerald-500/20"
-                title="Ver Data de Início"
-              >
-                <Calendar size={18} />
-              </button>
+            <h1 className="text-xl sm:text-4xl font-display tracking-[0.2em] sm:tracking-[0.5em] text-slate-900 uppercase leading-tight">Classificação <span className="text-emerald-500">Ao Vivo</span></h1>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium">Concurso #{activeContest.number} • {bets.length} Apostas Validadas</p>
+            
+            {isAdmin && (
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <button 
+                  onClick={() => setShowPrizeEditModal(true)}
+                  className="px-2 py-1 bg-lotofacil-purple/10 text-lotofacil-purple rounded-lg text-[9px] font-bold uppercase tracking-widest border border-lotofacil-purple/10"
+                >
+                  Editar Premiações
+                </button>
+                <button 
+                  onClick={() => setShowFinalizeConfirm(true)}
+                  className="px-2 py-1 bg-red-50 text-red-600 rounded-lg text-[9px] font-bold uppercase tracking-widest border border-red-100"
+                >
+                  Finalizar
+                </button>
+              </div>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => {
-                setDownloadType('excel');
-                setShowPasswordModal(true);
-              }}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-white transition-all shadow-lg shadow-emerald-200 flex items-center gap-2 text-xs font-bold"
-              title="Baixar Excel"
+          <div className="flex flex-col items-center gap-2">
+            <motion.button 
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowPrizesModal(true)}
+              className="w-14 h-14 sm:w-20 sm:h-20 bg-white rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col items-center justify-center text-lotofacil-purple group relative overflow-hidden"
             >
-              <Download size={16} />
-              <span>EXCEL</span>
-            </button>
-            <button 
-              onClick={() => {
-                setDownloadType('pdf');
-                setShowPasswordModal(true);
-              }}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-xl text-white transition-all shadow-lg shadow-red-200 flex items-center gap-2 text-xs font-bold"
-              title="Baixar PDF"
-            >
-              <FileText size={16} />
-              <span>PDF</span>
-            </button>
+               <div className="absolute inset-0 bg-lotofacil-purple/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+               <Gift size={24} className="sm:w-8 sm:h-8 mb-1" />
+               <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 group-hover:text-lotofacil-purple transition-colors">Prêmios</span>
+               <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+            </motion.button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setShowDownloadOptionsModal(true)}
+                className="w-10 h-10 bg-white text-slate-400 rounded-2xl flex items-center justify-center hover:bg-slate-50 transition-all border border-slate-100 shadow-sm"
+                title="Download Relatórios"
+              >
+                <Download size={20} />
+              </button>
+              <button 
+                onClick={() => setShowRulesModal(true)}
+                className="w-10 h-10 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center hover:bg-slate-100 transition-all border border-slate-100"
+              >
+                <HelpCircle size={20} />
+              </button>
+            </div>
           </div>
+        </div>
 
-          <div className="relative flex-1 sm:flex-none">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-            <input 
-              type="text" 
-              placeholder="Buscar participante..."
+        {/* Search row */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" size={18} />
+            <input
+              type="text"
+              placeholder="Buscar participante ou vendedor..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs w-full sm:w-64 shadow-sm"
+              className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm text-sm"
             />
           </div>
         </div>
       </div>
 
-      {/* 10 PTS Prizes Row */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        {[1, 2, 3].map(num => (
-          <PrizeCard 
-            key={num}
-            title={`${num}º SORTEIO 10 PTS`} 
-            value={num === 1 ? prizes.fixed10PtsDraw1 : num === 2 ? prizes.fixed10PtsDraw2 : prizes.fixed10PtsDraw3} 
-            count={num === 1 && maxS1Hits < 10 && maxS1Hits > 0 ? rapidinhaWinnersCount : winners10Pts[num-1].length}
-            icon={Target}
-            color="text-orange-600"
-            bg="bg-orange-50"
-            border="border-orange-200"
-            compact
-            isFinished={num === 1 ? isDraw1Finished : num === 2 ? isDraw2Finished : isThirdDrawFinished}
-            onInfoClick={num === 1 ? () => {
-              setPrizeInfoType('draw1');
-              setShowPrizesInfoModal(true);
-            } : undefined}
-          />
-        ))}
-      </div>
+      <div className="flex flex-col gap-6">
+        <AnimatePresence>
+          {showDownloadOptionsModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDownloadOptionsModal(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-[32px] shadow-2xl overflow-hidden border border-slate-100"
+            >
+              <div className="p-6 text-center border-b border-slate-50">
+                <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                  <Download size={32} />
+                </div>
+                <h2 className="text-xl font-display tracking-widest text-slate-900 uppercase">Download de Relatórios</h2>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Selecione o formato desejado</p>
+              </div>
 
-      {/* Main Prizes Row (Rapidinha, 1st, 2nd) */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        <PrizeCard 
-          title="RAPIDINHA" 
-          value={prizes.rapidinha} 
-          count={rapidinhaWinnersCount}
-          icon={Zap}
-          color="text-yellow-500"
-          bg="bg-white"
-          border="border-yellow-100"
-          compact
-          isFinished={isDraw1Finished}
-        />
-        <PrizeCard 
-          title="1º LUGAR" 
-          value={prizes.campeao} 
-          count={rankingWithRanks.filter(b => b.totalHits === maxTotalHits && maxTotalHits > 0).length}
-          icon={Crown}
-          color="text-lotofacil-purple"
-          bg="bg-lotofacil-purple/5"
-          border="border-lotofacil-purple/10"
-          compact
-          isFinished={isThirdDrawFinished}
-        />
-        <PrizeCard 
-          title="2º LUGAR" 
-          value={prizes.vice} 
-          count={rankingWithRanks.filter(b => b.totalHits === secondMaxTotalHits && secondMaxTotalHits > 0).length}
-          icon={Award}
-          color="text-blue-500"
-          bg="bg-blue-50"
-          border="border-blue-100"
-          compact
-          isFinished={isThirdDrawFinished}
-        />
-      </div>
+              <div className="p-4 space-y-3">
+                <button 
+                  onClick={() => {
+                    setDownloadType('excel');
+                    setShowPasswordModal(true);
+                    setShowDownloadOptionsModal(false);
+                  }}
+                  className="w-full group flex items-center gap-4 p-4 bg-emerald-50 hover:bg-emerald-100 rounded-2xl border border-emerald-500/10 transition-all text-left"
+                >
+                  <div className="w-12 h-12 bg-[#107c41] text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200 shrink-0 group-hover:scale-110 transition-transform">
+                    <Download size={24} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-[#107c41] uppercase tracking-widest">Excel Spreadsheet</p>
+                    <p className="text-[10px] text-emerald-600 font-medium font-mono">.xlsx format</p>
+                  </div>
+                </button>
 
-      {/* Special Prizes */}
-      <div className="w-full space-y-3">
-        <div className="max-w-4xl mx-auto w-full">
-          <PrizeCard 
-            title="🏆 Super Bônus 27" 
-            value={prizes.fixed27Plus} 
-            count={winners27Plus.length}
-            icon={Star}
-            color="text-lotofacil-yellow"
-            bg="bg-lotofacil-yellow/10"
-            border="border-lotofacil-yellow/20"
-            fullWidth
-            pointsLabel="27 PTS NA SOMA TOTAL"
-            variant="bonus27"
-            isFinished={isThirdDrawFinished}
-            onInfoClick={() => {
-              setPrizeInfoType('bonus');
-              setShowPrizesInfoModal(true);
-            }}
-          />
-        </div>
-        <div className="max-w-4xl mx-auto w-full">
-          <PrizeCard 
-            title="🔥 BÔNUS 25" 
-            value={prizes.fixed25Plus} 
-            count={winners25Plus.length}
-            icon={Medal}
-            color="text-white"
-            bg="bg-emerald-500"
-            border="border-emerald-400"
-            fullWidth
-            pointsLabel="25 PTS NA SOMA TOTAL"
-            variant="bonus25"
-            isFinished={isThirdDrawFinished}
-            onInfoClick={() => {
-              setPrizeInfoType('bonus');
-              setShowPrizesInfoModal(true);
-            }}
-          />
-        </div>
+                <button 
+                  onClick={() => {
+                    setDownloadType('pdf');
+                    setShowPasswordModal(true);
+                    setShowDownloadOptionsModal(false);
+                  }}
+                  className="w-full group flex items-center gap-4 p-4 bg-rose-50 hover:bg-rose-100 rounded-2xl border border-rose-500/10 transition-all text-left"
+                >
+                  <div className="w-12 h-12 bg-[#e11d48] text-white rounded-xl flex items-center justify-center shadow-lg shadow-rose-200 shrink-0 group-hover:scale-110 transition-transform">
+                    <FileText size={24} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-[#e11d48] uppercase tracking-widest">PDF Document</p>
+                    <p className="text-[10px] text-rose-600 font-medium font-mono">.pdf format</p>
+                  </div>
+                </button>
+              </div>
+
+              <button 
+                onClick={() => setShowDownloadOptionsModal(false)}
+                className="w-full py-4 bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:text-slate-900 transition-colors border-t border-slate-100"
+              >
+                Voltar
+              </button>
+            </motion.div>
+          </div>
+        )}
+        {showPrizesModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowPrizesModal(false)}
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 30 }}
+                className="relative w-full max-w-5xl max-h-[92vh] overflow-hidden bg-[#f8fafc] rounded-[40px] shadow-2xl flex flex-col border border-white"
+              >
+                {/* Modal Header */}
+                <div className="p-6 sm:p-10 flex items-center justify-between bg-white/80 backdrop-blur-md border-b border-slate-100 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-lotofacil-purple/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
+                  <div className="flex items-center gap-5 relative z-10">
+                    <div className="w-16 h-16 bg-lotofacil-purple/10 text-lotofacil-purple rounded-[22px] flex items-center justify-center shadow-inner">
+                      <Gift size={32} />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-display tracking-[0.2em] text-slate-900 uppercase">Valores do Concurso</h2>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-[10px] font-black uppercase tracking-widest">Concurso #{activeContest.number}</span>
+                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          Atualizado Agora
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <motion.button 
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setShowPrizesModal(false)}
+                    className="w-14 h-14 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white transition-all shadow-sm border border-slate-100"
+                  >
+                    <X size={28} />
+                  </motion.button>
+                </div>
+
+                {/* Modal Content */}
+                <div className="p-4 sm:p-10 overflow-y-auto no-scrollbar space-y-10 custom-scrollbar">
+                  {/* High Value Bonus Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 px-2">
+                      <Crown size={20} className="text-lotofacil-yellow" />
+                      <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Bonus Especiais</h3>
+                    </div>
+                    <div className="grid grid-cols-1 gap-6">
+                      <PrizeCard 
+                        title="👑 SUPER BÔNUS 28" 
+                        value={prizes.fixed28Plus} 
+                        count={winners28Plus.length}
+                        icon={Crown}
+                        color="text-lotofacil-yellow"
+                        bg="bg-slate-950"
+                        border="border-lotofacil-yellow/30"
+                        fullWidth
+                        pointsLabel="28 Pontos na Soma"
+                        variant="bonus28"
+                        isFinished={isDraw1Finished && isDraw2Finished && isThirdDrawFinished}
+                      />
+
+                      <PrizeCard 
+                        title="🔥 BÔNUS 25" 
+                        value={prizes.fixed25Plus} 
+                        count={winners25Plus.length}
+                        icon={Medal}
+                        color="text-[#10b981]"
+                        bg="bg-emerald-50"
+                        border="border-emerald-500/20"
+                        fullWidth
+                        pointsLabel="25 Pontos na Soma"
+                        variant="bonus25"
+                        isFinished={isDraw1Finished && isDraw2Finished && isThirdDrawFinished}
+                        onInfoClick={() => {
+                          setPrizeInfoType('bonus');
+                          setShowPrizesInfoModal(true);
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Main Grid Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 px-2">
+                    <Trophy size={20} className="text-lotofacil-purple" />
+                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Premiação por Performance</h3>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <PrizeCard 
+                        title="⚡ RAPIDINHA" 
+                        value={prizes.rapidinha} 
+                        count={rapidinhaWinnersCount}
+                        icon={Zap}
+                        color="text-amber-600"
+                        bg="bg-amber-50"
+                        border="border-amber-100"
+                        isFinished={isDraw1Finished}
+                      />
+
+                      <PrizeCard 
+                        title="🏆 1º LUGAR" 
+                        value={prizes.campeao} 
+                        count={rankingWithRanks.filter(b => b.rank === 1 && maxTotalHits > 0).length}
+                        icon={Trophy}
+                        color="text-lotofacil-purple"
+                        bg="bg-purple-50"
+                        border="border-purple-100"
+                        isFinished={isThirdDrawFinished}
+                      />
+
+                      <PrizeCard 
+                        title="🥈 2º LUGAR" 
+                        value={prizes.vice} 
+                        count={rankingWithRanks.filter(b => b.rank === 2 && secondMaxTotalHits > 0).length}
+                        icon={Award}
+                        color="text-slate-600"
+                        bg="bg-slate-50"
+                        border="border-slate-100"
+                        isFinished={isThirdDrawFinished}
+                      />
+
+                      <PrizeCard 
+                        title="🎯 S1 | 10 PTS" 
+                        value={prizes.fixed10PtsDraw1} 
+                        count={winners10Pts[0].length}
+                        icon={Target}
+                        color="text-orange-600"
+                        bg="bg-orange-50"
+                        border="border-orange-100"
+                        isFinished={isDraw1Finished}
+                      />
+
+                      <PrizeCard 
+                        title="🎯 S2 | 10 PTS" 
+                        value={prizes.fixed10PtsDraw2} 
+                        count={winners10Pts[1].length}
+                        icon={Target}
+                        color="text-orange-600"
+                        bg="bg-orange-50"
+                        border="border-orange-100"
+                        isFinished={isDraw2Finished}
+                      />
+
+                      <PrizeCard 
+                        title="🎯 S3 | 10 PTS" 
+                        value={prizes.fixed10PtsDraw3} 
+                        count={winners10Pts[2].length}
+                        icon={Target}
+                        color="text-orange-600"
+                        bg="bg-orange-50"
+                        border="border-orange-100"
+                        isFinished={isThirdDrawFinished}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Search and Table */}
@@ -1258,29 +1337,29 @@ const LiveRanking: React.FC = () => {
             </div>
           </div>
 
-          <table className="w-full text-left border-collapse min-w-full sm:min-w-[800px] compact-table">
-            <thead>
-              <tr className="bg-slate-50/50">
-                <th className="px-0.5 py-3 text-[8px] sm:text-[9px] uppercase tracking-widest font-bold text-slate-500 w-6 sm:w-10 text-center shrink-0">Pos</th>
-                <th className="px-1 py-3 text-[8px] sm:text-[9px] uppercase tracking-widest font-bold text-slate-500">Participante</th>
-                <th className="px-1 py-3 text-[8px] sm:text-[9px] uppercase tracking-widest font-bold text-slate-500 text-center">Vendedor</th>
-                <th className="px-2 py-3 text-[9px] uppercase tracking-widest font-bold text-slate-500 text-center hidden sm:table-cell">Números da Aposta</th>
+          <table className="w-full text-left border-collapse min-w-full sm:min-w-[800px] compact-table relative">
+            <thead className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm">
+              <tr className="border-b border-slate-100">
+                <th className="px-1 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest font-black text-slate-400 w-8 sm:w-12 text-center">Pos</th>
+                <th className="px-1 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest font-black text-slate-400">Participante</th>
+                <th className="px-1 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest font-black text-slate-400 text-center">Vendedor</th>
+                <th className="px-2 py-4 text-[9px] uppercase tracking-widest font-black text-slate-400 text-center hidden sm:table-cell">Números da Aposta</th>
                 {[1, 2, 3].map((num, i) => (
                   <th 
                     key={num} 
                     onClick={() => setSelectedDraw(i)}
                     className={cn(
-                      "px-0.5 py-3 text-[8px] sm:text-[9px] uppercase tracking-widest font-bold text-center w-6 sm:w-16 cursor-pointer transition-all shrink-0",
-                      selectedDraw === i ? "bg-lotofacil-purple text-white" : 
-                      i === 0 ? "bg-blue-50/50 text-blue-600" :
-                      i === 1 ? "bg-green-50/50 text-green-600" :
-                      "bg-purple-50/50 text-purple-600"
+                      "px-1 py-4 text-[10px] sm:text-xs uppercase tracking-tighter font-black text-center w-8 sm:w-20 cursor-pointer transition-all shrink-0",
+                      selectedDraw === i ? "bg-lotofacil-purple text-white shadow-inner" : 
+                      i === 0 ? "text-blue-500" :
+                      i === 1 ? "text-emerald-500" :
+                      "text-purple-500"
                     )}
                   >
                     S{num}
                   </th>
                 ))}
-                <th className="px-0.5 py-3 text-[8px] sm:text-[9px] uppercase tracking-widest font-bold text-lotofacil-purple text-center w-8 sm:w-20 shrink-0">Total</th>
+                <th className="px-1 py-4 text-[10px] sm:text-xs uppercase tracking-tighter font-black text-lotofacil-purple text-center w-10 sm:w-24 shrink-0 bg-purple-50/30">Total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -1294,7 +1373,7 @@ const LiveRanking: React.FC = () => {
                 const isVice = totalHits === secondMaxTotalHits && secondMaxTotalHits > 0;
                 const isRapidinha = hits[0] === maxS1Hits && maxS1Hits > 0;
                 const has10Pts = hits[0] >= 10 || hits[1] >= 10 || hits[2] >= 10;
-                const has27Plus = totalHits >= 27 && b.rank === 1;
+                const has28Plus = totalHits >= 28 && b.rank === 1;
                 const has25Plus = totalHits >= 25 && b.rank === 1;
 
                 const prizeNames = [];
@@ -1302,8 +1381,8 @@ const LiveRanking: React.FC = () => {
                 if (isVice) prizeNames.push('2º LUGAR');
                 if (isRapidinha) prizeNames.push('RAPIDINHA');
                 if (has10Pts) prizeNames.push('10 PONTOS');
-                if (has27Plus) prizeNames.push('BÔNUS 27');
-                if (has25Plus && !has27Plus) prizeNames.push('BÔNUS 25');
+                if (has28Plus) prizeNames.push('BÔNUS 28');
+                if (has25Plus && !has28Plus) prizeNames.push('BÔNUS 25');
 
                 const isWinner = prizeNames.length > 0;
                 const isExpanded = expandedBetId === b.id;
@@ -1314,12 +1393,12 @@ const LiveRanking: React.FC = () => {
                       onClick={() => setExpandedBetId(isExpanded ? null : b.id)}
                       className={cn(
                         "transition-all duration-300 cursor-pointer relative",
-                        isExpanded ? "bg-slate-900 text-white shadow-2xl z-30 scale-[1.02] rounded-xl" : 
-                        isChampion ? "bg-gradient-to-r from-amber-50 via-amber-100 to-amber-50 hover:from-amber-100 hover:via-amber-200 hover:to-amber-100/80 border-y border-amber-200/50 shadow-sm" : 
-                        isVice ? "bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 hover:from-blue-100 hover:via-blue-200 hover:to-blue-100/80 border-y border-blue-200/50 shadow-sm" :
-                        hits[selectedDraw] >= 10 ? "bg-orange-100/40 hover:bg-orange-200/60" :
-                        isRapidinha ? "bg-yellow-100/40 hover:bg-yellow-100/60" :
-                        isWinner ? "bg-lotofacil-purple/5 hover:bg-lotofacil-purple/10" : "hover:bg-slate-50"
+                        isExpanded ? "bg-slate-900 text-white shadow-2xl z-30 scale-[1.01] rounded-xl" : 
+                        has28Plus ? "bg-amber-50/50 border-l-4 border-l-lotofacil-yellow" :
+                        has25Plus ? "bg-emerald-50/50 border-l-4 border-l-emerald-500" :
+                        isChampion ? "bg-amber-50/30" : 
+                        isVice ? "bg-blue-50/30" :
+                        "hover:bg-slate-50"
                       )}
                     >
                       <td className="px-0.5 py-3">
@@ -1475,7 +1554,7 @@ const LiveRanking: React.FC = () => {
                             <span className={cn(
                               "text-[6px] font-bold px-1 rounded bg-white text-[#1e3a8a]"
                             )}>
-                              BÔNUS {totalHits >= 27 ? '27' : '25'}
+                              BÔNUS {totalHits >= 28 ? '28' : '25'}
                             </span>
                           )}
                         </div>
@@ -1574,7 +1653,7 @@ const LiveRanking: React.FC = () => {
           <p className="text-[10px] font-bold uppercase tracking-widest">Informações sobre Premiações</p>
           <p className="text-[9px] text-slate-400 leading-relaxed">
             A classificação é atualizada em tempo real conforme os resultados da Lotofácil Oficial Caixa.
-            Prêmios fixos (10 PTS nos Sorteios S1/S2/S3 e BÔNUS 25 PTS e 27 PTS) são garantidos. Em caso de empate, os prêmios são divididos igualmente entre os ganhadores.
+            Prêmios fixos (10 PTS nos Sorteios S1/S2/S3 e BÔNUS 25 PTS e 28 PTS) são garantidos. Em caso de empate, os prêmios são divididos igualmente entre os ganhadores.
           </p>
         </div>
       </div>
@@ -1805,7 +1884,7 @@ const LiveRanking: React.FC = () => {
                         { label: '10 Pts (S2)', key: 'fixed10PtsDraw2' },
                         { label: '10 Pts (S3)', key: 'fixed10PtsDraw3' },
                         { label: 'Bônus 25 Pts', key: 'fixed25PlusTotal' },
-                        { label: 'Super 27 Pts', key: 'fixed27PlusTotal' },
+                        { label: 'Super 28 Pts', key: 'fixed28PlusTotal' },
                       ].map(item => (
                         <div key={item.key} className="space-y-1.5">
                           <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">{item.label}</label>
@@ -1905,144 +1984,135 @@ interface PrizeCardProps {
   compact?: boolean;
   fullWidth?: boolean;
   pointsLabel?: string;
-  variant?: 'default' | 'bonus25' | 'bonus27';
+  variant?: 'default' | 'bonus25' | 'bonus28';
   isFinished?: boolean;
   onInfoClick?: () => void;
 }
 
 const PrizeCard: React.FC<PrizeCardProps> = ({ 
-  title, value, count, icon: Icon, color, bg, border, compact, fullWidth, pointsLabel, variant = 'default', isFinished, onInfoClick
-}) => (
-  <div className={cn(
-    "glass-card border transition-all relative overflow-hidden group",
-    compact ? "p-2 sm:p-3" : fullWidth ? "p-3 sm:p-5" : "p-4 sm:p-6",
-    border,
-    variant === 'bonus27' ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white border-lotofacil-yellow/40 shadow-[0_15px_35px_rgba(0,0,0,0.5),0_0_20px_rgba(234,179,8,0.1)]" :
-    variant === 'bonus25' ? "bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-600 text-white border-emerald-400/30 shadow-[0_15px_35px_rgba(16,185,129,0.25)]" :
-    "bg-white"
-  )}>
-    {fullWidth ? (
-      <div className="flex flex-row items-center justify-between gap-4 sm:gap-10 relative z-10">
-        <div className="flex items-center gap-3 sm:gap-6">
-          <div className={cn(
-            "w-10 h-10 sm:w-16 sm:h-16 rounded-2xl border shadow-lg flex items-center justify-center shrink-0 rotate-3 group-hover:rotate-0 transition-transform duration-500",
-            variant === 'bonus27' ? "bg-lotofacil-yellow/20 border-lotofacil-yellow/30 shadow-lotofacil-yellow/20" : "bg-white/20 border-white/30 shadow-white/10"
-          )}>
-            <Icon className={variant === 'bonus27' ? "text-lotofacil-yellow" : "text-white"} size={variant === 'bonus27' ? 20 : 24} />
+  title, value, count, icon: Icon, color, bg, border, fullWidth, pointsLabel, variant = 'default', isFinished, onInfoClick
+}) => {
+  const isPremium = variant === 'bonus28' || variant === 'bonus25';
+  
+  return (
+    <motion.div 
+      whileHover={{ y: -4, scale: 1.01 }}
+      className={cn(
+        "group relative flex flex-row items-center justify-between p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border transition-all duration-500 overflow-hidden",
+        border,
+        variant === 'bonus28' ? "bg-slate-950 text-white border-lotofacil-yellow/30 shadow-[0_20px_50px_rgba(0,0,0,0.4)]" :
+        variant === 'bonus25' ? "bg-emerald-50 text-slate-900 border-emerald-500/20 shadow-[0_20px_50px_rgba(16,185,129,0.05)]" :
+        "bg-white border-slate-100 shadow-sm hover:shadow-md"
+      )}
+    >
+      {/* Decorative background elements */}
+      {variant === 'bonus28' ? (
+        <>
+          <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-from)_0%,_transparent_70%)] from-lotofacil-yellow/20 pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-lotofacil-purple/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
+        </>
+      ) : variant === 'bonus25' ? (
+        <>
+          <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-from)_0%,_transparent_70%)] from-emerald-400/20 pointer-events-none" />
+          <div className="absolute inset-0 opacity-[0.05] pointer-events-none">
+            <svg width="100%" height="100%"><pattern id="grid" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M 30 0 L 0 0 0 30" fill="none" stroke="currentColor" strokeWidth="0.5" /></pattern><rect width="100%" height="100%" fill="url(#grid)" /></svg>
           </div>
-          <div className="space-y-0.5 sm:space-y-1">
-            <h2 className={cn(
-              "text-[13px] sm:text-[25px] font-black uppercase tracking-[0.2em] drop-shadow-lg sm:leading-[30px] flex items-center gap-2",
-              variant === 'bonus27' ? "text-lotofacil-yellow" : "text-white"
+        </>
+      ) : (
+        <div className={cn(
+          "absolute top-0 right-0 w-32 h-32 -mr-12 -mt-12 rounded-full blur-3xl opacity-10 transition-transform group-hover:scale-150",
+          color.replace('text-', 'bg-')
+        )} />
+      )}
+      
+      <div className="flex items-center gap-4 sm:gap-6 relative z-10 w-full">
+        {/* Icon Container */}
+        <div className={cn(
+          "w-14 h-14 sm:w-20 sm:h-20 rounded-[22px] sm:rounded-[28px] flex items-center justify-center shadow-2xl transition-all group-hover:rotate-0 duration-700 shrink-0",
+          variant === 'bonus28' ? "bg-black text-lotofacil-yellow border border-lotofacil-yellow/50 -rotate-3" : 
+          variant === 'bonus25' ? "bg-emerald-500 text-white rotate-3" : 
+          "bg-white border border-slate-50 shadow-inner"
+        )}>
+          <Icon className={cn("w-7 h-7 sm:w-10 sm:h-10", (variant === 'default') && color)} />
+        </div>
+
+        {/* Content */}
+        <div className="flex flex-row items-center justify-between w-full min-w-0">
+          <div className="min-w-0 pr-2 text-left">
+            <p className={cn(
+              "text-[8px] sm:text-[11px] font-black uppercase tracking-[0.2em] mb-1",
+              variant === 'bonus28' ? "text-lotofacil-yellow" : 
+              variant === 'bonus25' ? "text-emerald-600" : 
+              "text-slate-400"
             )}>
-              {(isFinished && variant === 'default') ? `${title} (${count || 0} Ganhadores)` : title}
-              {onInfoClick && (
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onInfoClick();
-                  }}
-                  className="p-1 hover:bg-white/10 rounded-full transition-all text-white/40 hover:text-white"
-                >
-                  <HelpCircle size={16} className="sm:w-6 sm:h-6" />
-                </button>
-              )}
-            </h2>
-            <div className="flex items-center gap-2">
-              {(count !== undefined && (count > 0 || !isFinished)) ? (
-                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-white/5 rounded-full border border-white/10">
-                  <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
-                  <p className="text-[6px] sm:text-[13px] font-black text-[#f7f7f7] uppercase tracking-widest">
-                    {count} ganhador(es)
-                  </p>
+              {pointsLabel || (variant === 'bonus28' ? "👑 Super Bônus" : variant === 'bonus25' ? "🔥 Bônus" : "Estimativa")}
+            </p>
+            <h3 className={cn(
+              "text-[10px] sm:text-2xl font-black uppercase tracking-widest truncate leading-tight",
+              variant === 'bonus28' ? "text-white" : "text-slate-900"
+            )}>
+              {title.replace('🔥 ', '').replace('👑 ', '')}
+            </h3>
+            
+            {/* Status / Winners Badge */}
+            <div className="mt-2.5 flex">
+              {(!isFinished || (count !== undefined && count > 0)) ? (
+                <div className={cn(
+                  "px-2 sm:px-4 py-1.5 rounded-full border text-[8px] sm:text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm transition-all duration-300",
+                  variant === 'bonus28' ? "bg-white/10 border-white/20 text-white" : 
+                  variant === 'bonus25' ? "bg-white border-emerald-100 text-emerald-600" : 
+                  "bg-slate-50 border-slate-100 text-slate-600"
+                )}>
+                  <span className={cn("w-1.5 h-1.5 rounded-full", isFinished ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-orange-400")} />
+                  {isFinished ? `${count || 0} Ganhadores` : "Aguardando..."}
                 </div>
-              ) : (isFinished && count === 0) && (
-                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-red-500/20 rounded-full border border-red-500/30">
-                  <div className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
-                  <p className="text-[6px] sm:text-[13px] font-black text-red-100 uppercase tracking-widest">
-                    ACUMULADO
-                  </p>
+              ) : (
+                <div className={cn(
+                  "px-3 sm:px-4 py-1.5 rounded-full border text-[8px] sm:text-[11px] font-black uppercase tracking-widest transition-all duration-300",
+                  variant === 'bonus28' ? "bg-white text-red-500 border-red-50" : "bg-white text-red-500 border-red-50 shadow-sm"
+                )}>
+                  Acumulado
                 </div>
               )}
-              <div className={cn(
-                "px-1.5 py-0.5 rounded-full border",
-                variant === 'bonus27' ? "bg-lotofacil-yellow/10 border-lotofacil-yellow/20 text-lotofacil-yellow" : "bg-white/10 border-white/20 text-white"
-              )}>
-                <p className="text-[6px] sm:text-[13px] font-black uppercase tracking-widest text-[#f7f7f7]">
-                  {pointsLabel || (variant === 'bonus27' ? "27+ PONTOS" : "25 PONTOS")}
-                </p>
-              </div>
             </div>
           </div>
-        </div>
-        <div className="text-right sm:bg-transparent rounded-2xl sm:border-0">
-          {(variant !== 'bonus25' && variant !== 'bonus27') && (
-            <p className="text-[6px] sm:text-[11px] font-black text-white/60 uppercase tracking-[0.1em] mb-0.5">Estimativa</p>
-          )}
-          <p className={cn(
-            "text-lg sm:text-4xl font-black tracking-tighter drop-shadow-[0_2px_5px_rgba(0,0,0,0.5)]",
-            "text-white"
-          )}>
-            {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-          </p>
-        </div>
-      </div>
-    ) : (
-      <div className="flex items-center gap-1.5 sm:gap-4 relative z-10">
-        <div className={cn(
-          "rounded-[0.75rem] sm:rounded-[1.25rem] flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105",
-          "w-8 h-8 sm:w-16 sm:h-16",
-          bg
-        )}>
-          <Icon className={cn(color, "sm:w-6 sm:h-6")} size={14} />
-        </div>
-        <div className="flex-1 min-w-0 text-right">
-          <p className="uppercase tracking-[0.1em] sm:tracking-[0.2em] text-slate-400 font-black text-[5px] sm:text-[9px] mb-0.5">
-            Estimativa
-          </p>
-          <div className="flex items-center justify-end gap-1 font-black tracking-tighter leading-none">
+
+          <div className="text-right shrink-0">
+            <div className={cn(
+              "px-4 py-3 sm:px-10 sm:py-6 rounded-[22px] sm:rounded-[36px] border flex flex-col justify-center transition-all duration-500",
+              variant === 'bonus28' ? "bg-slate-900 border-lotofacil-yellow/20 shadow-2xl" : 
+              variant === 'bonus25' ? "bg-white border-emerald-100 shadow-xl" : 
+              "bg-white border-slate-100 shadow-sm"
+            )}>
+              <p className={cn(
+                "text-sm sm:text-[46px] font-black tracking-tighter leading-none whitespace-nowrap",
+                variant === 'bonus28' ? "text-lotofacil-yellow" : 
+                variant === 'bonus25' ? "text-emerald-500" : 
+                color
+              )}>
+                {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </p>
+            </div>
             {onInfoClick && (
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   onInfoClick();
                 }}
-                className="p-1 hover:bg-slate-100 rounded-full transition-all text-slate-400 hover:text-lotofacil-purple"
+                className={cn(
+                  "mt-2 text-[8px] sm:text-[11px] items-center gap-1 font-black uppercase tracking-widest transition-colors inline-flex",
+                  variant === 'bonus28' ? "text-white/40 hover:text-white" : "text-slate-400 hover:text-lotofacil-purple"
+                )}
               >
-                <HelpCircle className="w-2.5 h-2.5 sm:w-5 sm:h-5" />
+                Detalhes <HelpCircle size={12} />
               </button>
             )}
-            <p className={cn(
-              "text-[9px] sm:text-2xl",
-              color
-            )}>
-              {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </p>
-          </div>
-          <p className="font-bold uppercase tracking-widest truncate text-slate-900 text-[6px] sm:text-[11px] mt-0.5 sm:mt-1">
-            {title}
-          </p>
-          
-          <div className="mt-1 sm:mt-2 flex items-center justify-end">
-            <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 bg-slate-100 rounded-full border border-slate-200 shadow-sm">
-              <div className={cn("w-1 h-1 rounded-full animate-pulse", isFinished ? "bg-emerald-500" : "bg-orange-400")} />
-              <p className="text-[6px] sm:text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                {isFinished ? `${count || 0} GANHADORES` : 'AGUARDANDO...'}
-              </p>
-            </div>
           </div>
         </div>
       </div>
-    )}
-
-    {/* Background Glow for fullWidth */}
-    {fullWidth && (
-      <>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-lotofacil-yellow/10 rounded-full -mr-32 -mt-32 blur-[80px] pointer-events-none animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-lotofacil-purple/5 rounded-full -ml-24 -mb-24 blur-[60px] pointer-events-none" />
-      </>
-    )}
-  </div>
-);
+    </motion.div>
+  );
+};
 
 export default LiveRanking;
