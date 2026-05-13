@@ -37,7 +37,8 @@ import {
   MessageCircle,
   Calendar,
   Clock,
-  Crown
+  Crown,
+  RefreshCcw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
@@ -273,6 +274,45 @@ const BetsTab: React.FC<{
       await fetchBets();
     } catch (error) {
       console.error('Erro na exclusão em massa:', error);
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkRepeat = async () => {
+    if (selectedIds.length === 0) return;
+    
+    const activeContest = await firebaseService.getActiveContest();
+    if (!activeContest) {
+      showAlert('Erro', 'Não há concurso ativo para repetir as apostas.');
+      return;
+    }
+
+    setIsBulkProcessing(true);
+    let successCount = 0;
+    try {
+      const selectedBets = bets.filter(b => selectedIds.includes(b.id));
+      for (const bet of selectedBets) {
+        try {
+          await firebaseService.createBet({
+            userId: bet.userId,
+            userName: bet.userName,
+            contestId: activeContest.id,
+            contestNumber: activeContest.number,
+            numbers: [...bet.numbers],
+            betName: bet.betName || '',
+            sellerCode: bet.sellerCode || '',
+          });
+          successCount++;
+        } catch (err) {
+          console.error(`Error repeating bet ${bet.id}:`, err);
+        }
+      }
+      showSuccess(`${successCount} apostas repetidas com sucesso no concurso atual!`);
+      setSelectedIds([]);
+      fetchBets();
+    } catch (error) {
+      console.error('Erro na repetição em massa:', error);
     } finally {
       setIsBulkProcessing(false);
     }
@@ -558,6 +598,14 @@ const BetsTab: React.FC<{
               <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Apostas Selecionadas</p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button 
+                onClick={handleBulkRepeat}
+                disabled={isBulkProcessing}
+                className="flex-1 sm:flex-none bg-emerald-600 text-white px-3 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg"
+              >
+                <RefreshCcw size={12} />
+                Repetir
+              </button>
               <button 
                 onClick={handleBulkValidate}
                 disabled={isBulkProcessing}

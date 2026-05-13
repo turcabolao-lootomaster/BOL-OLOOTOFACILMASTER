@@ -617,6 +617,7 @@ export const firebaseService = {
             contestNumber: number,
             status: 'pendente', // New bets start as pending for validation
             repeat: true, // Keep repeating
+            sellerCode: betData.sellerCode || '',
             createdAt: serverTimestamp(),
             hits: [0, 0, 0]
           });

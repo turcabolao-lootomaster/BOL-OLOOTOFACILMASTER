@@ -98,7 +98,7 @@ const MyBets: React.FC = () => {
             contestNumber: activeContest.number,
             numbers: [...bet.numbers],
             betName: bet.betName || '',
-            sellerCode: currentSellerCode || bet.sellerCode || '',
+            sellerCode: bet.sellerCode || currentSellerCode || '',
           });
           successCount++;
         } catch (err) {

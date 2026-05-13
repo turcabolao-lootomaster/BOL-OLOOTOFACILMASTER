@@ -1266,17 +1266,7 @@ const LiveRanking: React.FC = () => {
               </div>
             </div>
 
-            {/* Search Input */}
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
-              <input 
-                type="text" 
-                placeholder="Buscar..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl py-2 pl-9 pr-4 text-[10px] sm:text-xs focus:outline-none focus:border-lotofacil-purple/50 transition-all"
-              />
-            </div>
+            {/* Search Input Removed as per request */}
           </div>
         </div>
 
@@ -2010,11 +2000,11 @@ const PrizeCard: React.FC<PrizeCardProps> = ({
     <motion.div 
       whileHover={{ y: -4, scale: 1.01 }}
       className={cn(
-        "group relative flex flex-row items-center justify-between p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border transition-all duration-500 overflow-hidden",
+        "group relative flex flex-row items-center justify-between p-4 sm:p-7 rounded-[28px] sm:rounded-[40px] border transition-all duration-500 overflow-hidden",
         border,
         variant === 'bonus28' ? "bg-slate-950 text-white border-lotofacil-yellow/30 shadow-[0_20px_50px_rgba(0,0,0,0.4)]" :
         variant === 'bonus25' ? "bg-emerald-50 text-slate-900 border-emerald-500/20 shadow-[0_20px_50px_rgba(16,185,129,0.05)]" :
-        "bg-white border-slate-100 shadow-sm hover:shadow-md"
+        cn("bg-white border-slate-100 shadow-sm hover:shadow-xl hover:border-lotofacil-purple/20", bg)
       )}
     >
       {/* Decorative background elements */}
@@ -2032,21 +2022,24 @@ const PrizeCard: React.FC<PrizeCardProps> = ({
           </div>
         </>
       ) : (
-        <div className={cn(
-          "absolute top-0 right-0 w-32 h-32 -mr-12 -mt-12 rounded-full blur-3xl opacity-10 transition-transform group-hover:scale-150",
-          color.replace('text-', 'bg-')
-        )} />
+        <>
+          <div className={cn(
+            "absolute top-0 right-0 w-32 h-32 -mr-12 -mt-12 rounded-full blur-3xl opacity-20 transition-transform group-hover:scale-150",
+            color.replace('text-', 'bg-')
+          )} />
+          <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+        </>
       )}
       
       <div className="flex items-center gap-4 sm:gap-6 relative z-10 w-full">
         {/* Icon Container */}
         <div className={cn(
-          "w-14 h-14 sm:w-20 sm:h-20 rounded-[22px] sm:rounded-[28px] flex items-center justify-center shadow-2xl transition-all group-hover:rotate-0 duration-700 shrink-0",
+          "w-14 h-14 sm:w-20 sm:h-20 rounded-[22px] sm:rounded-[28px] flex items-center justify-center shadow-2xl transition-all group-hover:scale-110 duration-700 shrink-0",
           variant === 'bonus28' ? "bg-black text-lotofacil-yellow border border-lotofacil-yellow/50 -rotate-3" : 
           variant === 'bonus25' ? "bg-emerald-500 text-white rotate-3" : 
-          "bg-white border border-slate-50 shadow-inner"
+          cn("bg-white text-slate-900 border border-slate-50 shadow-inner group-hover:rotate-12", color)
         )}>
-          <Icon className={cn("w-7 h-7 sm:w-10 sm:h-10", (variant === 'default') && color)} />
+          <Icon className={cn("w-7 h-7 sm:w-10 sm:h-10")} />
         </div>
 
         {/* Content */}
@@ -2061,7 +2054,7 @@ const PrizeCard: React.FC<PrizeCardProps> = ({
               {pointsLabel || (variant === 'bonus28' ? "👑 Super Bônus" : variant === 'bonus25' ? "🔥 Bônus" : "Estimativa")}
             </p>
             <h3 className={cn(
-              "text-[10px] sm:text-2xl font-black uppercase tracking-widest truncate leading-tight",
+              "text-xs sm:text-2xl font-black uppercase tracking-widest truncate leading-tight",
               variant === 'bonus28' ? "text-white" : "text-slate-900"
             )}>
               {title.replace('🔥 ', '').replace('👑 ', '')}
@@ -2071,12 +2064,12 @@ const PrizeCard: React.FC<PrizeCardProps> = ({
             <div className="mt-2.5 flex">
               {(!isFinished || (count !== undefined && count > 0)) ? (
                 <div className={cn(
-                  "px-2 sm:px-4 py-1.5 rounded-full border text-[8px] sm:text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm transition-all duration-300",
+                  "px-2.5 sm:px-4 py-1.5 rounded-full border text-[8px] sm:text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm transition-all duration-300",
                   variant === 'bonus28' ? "bg-white/10 border-white/20 text-white" : 
                   variant === 'bonus25' ? "bg-white border-emerald-100 text-emerald-600" : 
-                  "bg-slate-50 border-slate-100 text-slate-600"
+                  "bg-white border-slate-200 text-slate-600 group-hover:border-lotofacil-purple/30 group-hover:text-lotofacil-purple"
                 )}>
-                  <span className={cn("w-1.5 h-1.5 rounded-full", isFinished ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-orange-400")} />
+                  <span className={cn("w-2 h-2 rounded-full", isFinished ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-orange-400")} />
                   {isFinished ? `${count || 0} Ganhadores` : "Aguardando..."}
                 </div>
               ) : (
@@ -2092,13 +2085,13 @@ const PrizeCard: React.FC<PrizeCardProps> = ({
 
           <div className="text-right shrink-0">
             <div className={cn(
-              "px-4 py-3 sm:px-10 sm:py-6 rounded-[22px] sm:rounded-[36px] border flex flex-col justify-center transition-all duration-500",
+              "px-3 py-3 sm:px-10 sm:py-6 rounded-[22px] sm:rounded-[36px] border flex flex-col justify-center transition-all duration-500",
               variant === 'bonus28' ? "bg-slate-900 border-lotofacil-yellow/20 shadow-2xl" : 
               variant === 'bonus25' ? "bg-white border-emerald-100 shadow-xl" : 
-              "bg-white border-slate-100 shadow-sm"
+              "bg-white border-slate-100 shadow-sm group-hover:shadow-xl group-hover:border-lotofacil-purple/10"
             )}>
               <p className={cn(
-                "text-sm sm:text-[46px] font-black tracking-tighter leading-none whitespace-nowrap",
+                "text-base sm:text-[46px] font-black tracking-tighter leading-none whitespace-nowrap",
                 variant === 'bonus28' ? "text-lotofacil-yellow" : 
                 variant === 'bonus25' ? "text-emerald-500" : 
                 color
