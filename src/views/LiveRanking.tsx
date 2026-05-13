@@ -915,29 +915,28 @@ const LiveRanking: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
-
-      {/* Optimized Header Section */}
-      <div className="flex flex-col gap-4 sm:gap-6 pt-2">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="px-1.5 py-0.5 bg-emerald-500 text-white rounded-md text-[8px] font-black uppercase tracking-widest animate-pulse shadow-sm">Live</div>
-              <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em]">Tempo Real</p>
+                    {/* Optimized Header Section */}
+      <div className="flex flex-col gap-3 sm:gap-6 pt-0 sm:pt-4">
+        <div className="flex items-start justify-between gap-3 sm:gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+              <div className="px-1 sm:px-1.5 py-0.5 bg-emerald-500 text-white rounded-[4px] text-[7px] sm:text-[8px] font-black uppercase tracking-widest animate-pulse shadow-sm">Live</div>
+              <p className="text-[8px] sm:text-[10px] font-black text-black uppercase tracking-[0.2em]">Tempo Real</p>
             </div>
-            <h1 className="text-xl sm:text-4xl font-display tracking-[0.2em] sm:tracking-[0.5em] text-slate-900 uppercase leading-tight">Classificação <span className="text-emerald-500">Ao Vivo</span></h1>
-            <p className="text-[10px] sm:text-xs text-slate-400 font-medium">Concurso #{activeContest.number} • {bets.length} Apostas Validadas</p>
+            <h1 className="text-lg sm:text-4xl font-display tracking-[0.1em] sm:tracking-[0.5em] text-slate-900 uppercase leading-tight truncate sm:whitespace-normal">Classificação <span className="text-emerald-500">Ao Vivo</span></h1>
+            <p className="text-[9px] sm:text-xs text-slate-400 font-medium truncate">Concurso #{activeContest.number} • {bets.length} Apostas</p>
             
             {isAdmin && (
-              <div className="flex flex-wrap items-center gap-2 mt-3">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3">
                 <button 
                   onClick={() => setShowPrizeEditModal(true)}
-                  className="px-2 py-1 bg-lotofacil-purple/10 text-lotofacil-purple rounded-lg text-[9px] font-bold uppercase tracking-widest border border-lotofacil-purple/10"
+                  className="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-[#52d60c] text-white rounded-lg text-[8px] sm:text-[9px] font-bold uppercase tracking-widest border border-lotofacil-purple/10"
                 >
-                  Editar Premiações
+                  Editar
                 </button>
                 <button 
                   onClick={() => setShowFinalizeConfirm(true)}
-                  className="px-2 py-1 bg-red-50 text-red-600 rounded-lg text-[9px] font-bold uppercase tracking-widest border border-red-100"
+                  className="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-red-50 text-red-600 rounded-lg text-[8px] sm:text-[9px] font-bold uppercase tracking-widest border border-red-100"
                 >
                   Finalizar
                 </button>
@@ -945,46 +944,32 @@ const LiveRanking: React.FC = () => {
             )}
           </div>
 
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-1.5 sm:gap-2 shrink-0">
             <motion.button 
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowPrizesModal(true)}
-              className="w-14 h-14 sm:w-20 sm:h-20 bg-white rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col items-center justify-center text-lotofacil-purple group relative overflow-hidden"
+              className="w-12 h-12 sm:w-20 sm:h-20 bg-white rounded-2xl sm:rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col items-center justify-center text-lotofacil-purple group relative overflow-hidden"
             >
                <div className="absolute inset-0 bg-lotofacil-purple/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-               <Gift size={24} className="sm:w-8 sm:h-8 mb-1" />
-               <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 group-hover:text-lotofacil-purple transition-colors">Prêmios</span>
-               <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+               <Gift size={20} className="sm:w-8 sm:h-8 mb-0.5 sm:mb-1" />
+               <span className="text-[6px] sm:text-[8px] font-black uppercase tracking-widest text-slate-400 group-hover:text-lotofacil-purple transition-colors">Prêmios</span>
+               <div className="absolute top-1 right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full border-2 border-white animate-pulse" />
             </motion.button>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button 
                 onClick={() => setShowDownloadOptionsModal(true)}
-                className="w-10 h-10 bg-white text-slate-400 rounded-2xl flex items-center justify-center hover:bg-slate-50 transition-all border border-slate-100 shadow-sm"
-                title="Download Relatórios"
+                className="w-8 h-8 sm:w-10 sm:h-10 bg-white text-slate-400 rounded-xl sm:rounded-2xl flex items-center justify-center hover:bg-slate-50 transition-all border border-slate-100 shadow-sm"
+                title="Download"
               >
-                <Download size={20} />
+                <Download size={16} className="sm:w-5 sm:h-5" />
               </button>
               <button 
                 onClick={() => setShowRulesModal(true)}
-                className="w-10 h-10 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center hover:bg-slate-100 transition-all border border-slate-100"
+                className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-50 text-slate-400 rounded-xl sm:rounded-2xl flex items-center justify-center hover:bg-slate-100 transition-all border border-slate-100"
               >
-                <HelpCircle size={20} />
+                <HelpCircle size={16} className="sm:w-5 sm:h-5" />
               </button>
             </div>
-          </div>
-        </div>
-
-        {/* Search row */}
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" size={18} />
-            <input
-              type="text"
-              placeholder="Buscar participante ou vendedor..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm text-sm"
-            />
           </div>
         </div>
       </div>
@@ -1228,44 +1213,44 @@ const LiveRanking: React.FC = () => {
 
       {/* Search and Table */}
       <div className="glass-card overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h2 className="text-sm sm:text-lg font-display tracking-widest text-slate-900 uppercase">RANKING DO <span className="text-lotofacil-purple">CONCURSO</span></h2>
+        <div className="p-3 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <h2 className="text-xs sm:text-lg font-display tracking-widest text-slate-900 uppercase">RANKING DO <span className="text-lotofacil-purple">CONCURSO</span></h2>
           
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto">
             {/* Sort Options */}
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">ORDENAR POR</span>
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 flex-1 sm:flex-none">
+              <span className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">ORDENAR</span>
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg sm:rounded-xl border border-slate-200 flex-1 sm:flex-none">
                 <button
                   onClick={() => setSortBy('points')}
-                className={cn(
-                  "flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
-                  sortBy === 'points' ? "bg-lotofacil-purple text-white shadow-md" : "text-slate-500 hover:bg-slate-200"
-                )}
-              >
-                Pontos
-              </button>
-              <button
-                onClick={() => setSortBy('name')}
-                className={cn(
-                  "flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
-                  sortBy === 'name' ? "bg-lotofacil-purple text-white shadow-md" : "text-slate-500 hover:bg-slate-200"
-                )}
-              >
-                A-Z
-              </button>
+                  className={cn(
+                    "flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-md sm:rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all",
+                    sortBy === 'points' ? "bg-lotofacil-purple text-white shadow-md" : "text-slate-500 hover:bg-slate-200"
+                  )}
+                >
+                  Pontos
+                </button>
+                <button
+                  onClick={() => setSortBy('name')}
+                  className={cn(
+                    "flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-md sm:rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all",
+                    sortBy === 'name' ? "bg-lotofacil-purple text-white shadow-md" : "text-slate-500 hover:bg-slate-200"
+                  )}
+                >
+                  A-Z
+                </button>
+              </div>
             </div>
-          </div>
 
             {/* Search Input */}
             <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
               <input 
                 type="text" 
-                placeholder="Buscar participante..."
+                placeholder="Buscar..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-50 border border-dark-border/40 rounded-xl py-2 pl-9 pr-4 text-xs focus:outline-none focus:border-lotofacil-purple/50 transition-all"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl py-2 pl-9 pr-4 text-[10px] sm:text-xs focus:outline-none focus:border-lotofacil-purple/50 transition-all"
               />
             </div>
           </div>
@@ -1288,11 +1273,11 @@ const LiveRanking: React.FC = () => {
             <div className="flex items-center justify-between relative z-10">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-lotofacil-purple animate-pulse shadow-[0_0_8px_rgba(147,51,234,0.8)]" />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-lotofacil-purple">
-                  RESULTADOS <span className="text-white/40 ml-1">#{activeContest.number}</span>
+                <p className="text-lotofacil-purple font-black uppercase tracking-[0.2em]" style={{ fontSize: '14px', color: '#f5f5f5' }}>
+                  RESULTADOS <span className="ml-1" style={{ color: '#eee6e6' }}>#{activeContest.number}</span>
                 </p>
               </div>
-              <div className="flex gap-1.5 bg-white/5 p-1 rounded-lg border border-white/10">
+              <div className="flex gap-1.5 p-1 rounded-lg border border-white/10" style={{ backgroundColor: '#030101' }}>
                 {[0, 1, 2].map(i => (
                   <button
                     key={i}
@@ -1301,8 +1286,11 @@ const LiveRanking: React.FC = () => {
                       "px-3 py-1 rounded-md text-[9px] font-black transition-all uppercase tracking-tighter",
                       selectedDraw === i 
                         ? "bg-lotofacil-purple text-white shadow-lg scale-105" 
-                        : "text-white/40 hover:text-white/70 hover:bg-white/5"
+                        : "hover:text-white/70 hover:bg-white/5"
                     )}
+                    style={{
+                      color: i === 0 ? '#0ded20' : i === 1 ? '#49ea11' : '#41ed0d'
+                    }}
                   >
                     S{i + 1}
                   </button>
@@ -1311,7 +1299,7 @@ const LiveRanking: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-1 relative z-10">
-              <p className="text-[8px] font-bold uppercase tracking-widest text-white/30">
+              <p className="font-bold uppercase tracking-widest" style={{ fontSize: '9px', color: '#85d707' }}>
                 {selectedDraw + 1}º Sorteio Realizado
               </p>
               <div className="grid grid-cols-10 gap-2 w-fit">
@@ -1329,8 +1317,8 @@ const LiveRanking: React.FC = () => {
                   ))
                 ) : (
                   <div className="col-span-10 flex items-center gap-2 py-2">
-                    <Clock className="w-3 h-3 text-white/20 animate-spin-slow" />
-                    <p className="text-[10px] text-white/20 font-bold uppercase tracking-widest italic">Aguardando sorteio oficial...</p>
+                    <Clock className="w-3 h-3 animate-spin-slow" style={{ color: '#ffffff' }} />
+                    <p className="text-[10px] font-bold uppercase tracking-widest italic" style={{ color: '#f5f5f5' }}>Aguardando sorteio oficial...</p>
                   </div>
                 )}
               </div>
@@ -1340,10 +1328,10 @@ const LiveRanking: React.FC = () => {
           <table className="w-full text-left border-collapse min-w-full sm:min-w-[800px] compact-table relative">
             <thead className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm">
               <tr className="border-b border-slate-100">
-                <th className="px-1 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest font-black text-slate-400 w-8 sm:w-12 text-center">Pos</th>
-                <th className="px-1 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest font-black text-slate-400">Participante</th>
-                <th className="px-1 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest font-black text-slate-400 text-center">Vendedor</th>
-                <th className="px-2 py-4 text-[9px] uppercase tracking-widest font-black text-slate-400 text-center hidden sm:table-cell">Números da Aposta</th>
+                <th className="px-1 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest font-black text-black w-8 sm:w-12 text-center">Pos</th>
+                <th className="px-1 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest font-black text-black">Participante</th>
+                <th className="px-1 py-4 text-[8px] sm:text-[9px] uppercase tracking-widest font-black text-black text-center">Vendedor</th>
+                <th className="px-2 py-4 text-[9px] uppercase tracking-widest font-black text-black text-center hidden sm:table-cell">Números da Aposta</th>
                 {[1, 2, 3].map((num, i) => (
                   <th 
                     key={num} 
@@ -1351,15 +1339,15 @@ const LiveRanking: React.FC = () => {
                     className={cn(
                       "px-1 py-4 text-[10px] sm:text-xs uppercase tracking-tighter font-black text-center w-8 sm:w-20 cursor-pointer transition-all shrink-0",
                       selectedDraw === i ? "bg-lotofacil-purple text-white shadow-inner" : 
-                      i === 0 ? "text-blue-500" :
+                      i === 0 ? "text-black" :
                       i === 1 ? "text-emerald-500" :
-                      "text-purple-500"
+                      "text-black"
                     )}
                   >
                     S{num}
                   </th>
                 ))}
-                <th className="px-1 py-4 text-[10px] sm:text-xs uppercase tracking-tighter font-black text-lotofacil-purple text-center w-10 sm:w-24 shrink-0 bg-purple-50/30">Total</th>
+                <th className="px-1 py-4 uppercase tracking-tighter font-black text-center w-10 sm:w-24 shrink-0 bg-purple-50/30" style={{ color: '#7c9f04', fontSize: '12px' }}>Total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -1401,7 +1389,7 @@ const LiveRanking: React.FC = () => {
                         "hover:bg-slate-50"
                       )}
                     >
-                      <td className="px-0.5 py-3">
+                      <td className="px-0.5 py-2.5 sm:py-3">
                         <div className="relative w-fit mx-auto">
                           <div className={cn(
                             "w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center text-[9px] sm:text-[10px] font-bold",
@@ -1415,7 +1403,7 @@ const LiveRanking: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-1 py-3 pr-4">
+                      <td className="px-1 py-2.5 sm:py-3 pr-4">
                         <div className="flex items-center justify-end gap-1">
                           <p className={cn(
                             "text-[10px] sm:text-xs font-bold uppercase truncate max-w-[100px] sm:max-w-none leading-tight",
@@ -1478,7 +1466,7 @@ const LiveRanking: React.FC = () => {
                           </div>
                         )}
                       </td>
-                      <td className="px-1 py-3 text-center">
+                      <td className="px-1 py-2.5 sm:py-3 text-center">
                         <p className={cn(
                           "text-[7px] sm:text-[9px] uppercase tracking-widest font-bold",
                           isExpanded ? "text-white/60" : "text-lotofacil-purple"
@@ -1486,7 +1474,7 @@ const LiveRanking: React.FC = () => {
                           {b.sellerCode || '-'}
                         </p>
                       </td>
-                      <td className="px-2 py-3 hidden sm:table-cell">
+                      <td className="px-2 py-2.5 sm:py-3 hidden sm:table-cell">
                         <div className="flex items-center justify-center gap-1">
                           {b.numbers.map(num => {
                             const isHit = currentDrawResults.includes(num);
@@ -1507,7 +1495,7 @@ const LiveRanking: React.FC = () => {
                         </div>
                       </td>
                       <td className={cn(
-                        "px-0.5 py-3 text-center transition-all",
+                        "px-0.5 py-2.5 sm:py-3 text-center transition-all",
                         isExpanded ? "bg-white/5" : selectedDraw === 0 ? "bg-lotofacil-purple/10" : "bg-blue-50/30"
                       )}>
                         <span className={cn(
@@ -1518,7 +1506,7 @@ const LiveRanking: React.FC = () => {
                         </span>
                       </td>
                       <td className={cn(
-                        "px-0.5 py-3 text-center transition-all",
+                        "px-0.5 py-2.5 sm:py-3 text-center transition-all",
                         isExpanded ? "bg-white/10" : selectedDraw === 1 ? "bg-lotofacil-purple/10" : "bg-green-50/30"
                       )}>
                         <span className={cn(
@@ -1529,7 +1517,7 @@ const LiveRanking: React.FC = () => {
                         </span>
                       </td>
                       <td className={cn(
-                        "px-0.5 py-3 text-center transition-all",
+                        "px-0.5 py-2.5 sm:py-3 text-center transition-all",
                         isExpanded ? "bg-white/5" : selectedDraw === 2 ? "bg-lotofacil-purple/10" : "bg-purple-50/30"
                       )}>
                         <span className={cn(
@@ -1540,7 +1528,7 @@ const LiveRanking: React.FC = () => {
                         </span>
                       </td>
                       <td className={cn(
-                        "px-0.5 py-3 text-center transition-all",
+                        "px-0.5 py-2.5 sm:py-3 text-center transition-all",
                         isExpanded ? "bg-white/10" : "bg-[#1e3a8a] border-x border-white/10"
                       )}>
                         <div className="flex flex-col items-center">
