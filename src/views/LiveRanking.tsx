@@ -44,6 +44,7 @@ const LiveRanking: React.FC = () => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [sortBy, setSortBy] = useState<'points' | 'name'>('name');
 
   useEffect(() => {
@@ -1266,7 +1267,56 @@ const LiveRanking: React.FC = () => {
               </div>
             </div>
 
-            {/* Search Input Removed as per request */}
+            {/* Compact Search Mechanism */}
+            <div className="flex items-center">
+              <motion.div 
+                initial={false}
+                animate={{ 
+                  width: isSearchExpanded ? (window.innerWidth > 640 ? 256 : '100%') : 40,
+                  backgroundColor: isSearchExpanded ? 'rgb(248 250 252)' : 'rgba(248, 250, 252, 0)'
+                }}
+                className={cn(
+                  "relative flex items-center transition-all duration-300 rounded-xl overflow-hidden",
+                  isSearchExpanded ? "border border-slate-200" : "border border-transparent"
+                )}
+              >
+                <button 
+                  onClick={() => {
+                    if (isSearchExpanded && searchTerm) {
+                      setSearchTerm('');
+                    } else {
+                      setIsSearchExpanded(!isSearchExpanded);
+                    }
+                  }}
+                  className={cn(
+                    "w-10 h-10 flex items-center justify-center transition-all shrink-0",
+                    isSearchExpanded ? "text-slate-400" : "text-slate-400 hover:text-lotofacil-purple hover:bg-slate-100 rounded-xl border border-slate-200"
+                  )}
+                >
+                  {isSearchExpanded && searchTerm ? (
+                    <X size={14} className="text-lotofacil-purple" />
+                  ) : (
+                    <Search size={14} />
+                  )}
+                </button>
+                
+                <AnimatePresence>
+                  {isSearchExpanded && (
+                    <motion.input
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: 'auto' }}
+                      exit={{ opacity: 0, width: 0 }}
+                      type="text"
+                      placeholder="Pesquisar..."
+                      autoFocus
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full bg-transparent border-none py-2 pr-4 text-[10px] sm:text-xs focus:outline-none placeholder:text-slate-400 font-medium"
+                    />
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            </div>
           </div>
         </div>
 
