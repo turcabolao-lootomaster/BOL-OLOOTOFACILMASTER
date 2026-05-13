@@ -44,7 +44,14 @@ const LiveRanking: React.FC = () => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'points' | 'name'>('points');
+  const [sortBy, setSortBy] = useState<'points' | 'name'>('name');
+
+  useEffect(() => {
+    if (activeContest) {
+      const hasResults = activeContest.draws.some(d => d.results && d.results.length > 0);
+      setSortBy(hasResults ? 'points' : 'name');
+    }
+  }, [activeContest?.draws]);
   const [selectedDraw, setSelectedDraw] = useState(0);
   const [expandedBetId, setExpandedBetId] = useState<string | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -947,11 +954,28 @@ const LiveRanking: React.FC = () => {
           <div className="flex flex-col items-center gap-1.5 sm:gap-2 shrink-0">
             <motion.button 
               whileTap={{ scale: 0.95 }}
+              animate={{ 
+                boxShadow: [
+                  "0 0 0 rgba(147, 51, 234, 0)", 
+                  "0 0 20px rgba(147, 51, 234, 0.4)", 
+                  "0 0 0 rgba(147, 51, 234, 0)"
+                ] 
+              }}
+              transition={{ 
+                duration: 2, 
+                repeat: Infinity, 
+                ease: "easeInOut" 
+              }}
               onClick={() => setShowPrizesModal(true)}
-              className="w-12 h-12 sm:w-20 sm:h-20 bg-white rounded-2xl sm:rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col items-center justify-center text-lotofacil-purple group relative overflow-hidden"
+              className="w-12 h-12 sm:w-20 sm:h-20 bg-white rounded-2xl sm:rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.05)] border border-emerald-100 flex flex-col items-center justify-center text-lotofacil-purple group relative overflow-hidden"
             >
                <div className="absolute inset-0 bg-lotofacil-purple/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-               <Gift size={20} className="sm:w-8 sm:h-8 mb-0.5 sm:mb-1" />
+               <motion.div
+                 animate={{ scale: [1, 1.2, 1] }}
+                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+               >
+                 <Gift size={20} className="sm:w-8 sm:h-8 mb-0.5 sm:mb-1" />
+               </motion.div>
                <span className="text-[6px] sm:text-[8px] font-black uppercase tracking-widest text-slate-400 group-hover:text-lotofacil-purple transition-colors">Prêmios</span>
                <div className="absolute top-1 right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full border-2 border-white animate-pulse" />
             </motion.button>
