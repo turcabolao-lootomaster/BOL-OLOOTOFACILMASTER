@@ -44,7 +44,7 @@ const LiveRanking: React.FC = () => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(true);
   const [sortBy, setSortBy] = useState<'points' | 'name'>('name');
 
   useEffect(() => {
@@ -231,8 +231,8 @@ const LiveRanking: React.FC = () => {
 
   const rapidinhaWinnersCount = bets.filter(b => (b.hits?.[0] || 0) === maxS1Hits && maxS1Hits > 0).length;
 
-  const winners28Plus = rankingWithRanks.filter(b => b.rank === 1 && b.totalHits >= 28);
-  const winners25Plus = rankingWithRanks.filter(b => b.rank === 1 && b.totalHits >= 25 && b.totalHits < 28);
+  const winners28Plus = rankingWithRanks.filter(b => b.totalHits >= 28);
+  const winners25Plus = rankingWithRanks.filter(b => b.totalHits >= 25 && b.totalHits < 28);
 
   const isDraw1Finished = activeContest.draws?.[0]?.status === 'concluido';
   const isDraw2Finished = activeContest.draws?.[1]?.status === 'concluido';
@@ -455,17 +455,75 @@ const LiveRanking: React.FC = () => {
 
     // Prize Cards in Header (Grid Layout matching the app)
     const prizeCards = [
-      { label: 'RAPIDINHA', value: prizes.rapidinha, color: [255, 251, 235], textColor: [217, 119, 6] },
-      { label: '1º LUGAR', value: prizes.campeao, color: [245, 243, 255], textColor: [124, 58, 237] },
-      { label: '2º LUGAR', value: prizes.vice, color: [239, 246, 255], textColor: [37, 99, 235] },
-      { label: '1º SORTEIO 10 PTS', value: prizes.fixed10PtsDraw1, color: [255, 247, 237], textColor: [234, 88, 12] },
-      { label: '2º SORTEIO 10 PTS', value: prizes.fixed10PtsDraw2, color: [255, 247, 237], textColor: [234, 88, 12] },
-      { label: '3º SORTEIO 10 PTS', value: prizes.fixed10PtsDraw3, color: [255, 247, 237], textColor: [234, 88, 12] }
+      { 
+        label: 'RAPIDINHA', 
+        value: prizes.rapidinha, 
+        color: [255, 251, 235], 
+        textColor: [217, 119, 6],
+        count: rapidinhaWinnersCount,
+        isFinished: isDraw1Finished
+      },
+      { 
+        label: '1º LUGAR', 
+        value: prizes.campeao, 
+        color: [245, 243, 255], 
+        textColor: [124, 58, 237],
+        count: rankingWithRanks.filter(b => b.rank === 1 && maxTotalHits > 0).length,
+        isFinished: isThirdDrawFinished
+      },
+      { 
+        label: '2º LUGAR', 
+        value: prizes.vice, 
+        color: [239, 246, 255], 
+        textColor: [37, 99, 235],
+        count: rankingWithRanks.filter(b => b.rank === 2 && secondMaxTotalHits > 0).length,
+        isFinished: isThirdDrawFinished
+      },
+      { 
+        label: '1º SORTEIO 10 PTS', 
+        value: prizes.fixed10PtsDraw1, 
+        color: [255, 247, 237], 
+        textColor: [234, 88, 12],
+        count: winners10Pts[0].length,
+        isFinished: isDraw1Finished
+      },
+      { 
+        label: '2º SORTEIO 10 PTS', 
+        value: prizes.fixed10PtsDraw2, 
+        color: [255, 247, 237], 
+        textColor: [234, 88, 12],
+        count: winners10Pts[1].length,
+        isFinished: isDraw2Finished
+      },
+      { 
+        label: '3º SORTEIO 10 PTS', 
+        value: prizes.fixed10PtsDraw3, 
+        color: [255, 247, 237], 
+        textColor: [234, 88, 12],
+        count: winners10Pts[2].length,
+        isFinished: isThirdDrawFinished
+      }
     ];
 
     const bonusCards = [
-      { label: 'SUPER BÔNUS 28', value: prizes.fixed28Plus, color: [15, 23, 42], sub: '28 PTS NA SOMA TOTAL', isSuper: true },
-      { label: 'BÔNUS 25', value: prizes.fixed25Plus, color: [16, 185, 129], sub: '25 PTS NA SOMA TOTAL', isSuper: false }
+      { 
+        label: 'SUPER BÔNUS 28', 
+        value: prizes.fixed28Plus, 
+        color: [15, 23, 42], 
+        sub: '28 PTS NA SOMA TOTAL', 
+        isSuper: true,
+        count: winners28Plus.length,
+        isFinished: isDraw1Finished && isDraw2Finished && isThirdDrawFinished
+      },
+      { 
+        label: 'BÔNUS 25', 
+        value: prizes.fixed25Plus, 
+        color: [16, 185, 129], 
+        sub: '25 PTS NA SOMA TOTAL', 
+        isSuper: false,
+        count: winners25Plus.length,
+        isFinished: isDraw1Finished && isDraw2Finished && isThirdDrawFinished
+      }
     ];
 
     const cardWidth = (pageWidth - 40) / 3;
@@ -487,9 +545,18 @@ const LiveRanking: React.FC = () => {
       doc.setTextColor(255, 255, 255);
       doc.text(card.sub, startX + 25, y + 12);
       
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setTextColor(255, 255, 255);
-      doc.text(card.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), pageWidth - 20, y + 10, { align: 'right' });
+      const valToPrint = card.count > 1 ? (card.value / card.count) : card.value;
+      const mainText = valToPrint.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + (card.count > 1 ? " cada" : "");
+      doc.text(mainText, pageWidth - 20, y + 10, { align: 'right' });
+
+      doc.setFontSize(6.5);
+      doc.setTextColor(255, 255, 255);
+      const statusText = card.isFinished 
+        ? `${card.count} Ganhador(es)` 
+        : "Aguardando conclusão...";
+      doc.text(statusText, pageWidth - 20, y + 14, { align: 'right' });
     });
 
     const prizeCardsStartY = startY + (16 + 3) * 2 + 5;
@@ -510,20 +577,25 @@ const LiveRanking: React.FC = () => {
       
       doc.setFontSize(5);
       doc.setTextColor(148, 163, 184);
-      doc.text('ESTIMATIVA', x + cardWidth - 5, y + 6, { align: 'right' });
+      doc.text(card.isFinished ? 'VALOR PAGO' : 'ESTIMATIVA', x + cardWidth - 5, y + 6, { align: 'right' });
       
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setTextColor(card.textColor[0], card.textColor[1], card.textColor[2]);
       doc.setFont('helvetica', 'bold');
-      doc.text(card.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), x + cardWidth - 5, y + 12, { align: 'right' });
+      const valToPrint = card.isFinished && card.count > 1 ? (card.value / card.count) : card.value;
+      const prizeValStr = valToPrint.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + (card.isFinished && card.count > 1 ? " cada" : "");
+      doc.text(prizeValStr, x + cardWidth - 5, y + 11, { align: 'right' });
       
       doc.setFontSize(6);
       doc.setTextColor(30, 41, 59);
-      doc.text(card.label, x + cardWidth - 5, y + 17, { align: 'right' });
+      doc.text(card.label, x + cardWidth - 5, y + 16, { align: 'right' });
       
-      doc.setFontSize(4);
+      doc.setFontSize(4.5);
       doc.setTextColor(148, 163, 184);
-      doc.text('0 GANHADOR(ES) NO...', x + cardWidth - 5, y + 20, { align: 'right' });
+      const statusStr = card.isFinished 
+        ? `${card.count} GANHADOR(ES)` 
+        : 'AGUARDANDO...';
+      doc.text(statusStr, x + cardWidth - 5, y + 20, { align: 'right' });
     });
 
     // Subheader Info - Centralized
@@ -604,13 +676,15 @@ const LiveRanking: React.FC = () => {
       const isRapidinha = hits[0] === maxS1Hits && maxS1Hits > 0;
       const has10Pts = hits[0] >= 10 || hits[1] >= 10 || hits[2] >= 10;
       const has28Plus = b.totalHits >= 28;
+      const has25Plus = b.totalHits >= 25 && b.totalHits < 28;
 
       const prizeLabels = [];
       if (isChampion) prizeLabels.push('[1º LUGAR]');
       if (isVice) prizeLabels.push('[2º LUGAR]');
       if (isRapidinha) prizeLabels.push('[RAPIDINHA]');
       if (has10Pts) prizeLabels.push('[10 PONTOS]');
-      if (has28Plus) prizeLabels.push('[28+ PONTOS]');
+      if (has28Plus) prizeLabels.push('[BÔNUS 28]');
+      if (has25Plus) prizeLabels.push('[BÔNUS 25]');
 
       const nameWithPrizes = `${(b.betName || b.userName).toUpperCase()} ${prizeLabels.join(' ')}`.trim();
       
@@ -1267,55 +1341,32 @@ const LiveRanking: React.FC = () => {
               </div>
             </div>
 
-            {/* Compact Search Mechanism */}
-            <div className="flex items-center">
-              <motion.div 
-                initial={false}
-                animate={{ 
-                  width: isSearchExpanded ? (window.innerWidth > 640 ? 256 : '100%') : 40,
-                  backgroundColor: isSearchExpanded ? 'rgb(248 250 252)' : 'rgba(248, 250, 252, 0)'
-                }}
-                className={cn(
-                  "relative flex items-center transition-all duration-300 rounded-xl overflow-hidden",
-                  isSearchExpanded ? "border border-slate-200" : "border border-transparent"
-                )}
+            {/* Displaying Always Open Highlighted Search Mechanism */}
+            <div className="flex items-center w-full sm:w-72">
+              <div 
+                className="relative flex items-center w-full rounded-xl border-2 border-lotofacil-purple/40 bg-purple-50/50 hover:bg-purple-50 hover:border-lotofacil-purple/60 transition-all duration-300 shadow-sm"
               >
-                <button 
-                  onClick={() => {
-                    if (isSearchExpanded && searchTerm) {
-                      setSearchTerm('');
-                    } else {
-                      setIsSearchExpanded(!isSearchExpanded);
-                    }
-                  }}
-                  className={cn(
-                    "w-10 h-10 flex items-center justify-center transition-all shrink-0",
-                    isSearchExpanded ? "text-slate-400" : "text-slate-400 hover:text-lotofacil-purple hover:bg-slate-100 rounded-xl border border-slate-200"
-                  )}
-                >
-                  {isSearchExpanded && searchTerm ? (
-                    <X size={14} className="text-lotofacil-purple" />
-                  ) : (
-                    <Search size={14} />
-                  )}
-                </button>
+                <div className="w-10 h-10 flex items-center justify-center text-lotofacil-purple shrink-0">
+                  <Search size={15} className="stroke-[2.5]" />
+                </div>
                 
-                <AnimatePresence>
-                  {isSearchExpanded && (
-                    <motion.input
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: 'auto' }}
-                      exit={{ opacity: 0, width: 0 }}
-                      type="text"
-                      placeholder="Pesquisar..."
-                      autoFocus
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full bg-transparent border-none py-2 pr-4 text-[10px] sm:text-xs focus:outline-none placeholder:text-slate-400 font-medium"
-                    />
-                  )}
-                </AnimatePresence>
-              </motion.div>
+                <input
+                  type="text"
+                  placeholder="Pesquisar..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-transparent border-none py-2 pr-2 text-xs focus:outline-none placeholder:text-lotofacil-purple/50 text-lotofacil-purple font-bold uppercase transition-all"
+                />
+
+                {searchTerm && (
+                  <button 
+                    onClick={() => setSearchTerm('')}
+                    className="w-8 h-8 flex items-center justify-center text-lotofacil-purple/60 hover:text-lotofacil-purple hover:bg-purple-200/50 rounded-lg mr-1 shrink-0 transition-all"
+                  >
+                    <X size={14} className="stroke-[2.5]" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1425,8 +1476,8 @@ const LiveRanking: React.FC = () => {
                 const isVice = totalHits === secondMaxTotalHits && secondMaxTotalHits > 0;
                 const isRapidinha = hits[0] === maxS1Hits && maxS1Hits > 0;
                 const has10Pts = hits[0] >= 10 || hits[1] >= 10 || hits[2] >= 10;
-                const has28Plus = totalHits >= 28 && b.rank === 1;
-                const has25Plus = totalHits >= 25 && b.rank === 1;
+                const has28Plus = totalHits >= 28;
+                const has25Plus = totalHits >= 25;
 
                 const prizeNames = [];
                 if (isChampion) prizeNames.push('1º LUGAR');
@@ -1602,9 +1653,9 @@ const LiveRanking: React.FC = () => {
                           )}>
                             {totalHits}
                           </span>
-                          {totalHits >= 25 && b.rank === 1 && (
+                          {totalHits >= 25 && (
                             <span className={cn(
-                              "text-[6px] font-bold px-1 rounded bg-white text-[#1e3a8a]"
+                              "text-[6px] font-bold px-1 rounded bg-white text-[#1e3a8a] mt-0.5"
                             )}>
                               BÔNUS {totalHits >= 28 ? '28' : '25'}
                             </span>
@@ -2141,13 +2192,29 @@ const PrizeCard: React.FC<PrizeCardProps> = ({
               "bg-white border-slate-100 shadow-sm group-hover:shadow-xl group-hover:border-lotofacil-purple/10"
             )}>
               <p className={cn(
-                "text-base sm:text-[46px] font-black tracking-tighter leading-none whitespace-nowrap",
+                "text-base sm:text-[40px] font-black tracking-tighter leading-none whitespace-nowrap",
                 variant === 'bonus28' ? "text-lotofacil-yellow" : 
                 variant === 'bonus25' ? "text-emerald-500" : 
                 color
               )}>
-                {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                {count && count > 1 
+                  ? (value / count).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                  : value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                }
+                {count && count > 1 && (
+                  <span className="text-[10px] sm:text-lg font-black uppercase tracking-normal h-fit ml-1 opacity-80">
+                    cada
+                  </span>
+                )}
               </p>
+              {count && count > 1 && (
+                <p className={cn(
+                  "text-[8px] sm:text-[10px] font-black uppercase tracking-wider mt-1.5",
+                  variant === 'bonus28' ? "text-slate-400" : "text-slate-500"
+                )}>
+                  Total {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })} div. por {count}
+                </p>
+              )}
             </div>
             {onInfoClick && (
               <button 

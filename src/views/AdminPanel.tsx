@@ -191,6 +191,8 @@ const BetsTab: React.FC<{
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'pendente' | 'validado' | 'rejeitado' | 'todos'>('pendente');
+  const [contestFilter, setContestFilter] = useState<string>('todos');
+  const [contests, setContests] = useState<Contest[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -203,6 +205,10 @@ const BetsTab: React.FC<{
   const fetchBets = async () => {
     setLoading(true);
     try {
+      // Also fetch contests for the filter
+      const allContests = await firebaseService.getAllContests();
+      setContests(allContests);
+
       let fetchedBets: Bet[] = [];
       if (statusFilter === 'pendente') {
         fetchedBets = await firebaseService.getAllPendingBets();
@@ -302,6 +308,8 @@ const BetsTab: React.FC<{
             numbers: [...bet.numbers],
             betName: bet.betName || '',
             sellerCode: bet.sellerCode || '',
+            sellerId: bet.sellerId || '',
+            repeat: bet.repeat || false
           });
           successCount++;
         } catch (err) {
@@ -407,11 +415,16 @@ const BetsTab: React.FC<{
     XLSX.writeFile(workbook, filename);
   };
 
-  const filteredBets = bets.filter(b => 
-    b.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (b.betName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (b.sellerCode || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBets = bets.filter(b => {
+    const matchesSearch = 
+      b.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (b.betName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (b.sellerCode || '').toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesContest = contestFilter === 'todos' || b.contestId === contestFilter;
+    
+    return matchesSearch && matchesContest;
+  });
 
   return (
     <div className="space-y-4 sm:space-y-8">
@@ -424,6 +437,16 @@ const BetsTab: React.FC<{
           </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <select 
+            value={contestFilter}
+            onChange={(e) => setContestFilter(e.target.value)}
+            className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-[10px] sm:text-xs text-slate-900 focus:outline-none focus:border-lotofacil-purple/50"
+          >
+            <option value="todos">Todos Concursos</option>
+            {contests.map(c => (
+              <option key={c.id} value={c.id}>Concurso #{c.number}</option>
+            ))}
+          </select>
           <select 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
@@ -645,8 +668,10 @@ const BetsTab: React.FC<{
                 </div>
               </th>
               <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-bold text-lotofacil-purple">Data</th>
+              <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-bold text-center text-lotofacil-purple">Conc.</th>
               <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-bold text-lotofacil-purple">Cliente / Vendedor</th>
               <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-bold text-center text-lotofacil-purple">Números Escolhidos</th>
+              <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-bold text-center text-lotofacil-purple">Pontos (S1/S2/S3)</th>
               <th className="px-4 py-3 text-[9px] uppercase tracking-widest text-slate-500 font-bold text-center">Ações</th>
             </tr>
           </thead>
@@ -679,6 +704,11 @@ const BetsTab: React.FC<{
                 <td className="px-4 py-4 text-[10px] text-slate-600 uppercase tracking-widest">
                   {bet.createdAt instanceof Date ? bet.createdAt.toLocaleDateString() : 'Recent'}
                 </td>
+                <td className="px-4 py-4 text-center">
+                  <span className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-600 border border-slate-200 mx-auto">
+                    #{bet.contestNumber}
+                  </span>
+                </td>
                 <td className="px-4 py-4">
                   <p className="text-xs font-bold text-slate-900 truncate max-w-[150px]">
                     {bet.betName || bet.userName}
@@ -691,6 +721,18 @@ const BetsTab: React.FC<{
                     {bet.numbers.sort((a, b) => a - b).map((num, i) => (
                       <span key={i} className="w-6 h-6 rounded-full bg-slate-100 text-slate-900 text-[10px] font-bold flex items-center justify-center border border-slate-200">
                         {num.toString().padStart(2, '0')}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-4 py-4 text-center">
+                  <div className="flex justify-center gap-1">
+                    {(bet.hits || [0, 0, 0]).map((h, i) => (
+                      <span key={i} className={cn(
+                        "px-1.5 py-0.5 rounded text-[8px] font-black",
+                        h >= 10 ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-600"
+                      )}>
+                        {h}
                       </span>
                     ))}
                   </div>
@@ -3940,44 +3982,42 @@ const WinnersTab: React.FC = () => {
       }
 
       // Bonus 25/28
-      const topBets = sortedParticipants.filter(p => p.score >= 25);
-      if (topBets.length > 0) {
-        const topScore = topBets[0].score;
-        if (topScore >= 28) {
-          const winners28 = topBets.filter(p => p.score === topScore);
-          const prize28 = (contest.displayPrizes as any)?.bonus28 !== undefined 
-            ? parseFloat((contest.displayPrizes as any).bonus28)
-            : (contest.prizeConfig?.fixed28PlusTotal || 7000);
-          
-          const perWinner = prize28 / winners28.length;
-          winners28.forEach(w => {
-            winnersByDraw.push({
-              draw: 'Bônus',
-              name: w.betName,
-              code: w.sellerCode,
-              hits: w.score,
-              prize: perWinner,
-              type: 'SUPER BÔNUS 28'
-            });
+      const winners28 = sortedParticipants.filter(p => p.score >= 28);
+      if (winners28.length > 0) {
+        const prize28 = (contest.displayPrizes as any)?.bonus28 !== undefined 
+          ? parseFloat((contest.displayPrizes as any).bonus28)
+          : (contest.prizeConfig?.fixed28PlusTotal || 7000);
+        
+        const perWinner = prize28 / winners28.length;
+        winners28.forEach(w => {
+          winnersByDraw.push({
+            draw: 'Bônus',
+            name: w.betName,
+            code: w.sellerCode,
+            hits: w.score,
+            prize: perWinner,
+            type: 'SUPER BÔNUS 28'
           });
-        } else if (topScore >= 25) {
-          const winners25 = topBets.filter(p => p.score === topScore);
-          const prize25 = (contest.displayPrizes as any)?.bonus25 !== undefined 
-            ? parseFloat((contest.displayPrizes as any).bonus25)
-            : (contest.prizeConfig?.fixed25PlusTotal || 2000);
-          
-          const perWinner = prize25 / winners25.length;
-          winners25.forEach(w => {
-            winnersByDraw.push({
-              draw: 'Bônus',
-              name: w.betName,
-              code: w.sellerCode,
-              hits: w.score,
-              prize: perWinner,
-              type: 'BÔNUS 25'
-            });
+        });
+      }
+
+      const winners25 = sortedParticipants.filter(p => p.score >= 25 && p.score < 28);
+      if (winners25.length > 0) {
+        const prize25 = (contest.displayPrizes as any)?.bonus25 !== undefined 
+          ? parseFloat((contest.displayPrizes as any).bonus25)
+          : (contest.prizeConfig?.fixed25PlusTotal || 2000);
+        
+        const perWinner = prize25 / winners25.length;
+        winners25.forEach(w => {
+          winnersByDraw.push({
+            draw: 'Bônus',
+            name: w.betName,
+            code: w.sellerCode,
+            hits: w.score,
+            prize: perWinner,
+            type: 'BÔNUS 25'
           });
-        }
+        });
       }
 
       setReportData(winnersByDraw);

@@ -618,6 +618,7 @@ export const firebaseService = {
             status: 'pendente', // New bets start as pending for validation
             repeat: true, // Keep repeating
             sellerCode: betData.sellerCode || '',
+            sellerId: betData.sellerId || '',
             createdAt: serverTimestamp(),
             hits: [0, 0, 0]
           });
@@ -1123,6 +1124,8 @@ export const firebaseService = {
         
         await updateDoc(docRef, { draws: updatedDraws });
 
+        console.log(`Updated draw ${drawNumber} results in contest ${contestId}`);
+
         // Update hits for all bets in this contest in batches
         const betsQuery = query(collection(db, 'bets'), where('contestId', '==', contestId));
         const betsSnap = await getDocs(betsQuery);
@@ -1134,10 +1137,19 @@ export const firebaseService = {
         
         for (const betDoc of betsSnap.docs) {
           const betData = betDoc.data() as Bet;
+          if (!betData.numbers || !Array.isArray(betData.numbers)) {
+            console.warn(`Bet ${betDoc.id} has invalid numbers:`, betData.numbers);
+            continue;
+          }
+
           const hits = [...(betData.hits || [0, 0, 0])];
           
           // Calculate hits for this specific draw
-          const drawHits = betData.numbers.filter(n => results.includes(n)).length;
+          // Force numbers to be integers just in case
+          const numResults = results.map(n => parseInt(n as any));
+          const betNums = betData.numbers.map(n => parseInt(n as any));
+          
+          const drawHits = betNums.filter(n => numResults.includes(n)).length;
           hits[drawNumber - 1] = drawHits;
           
           batch.update(doc(db, 'bets', betDoc.id), { hits });

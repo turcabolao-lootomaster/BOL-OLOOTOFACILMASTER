@@ -21,6 +21,7 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [pendingBets, setPendingBets] = useState<number[][]>([]);
   const [sellerCode, setSellerCode] = useState('');
+  const [sellerId, setSellerId] = useState('');
   const [isSellerLink, setIsSellerLink] = useState(false);
   const [betName, setBetName] = useState('');
   const [showInfoTip, setShowInfoTip] = useState(false);
@@ -84,6 +85,7 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
           setIsSellerLink(true);
           const seller = await firebaseService.getSellerByCode(finalSellerCode);
           if (seller) {
+            setSellerId(seller.id);
             const ws = seller.whatsapp || await firebaseService.getSellerWhatsApp(seller.userId);
             if (ws) setSellerWhatsApp(ws);
             if (seller.pixKey) setSellerPixKey(seller.pixKey);
@@ -234,6 +236,7 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
           numbers: [...numbers],
           betName: cleanBetName,
           sellerCode: sellerCode || '',
+          sellerId: sellerId || ''
         });
         if (id) {
           ids.push(id);

@@ -262,7 +262,6 @@ const CurrentContest: React.FC = () => {
                             <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
                               {bet.betName || bet.userName}
                             </p>
-                            <p className="text-[8px] sm:text-[9px] text-slate-400 uppercase tracking-widest mt-0.5 font-medium">ID: {bet.userId.slice(-6).toUpperCase()}</p>
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {bet.numbers.map(num => {
