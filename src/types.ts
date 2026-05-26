@@ -8,6 +8,7 @@ export type UserRole = 'master' | 'admin' | 'vendedor' | 'cliente';
 export interface User {
   id: string;
   uid: string;
+  uids?: string[];
   name: string;
   email: string;
   whatsapp?: string;

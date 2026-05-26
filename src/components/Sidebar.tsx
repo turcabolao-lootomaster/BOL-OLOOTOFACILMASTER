@@ -129,13 +129,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all text-xs uppercase tracking-widest font-bold group",
                 currentView === item.id 
-                  ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" 
+                  ? (item.id === 'bet' ? "bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/30 font-black" : "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20")
                   : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
               )}
             >
               <item.icon size={18} className={cn(
                 "transition-transform group-hover:scale-110",
-                currentView === item.id ? "text-white" : "text-slate-400 group-hover:text-lotofacil-purple",
+                currentView === item.id 
+                  ? (item.id === 'bet' ? "text-slate-950" : "text-white") 
+                  : "text-slate-400 group-hover:text-lotofacil-purple",
                 item.id === 'participants' && currentView !== item.id && "text-emerald-500"
               )} />
               <span>{item.label}</span>
@@ -145,7 +147,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
                 </div>
               )}
               {currentView === item.id && (
-                <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full" />
+                <div className={cn("ml-auto w-1.5 h-1.5 rounded-full", item.id === 'bet' ? "bg-slate-950" : "bg-white")} />
               )}
             </button>
           ))}

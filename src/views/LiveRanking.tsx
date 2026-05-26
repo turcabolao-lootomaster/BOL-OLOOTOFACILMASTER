@@ -29,7 +29,8 @@ import {
   AlertCircle,
   HelpCircle,
   Gift,
-  Calendar
+  Calendar,
+  Ticket
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ExcelJS from 'exceljs';
@@ -46,6 +47,50 @@ const LiveRanking: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState(true);
   const [sortBy, setSortBy] = useState<'points' | 'name'>('name');
+  const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number; totalMs: number } | null>(null);
+  const [showCountdownModal, setShowCountdownModal] = useState(false);
+
+  useEffect(() => {
+    if (!activeContest) return;
+
+    const calcTime = () => {
+      const displayStartDate = activeContest.startDate || systemSettings?.poolStartDate;
+      const displayStartTime = activeContest.startTime || systemSettings?.poolStartTime || '19:00';
+      
+      if (!displayStartDate) {
+        setTimeLeft(null);
+        return;
+      }
+
+      let formattedDate = displayStartDate;
+      if (displayStartDate.includes('-')) {
+        formattedDate = displayStartDate;
+      } else if (displayStartDate.includes('/')) {
+        const parts = displayStartDate.split('/');
+        if (parts.length === 3) {
+          formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+      }
+
+      const deadline = new Date(`${formattedDate}T${displayStartTime}:00`);
+      const now = new Date();
+      const diff = deadline.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setTimeLeft({ hours: 0, minutes: 0, seconds: 0, totalMs: diff });
+      } else {
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft({ hours, minutes, seconds, totalMs: diff });
+      }
+    };
+
+    calcTime();
+    const interval = setInterval(calcTime, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeContest, systemSettings]);
 
   useEffect(() => {
     if (activeContest) {
@@ -1072,6 +1117,158 @@ const LiveRanking: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Faixa Rápida de Contagem Regressiva */}
+      {timeLeft && activeContest.status === 'aberto' && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={() => setShowCountdownModal(true)}
+          className="w-full bg-gradient-to-r from-red-500 via-amber-400 to-red-500 p-[1.5px] rounded-2xl animate-pulse-glow shadow-lg shadow-yellow-500/5 mb-2 cursor-pointer relative group overflow-hidden shrink-0"
+        >
+          <div className="bg-slate-950 rounded-[14px] px-3 py-2.5 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row items-center justify-between gap-2.5 overflow-hidden relative">
+            <div className="absolute inset-0 bg-yellow-400/5 group-hover:bg-yellow-400/10 transition-all" />
+            
+            <div className="flex items-center gap-2 relative z-10">
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              </span>
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-100 flex items-center gap-1.5">
+                ⌛ REGISTRO DE APOSTAS FECHA EM:
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-2 relative z-10 font-mono">
+              {timeLeft.totalMs > 0 ? (
+                <>
+                  <div className="flex items-center gap-1">
+                    <span className="bg-red-500/15 text-red-400 border border-red-500/30 rounded px-2 py-0.5 text-xs sm:text-sm font-black">
+                      {timeLeft.hours.toString().padStart(2, '0')}
+                    </span>
+                    <span className="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-widest">h</span>
+                  </div>
+                  <span className="text-red-500 font-black animate-pulse">:</span>
+                  <div className="flex items-center gap-1">
+                    <span className="bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded px-2 py-0.5 text-xs sm:text-sm font-black">
+                      {timeLeft.minutes.toString().padStart(2, '0')}
+                    </span>
+                    <span className="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-widest">m</span>
+                  </div>
+                  <span className="text-amber-400 font-black animate-pulse">:</span>
+                  <div className="flex items-center gap-1">
+                    <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded px-2 py-0.5 text-xs sm:text-sm font-black">
+                      {timeLeft.seconds.toString().padStart(2, '0')}
+                    </span>
+                    <span className="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-widest">s</span>
+                  </div>
+                </>
+              ) : (
+                <span className="text-red-500 font-black tracking-widest animate-pulse text-[11px] sm:text-xs uppercase">
+                  🚨 INSCRIÇÃO ENCERRADA! AGUARDANDO ADM FINALIZAR
+                </span>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Modal Contagem Regressiva */}
+      <AnimatePresence>
+        {showCountdownModal && timeLeft && (
+          <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 30 }}
+              className="bg-white rounded-[2.5rem] p-6 sm:p-8 max-w-sm w-full shadow-2xl border-2 border-lotofacil-purple/30 relative overflow-hidden text-center space-y-6"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-500 via-amber-400 to-emerald-500" />
+              
+              <button 
+                onClick={() => setShowCountdownModal(false)}
+                className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-400/15 rounded-3xl text-amber-500 animate-bounce-subtle mt-2">
+                <Clock size={32} />
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">
+                  REGISTRO DE APOSTAS
+                </h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                  Concurso #{activeContest.number}
+                </p>
+              </div>
+
+              {timeLeft.totalMs > 0 ? (
+                <div className="bg-slate-50 border border-slate-100 rounded-3xl p-5 font-mono space-y-3">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">AS APOSTAS FECHAM EM:</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="flex flex-col items-center">
+                      <span className="text-3xl font-black text-slate-950 leading-none">
+                        {timeLeft.hours.toString().padStart(2, '0')}
+                      </span>
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1.5">Horas</span>
+                    </div>
+                    <span className="text-2xl font-black text-slate-300 animate-pulse">:</span>
+                    <div className="flex flex-col items-center">
+                      <span className="text-3xl font-black text-slate-955 leading-none">
+                        {timeLeft.minutes.toString().padStart(2, '0')}
+                      </span>
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1.5">Minutos</span>
+                    </div>
+                    <span className="text-2xl font-black text-slate-300 animate-pulse">:</span>
+                    <div className="flex flex-col items-center">
+                      <span className="text-3xl font-black text-slate-950 leading-none">
+                        {timeLeft.seconds.toString().padStart(2, '0')}
+                      </span>
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1.5">Segundos</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-red-50 border border-red-100 rounded-3xl p-6 space-y-2 text-center">
+                  <AlertCircle className="text-red-500 mx-auto" size={24} />
+                  <p className="text-sm font-black text-red-600 uppercase tracking-wider">PRAZO ENCERRADO!</p>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">As apostas se encerraram para este concurso.</p>
+                </div>
+              )}
+
+              <div className="text-[10px] text-slate-500 leading-relaxed font-bold uppercase tracking-wider">
+                Prazo final: <span className="text-slate-950 font-black">{activeContest.startDate?.split('-').reverse().join('/') || systemSettings?.poolStartDate}</span> às <span className="text-slate-950 font-black">{activeContest.startTime || systemSettings?.poolStartTime || '19:00'}</span>
+              </div>
+
+              {timeLeft.totalMs > 0 && (
+                <button 
+                  onClick={() => {
+                    setShowCountdownModal(false);
+                    const buttons = Array.from(document.querySelectorAll('button, a'));
+                    const betButton = buttons.find(b => 
+                      b.textContent?.toUpperCase().includes('APOSTAR') || 
+                      b.textContent?.toUpperCase().includes('FAZER APOSTA')
+                    ) as HTMLButtonElement;
+                    
+                    if (betButton) {
+                      betButton.click();
+                    } else {
+                      window.location.href = '?view=bet';
+                    }
+                  }}
+                  className="w-full py-4 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl shadow-amber-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <Ticket size={16} />
+                  FAZER APOSTA AGORA!
+                </button>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <div className="flex flex-col gap-6">
         <AnimatePresence>

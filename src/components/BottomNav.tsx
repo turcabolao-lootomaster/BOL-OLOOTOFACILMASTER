@@ -44,7 +44,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
     const filteredItems = items.filter(item => item.roles.includes(user.role)).slice(0, 5);
     
     return (
-    <nav className="fixed bottom-0 left-0 lg:left-72 right-0 bg-slate-950/95 backdrop-blur-xl border-t border-white/10 px-2 py-2 z-50 flex items-center justify-around shadow-[0_-8px_30px_rgba(0,0,0,0.5)]">
+    <nav className="fixed bottom-0 left-0 lg:left-72 right-0 bg-slate-950/80 backdrop-blur-xl border-t border-sky-400/20 px-2 py-2 z-50 flex items-center justify-around shadow-[0_-8px_32px_rgba(14,165,233,0.15)]">
       {filteredItems.map(item => (
         <button
           key={item.id}
@@ -52,8 +52,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
           className={cn(
             "flex flex-col items-center gap-1.5 p-2 rounded-2xl transition-all min-w-[64px] relative group",
             currentView === item.id 
-              ? "text-lotofacil-yellow scale-110" 
-              : item.id === 'logout' ? "text-red-400" : "text-white/40"
+              ? (item.id === 'bet' ? "text-yellow-400 scale-115" : "text-lotofacil-yellow scale-110") 
+              : item.id === 'logout' ? "text-red-400" : "text-white/40 flex"
           )}
         >
           {currentView === item.id && (
@@ -64,7 +64,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
           )}
           <div className={cn(
             "p-1.5 rounded-xl transition-all relative",
-            currentView === item.id ? "bg-lotofacil-yellow/10" : ""
+            currentView === item.id ? (item.id === 'bet' ? "bg-yellow-400/20 text-yellow-400" : "bg-lotofacil-yellow/10") : ""
           )}>
             <item.icon 
               size={currentView === item.id ? 24 : 20} 
@@ -83,7 +83,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
           </div>
           <span className={cn(
             "text-[9px] font-bold uppercase tracking-widest transition-all",
-            currentView === item.id ? "opacity-100 translate-y-0 text-lotofacil-yellow" : "opacity-40"
+            currentView === item.id ? (item.id === 'bet' ? "opacity-100 translate-y-0 text-yellow-400" : "opacity-100 translate-y-0 text-lotofacil-yellow") : "opacity-40"
           )}>
             {item.label}
           </span>
@@ -123,7 +123,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 lg:left-72 right-0 bg-slate-950/95 backdrop-blur-xl border-t border-white/10 px-2 py-2 z-50 flex items-center justify-around shadow-[0_-8px_30px_rgba(0,0,0,0.5)]">
+    <nav className="fixed bottom-0 left-0 lg:left-72 right-0 bg-slate-950/80 backdrop-blur-xl border-t border-sky-400/20 px-2 py-2 z-50 flex items-center justify-around shadow-[0_-8px_32px_rgba(14,165,233,0.15)]">
       {filteredItems.map(item => (
         <button
           key={item.id}
@@ -131,7 +131,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
           className={cn(
             "flex flex-col items-center gap-1.5 p-2 rounded-2xl transition-all min-w-[64px] relative group",
             currentView === item.id 
-              ? "text-lotofacil-yellow scale-110" 
+              ? (item.id === 'bet' ? "text-yellow-400 scale-115" : "text-lotofacil-yellow scale-110") 
               : item.id === 'logout' || item.id === 'login' ? (user ? "text-red-400" : "text-lotofacil-yellow") : "text-white/40 flex"
           )}
         >
@@ -143,7 +143,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
           )}
           <div className={cn(
             "p-1.5 rounded-xl transition-all relative",
-            currentView === item.id ? "bg-lotofacil-yellow/10" : ""
+            currentView === item.id ? (item.id === 'bet' ? "bg-yellow-400/20 text-yellow-400" : "bg-lotofacil-yellow/10") : ""
           )}>
             <item.icon 
               size={currentView === item.id ? 24 : 20} 
@@ -162,7 +162,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
           </div>
           <span className={cn(
             "text-[9px] font-bold uppercase tracking-widest transition-all",
-            currentView === item.id ? "opacity-100 text-lotofacil-yellow" : "opacity-40"
+            currentView === item.id ? (item.id === 'bet' ? "opacity-100 text-yellow-400" : "opacity-100 text-lotofacil-yellow") : "opacity-40"
           )}>
             {item.label}
           </span>

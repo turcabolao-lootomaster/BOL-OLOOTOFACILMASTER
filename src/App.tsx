@@ -251,7 +251,7 @@ const AppContent: React.FC = () => {
                 onClick={() => setView('bet')}
                 className={cn(
                   "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
-                  currentView === 'bet' ? "bg-lotofacil-purple text-white shadow-lg shadow-lotofacil-purple/20" : "text-slate-500 hover:bg-slate-50"
+                  currentView === 'bet' ? "bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/30" : "text-slate-500 hover:bg-slate-50"
                 )}
               >
                 Apostar

@@ -5,6 +5,8 @@
       "description": "User profile and ranking points",
       "type": "object",
       "properties": {
+        "uid": { "type": "string" },
+        "uids": { "type": "array", "items": { "type": "string" } },
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "whatsapp": { "type": "string" },

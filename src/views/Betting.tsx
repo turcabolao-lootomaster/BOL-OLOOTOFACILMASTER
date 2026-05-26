@@ -163,12 +163,19 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
     const cleanBetName = betName.trim().toUpperCase();
     if (!cleanBetName) {
       setFeedback({ message: 'Por favor, preencha o Nome na Aposta.', type: 'info' });
+      alert('⚠️ Por favor, digite o seu "NOME NA APOSTA (NICK)" para salvar a aposta!');
+      return;
+    }
+
+    if (!sellerCode.trim()) {
+      setFeedback({ message: 'Por favor, insira o Código do Vendedor.', type: 'info' });
+      alert('⚠️ Por favor, preencha o "Código do Vendedor" para validar sua aposta!');
       return;
     }
     
     setIsSubmitting(true);
     const ids: string[] = [];
-    let userId = user?.uid || user?.id || auth.currentUser?.uid || '';
+    let userId = user?.id || user?.uid || auth.currentUser?.uid || '';
     
     // Auto-login anonymous if no user and it's a seller link action
     if (!userId) {
@@ -505,9 +512,14 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
             <button 
               onClick={registerBet}
               disabled={selectedNumbers.length !== 10}
-              className="flex-1 bg-slate-900 text-white h-11 sm:h-12 flex flex-col items-center justify-center gap-0.5 text-[8px] sm:text-[10px] font-black uppercase tracking-widest disabled:opacity-50 rounded-xl shadow-lg hover:bg-slate-800 active:scale-95 transition-all border-b-4 border-slate-700 active:border-b-0 active:translate-y-1"
+              className={cn(
+                "flex-1 h-11 sm:h-12 flex flex-col items-center justify-center gap-0.5 text-[8px] sm:text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg transition-all border-b-4 active:border-b-0 active:translate-y-1",
+                selectedNumbers.length === 10
+                  ? "bg-gradient-to-r from-sky-300 via-cyan-100 to-sky-400 text-slate-950 border-sky-400 shadow-[0_0_20px_rgba(186,230,253,0.7)] hover:shadow-[0_0_30px_rgba(186,230,253,1)] hover:brightness-110 active:brightness-95 animate-[pulse_1.5s_infinite_alternate]"
+                  : "bg-slate-900 text-white opacity-50 border-slate-700 cursor-not-allowed"
+              )}
             >
-              <Plus size={14} className="text-lotofacil-yellow" />
+              <Plus size={14} className={selectedNumbers.length === 10 ? "text-sky-800" : "text-lotofacil-yellow"} />
               <span>REGISTRAR</span>
             </button>
 
@@ -627,8 +639,8 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
 
                 <button 
                   type="submit"
-                  disabled={pendingBets.length === 0 || isSubmitting || isLoadingContest || (activeContest?.status !== 'aberto') || !betName.trim() || !sellerCode}
-                  className="w-full bg-[#1b56ea] text-white h-14 rounded-2xl flex items-center justify-center shadow-[0_10px_30px_rgba(27,86,234,0.3)] disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm uppercase tracking-widest font-black hover:brightness-110 active:scale-95 transition-all border-2 border-white/20 relative overflow-hidden group animate-pulse-glow"
+                  disabled={pendingBets.length === 0 || isSubmitting || isLoadingContest || (activeContest?.status !== 'aberto')}
+                  className="w-full bg-yellow-400 text-slate-950 h-14 rounded-2xl flex items-center justify-center shadow-[0_10px_30px_rgba(250,204,21,0.4)] disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm uppercase tracking-widest font-black hover:bg-yellow-300 active:scale-95 transition-all border-2 border-white/20 relative overflow-hidden group animate-pulse-glow"
                 >
                   <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                   <span className="flex items-center gap-2 drop-shadow-md">
@@ -638,7 +650,7 @@ const Betting: React.FC<BettingProps> = ({ setView }) => {
                       (activeContest.status !== 'aberto' ? 'APOSTAS BLOQUEADAS' : (
                         <>
                           FINALIZAR E ENVIAR
-                          <Sparkles size={16} className="text-lotofacil-yellow" />
+                          <Sparkles size={16} className="text-slate-950 animate-pulse" />
                         </>
                       )))}
                   </span>

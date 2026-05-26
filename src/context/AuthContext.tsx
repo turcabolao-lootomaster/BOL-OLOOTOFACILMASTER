@@ -12,7 +12,7 @@ import {
   signInAnonymously,
   User as FirebaseUser
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, Timestamp, onSnapshot, query, collection, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp, onSnapshot, query, collection, where, getDocs, updateDoc, or, arrayUnion } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { User, UserRole } from '../types';
 
@@ -44,8 +44,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (unsubscribeUser) unsubscribeUser();
           
           if (firebaseUser) {
-            // Listen via query to catch dynamic UID linking (important for seller/custom login)
-            const q = query(collection(db, 'users'), where('uid', '==', firebaseUser.uid));
+            // Listen using 'or' to support both legacy single 'uid' tracking and real-time multi-device 'uids' list tracking
+            const q = query(
+              collection(db, 'users'),
+              or(
+                where('uid', '==', firebaseUser.uid),
+                where('uids', 'array-contains', firebaseUser.uid)
+              )
+            );
             
             unsubscribeUser = onSnapshot(q, async (snapshot) => {
               if (!snapshot.empty) {
@@ -67,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     const newUser: User = {
                       id: firebaseUser.uid,
                       uid: firebaseUser.uid,
+                      uids: [firebaseUser.uid],
                       name: firebaseUser.displayName || (firebaseUser.isAnonymous ? 'Visitante' : 'Usuário'),
                       email: firebaseUser.email || '',
                       role: isMaster ? 'master' : 'cliente',
@@ -76,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     
                     try {
                       await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
+                      await setDoc(doc(db, 'uids', firebaseUser.uid), { userId: firebaseUser.uid });
                       // Snapshot will pick this up on next emission
                     } catch (err) {
                       console.error('Error creating default user doc:', err);
@@ -130,10 +138,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const snapshot = await getDocs(q);
       
       if (!snapshot.empty) {
-        // Update existing user with new UID
+        // Update existing user with new UID and append UID to uids array for multi-device synchronization
         const userDoc = snapshot.docs[0];
         const userData = userDoc.data() as User;
-        const updates: any = { uid: firebaseUser.uid };
+        const updates: any = { 
+          uid: firebaseUser.uid,
+          uids: arrayUnion(firebaseUser.uid)
+        };
         
         // Update name if current is generic and a new one was provided
         if (name && (!userData.name || userData.name.startsWith('User '))) {
@@ -146,12 +157,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         await updateDoc(doc(db, 'users', userDoc.id), updates);
+        await setDoc(doc(db, 'uids', firebaseUser.uid), { userId: userDoc.id });
       } else {
         // Create new user
         const userId = `wa_${phone}`;
         const newUser: User = {
           id: userId,
           uid: firebaseUser.uid,
+          uids: [firebaseUser.uid],
           name: name || `User ${phone.slice(-4)}`,
           email: '',
           whatsapp: phone,
@@ -161,6 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           createdAt: Timestamp.now()
         };
         await setDoc(doc(db, 'users', userId), newUser);
+        await setDoc(doc(db, 'uids', firebaseUser.uid), { userId: userId });
       }
     } catch (error) {
       console.error('Erro no login com WhatsApp:', error);
@@ -201,8 +215,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Usuário do vendedor não encontrado.');
       }
 
-      // 4. Link the anonymous UID to this seller user
-      await updateDoc(userDocRef, { uid: firebaseUser.uid });
+      // 4. Link the anonymous UID to this seller user and append UID to uids array for multi-device sync
+      await updateDoc(userDocRef, { 
+        uid: firebaseUser.uid,
+        uids: arrayUnion(firebaseUser.uid)
+      });
+      await setDoc(doc(db, 'uids', firebaseUser.uid), { userId: sellerUserId });
       
     } catch (error) {
       console.error('Erro no login com código de vendedor:', error);
@@ -233,13 +251,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!clientSnap.empty) {
         // Update existing user
         const userDoc = clientSnap.docs[0];
-        await updateDoc(doc(db, 'users', userDoc.id), { uid: firebaseUser.uid });
+        await updateDoc(doc(db, 'users', userDoc.id), { 
+          uid: firebaseUser.uid,
+          uids: arrayUnion(firebaseUser.uid)
+        });
+        await setDoc(doc(db, 'uids', firebaseUser.uid), { userId: userDoc.id });
       } else {
         // Create new client user
         const userId = `client_${name.replace(/\s+/g, '_')}_${sellerCode.toUpperCase()}`;
         const newUser: User = {
           id: userId,
           uid: firebaseUser.uid,
+          uids: [firebaseUser.uid],
           name: name,
           email: '',
           role: 'cliente',
@@ -248,6 +271,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           createdAt: Timestamp.now()
         };
         await setDoc(doc(db, 'users', userId), newUser);
+        await setDoc(doc(db, 'uids', firebaseUser.uid), { userId: userId });
       }
     } catch (error) {
       console.error('Erro no login por código de cliente:', error);

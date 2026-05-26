@@ -127,7 +127,7 @@ const Login: React.FC = () => {
     setLoading(true);
     try {
       await firebaseService.createSellerRequest({
-        userId: user?.uid || 'guest',
+        userId: user?.id || user?.uid || 'guest',
         name: regForm.name,
         whatsapp: regForm.whatsapp,
         email: regForm.email,

@@ -931,7 +931,7 @@ const Participants: React.FC = () => {
               ) : filteredBets.map((b, idx) => {
                 const hits = b.hits || [0, 0, 0];
                 const total = hits.reduce((sum, h) => sum + h, 0);
-                const isCurrentUser = b.userId === user?.uid;
+                const isCurrentUser = b.userId === user?.id || b.userId === user?.uid;
                 const isRapidinha = winners.rapidinha.includes(b.id);
                 const isChampion = winners.champion.includes(b.id);
                 const isVice = winners.vice.includes(b.id);
