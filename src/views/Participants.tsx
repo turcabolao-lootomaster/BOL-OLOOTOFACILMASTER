@@ -457,8 +457,12 @@ const Participants: React.FC = () => {
     // Table Headers - Reordered: S1, S2, S3, SOMA at the end
     const headers = [
       'Nº', 'POS', 'CLIENTE', 'VENDEDOR', 
+      '', // Spacing after Vendedor (no borders)
       'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10',
-      'S1', 'S2', 'S3', 'SOMA'
+      '', // Spacing after Numbers (no borders)
+      'S1', 'S2', 'S3',
+      '', // Spacing after S3 (no borders)
+      'SOMA'
     ];
 
     const data = filteredBets.map((b: any, index: number) => {
@@ -485,10 +489,13 @@ const Participants: React.FC = () => {
         `${index + 1}º`,
         nameWithPrizes,
         b.sellerCode || '-',
+        '', // Spacing after Vendedor
         ...numCols,
+        '', // Spacing after Numbers
         hits[0],
         hits[1],
         hits[2],
+        '', // Spacing after S3
         total
       ];
     });
@@ -501,50 +508,93 @@ const Participants: React.FC = () => {
       body: data,
       startY: 15,
       theme: 'grid',
-      margin: { left: 49.5 }, // Centering the table (297 - 198) / 2
+      margin: { left: 11 }, // Bring closer to the margins (297 - 275) / 2
       styles: { fontSize: 7, halign: 'center', cellPadding: 1.2, font: 'helvetica', lineColor: [0, 0, 0], lineWidth: 0.5 },
-      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' },
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineColor: [0, 0, 0], lineWidth: 0.5 },
       columnStyles: {
         0: { fillColor: [255, 255, 255], fontStyle: 'bold', cellWidth: 8 }, // Nº
         1: { fillColor: [255, 255, 255], fontStyle: 'bold', cellWidth: 9 }, // POS
-        2: { fillColor: [255, 255, 255], halign: 'left', cellWidth: 55 }, // CLIENTE (Increased width)
-        3: { fillColor: [255, 255, 255], cellWidth: 18 }, // VENDEDOR
-        4: { cellWidth: 7 }, 5: { cellWidth: 7 }, 6: { cellWidth: 7 }, 7: { cellWidth: 7 }, 8: { cellWidth: 7 },
-        9: { cellWidth: 7 }, 10: { cellWidth: 7 }, 11: { cellWidth: 7 }, 12: { cellWidth: 7 }, 13: { cellWidth: 7 },
-        14: { fillColor: [219, 234, 254], textColor: [30, 58, 138], fontStyle: 'bold', cellWidth: 8 }, // S1
-        15: { fillColor: [255, 237, 213], textColor: [154, 52, 18], fontStyle: 'bold', cellWidth: 8 }, // S2
-        16: { fillColor: [243, 232, 255], textColor: [107, 33, 168], fontStyle: 'bold', cellWidth: 8 }, // S3
-        17: { fillColor: [30, 58, 138], textColor: [255, 215, 0], fontStyle: 'bold', fontSize: 9, cellWidth: 14 } // SOMA
+        2: { fillColor: [255, 255, 255], halign: 'left', cellWidth: 65 }, // CLIENTE (Increased width)
+        3: { fillColor: [255, 255, 255], cellWidth: 27 }, // VENDEDOR (Increased width to avoid wrapping)
+        4: { fillColor: [255, 255, 255], cellWidth: 3.5 }, // Spacing after Vendedor (blank)
+        5: { cellWidth: 11 }, 6: { cellWidth: 11 }, 7: { cellWidth: 11 }, 8: { cellWidth: 11 }, 9: { cellWidth: 11 },
+        10: { cellWidth: 11 }, 11: { cellWidth: 11 }, 12: { cellWidth: 11 }, 13: { cellWidth: 11 }, 14: { cellWidth: 11 }, // N1 to N10 (indices 5-14) (Wider & more rectangular)
+        15: { fillColor: [255, 255, 255], cellWidth: 3.5 }, // Spacing after Numbers (blank)
+        16: { fillColor: [219, 234, 254], textColor: [30, 58, 138], fontStyle: 'bold', cellWidth: 10 }, // S1
+        17: { fillColor: [255, 237, 213], textColor: [154, 52, 18], fontStyle: 'bold', cellWidth: 10 }, // S2
+        18: { fillColor: [243, 232, 255], textColor: [107, 33, 168], fontStyle: 'bold', cellWidth: 10 }, // S3
+        19: { fillColor: [255, 255, 255], cellWidth: 3.5 }, // Spacing after S3 (blank)
+        20: { fillColor: [30, 58, 138], textColor: [255, 215, 0], fontStyle: 'bold', fontSize: 11, cellWidth: 15.5 } // SOMA
       },
-      alternateRowStyles: { fillColor: [252, 252, 252] },
+      alternateRowStyles: { fillColor: [255, 255, 255] },
       didParseCell: (data) => {
-        if (data.section === 'body') {
-          const betId = filteredBets[data.row.index].id;
+        // Clear borders and colors of spacing columns
+        if (data.column.index === 4 || data.column.index === 15 || data.column.index === 19) {
+          data.cell.styles.lineWidth = 0;
+          data.cell.styles.lineColor = [255, 255, 255];
+          data.cell.styles.fillColor = [255, 255, 255];
+        } else {
+          // Keep thick black borders on normal cells
+          data.cell.styles.lineWidth = 0.5;
+          data.cell.styles.lineColor = [0, 0, 0];
           
-          // Columns 0-3 background always white
-          if (data.column.index <= 3) {
-            data.cell.styles.fillColor = [255, 255, 255];
-          }
-
-          // Check if winner to highlight row (only applied to non-white column sections, i.e., index > 3 but not the individual numbers if hit)
-          const isWinner = winners.rapidinha.includes(betId) || 
-                           winners.champion.includes(betId) || 
-                           winners.vice.includes(betId) || 
-                           winners.total25.includes(betId) || 
-                           winners.total28.includes(betId) ||
-                           winners.draws10.some(d => d.includes(betId));
-
-          if (isWinner && data.column.index > 3 && data.column.index < 14) {
-            data.cell.styles.fillColor = [254, 243, 199]; // Light Gold for selection area if winner
-          }
-
-          // Highlight hit numbers
-          if (data.column.index >= 4 && data.column.index <= 13) {
-            const num = data.cell.raw;
-            if (typeof num === 'number' && allResults.includes(num)) {
-              data.cell.styles.fillColor = [107, 33, 168]; // Purple highlight
-              data.cell.styles.textColor = 255;
+          if (data.section === 'head') {
+            if (data.column.index === 16) { // S1
+               data.cell.styles.fillColor = [219, 234, 254];
+               data.cell.styles.textColor = [30, 58, 138];
+               data.cell.styles.fontSize = 10;
+            } else if (data.column.index === 17) { // S2
+               data.cell.styles.fillColor = [255, 237, 213];
+               data.cell.styles.textColor = [154, 52, 18];
+               data.cell.styles.fontSize = 10;
+            } else if (data.column.index === 18) { // S3
+               data.cell.styles.fillColor = [243, 232, 255];
+               data.cell.styles.textColor = [107, 33, 168];
+               data.cell.styles.fontSize = 10;
+            } else if (data.column.index === 20) { // SOMA
+               data.cell.styles.fillColor = [30, 58, 138];
+               data.cell.styles.textColor = [255, 215, 0];
+               data.cell.styles.fontSize = 11;
+            } else if (data.column.index >= 5 && data.column.index <= 14) { // Numbers N1 to N10
+              data.cell.styles.fillColor = [107, 33, 168]; // Purple background
+              data.cell.styles.textColor = [255, 255, 255]; // White Text
+              data.cell.styles.fontSize = 9;
               data.cell.styles.fontStyle = 'bold';
+            } else { // Nº, POS, CLIENTE, VENDEDOR (0, 1, 2, 3)
+              data.cell.styles.fillColor = [107, 33, 168]; // Purple background
+              data.cell.styles.textColor = [255, 255, 255]; // White Text
+              data.cell.styles.fontStyle = 'bold';
+            }
+          } else if (data.section === 'body') {
+            if (data.column.index === 16) { // S1
+              data.cell.styles.fillColor = [219, 234, 254];
+              data.cell.styles.textColor = [30, 58, 138];
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fontSize = 10;
+            } else if (data.column.index === 17) { // S2
+              data.cell.styles.fillColor = [255, 237, 213];
+              data.cell.styles.textColor = [154, 52, 18];
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fontSize = 10;
+            } else if (data.column.index === 18) { // S3
+              data.cell.styles.fillColor = [243, 232, 255];
+              data.cell.styles.textColor = [107, 33, 168];
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fontSize = 10;
+            } else if (data.column.index === 20) { // SOMA
+              data.cell.styles.fillColor = [30, 58, 138];
+              data.cell.styles.textColor = [255, 215, 0];
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fontSize = 11;
+            } else if (data.column.index >= 5 && data.column.index <= 14) { // Numbers N1 to N10
+              data.cell.styles.fillColor = [255, 255, 255];
+              data.cell.styles.textColor = [0, 0, 0];
+              data.cell.styles.fontSize = 9;
+              data.cell.styles.fontStyle = 'bold'; // Bold numbers in table body!
+            } else {
+              data.cell.styles.fillColor = [255, 255, 255];
+              data.cell.styles.textColor = [0, 0, 0];
+              data.cell.styles.fontStyle = (data.column.index <= 1) ? 'bold' : 'normal';
             }
           }
         }
