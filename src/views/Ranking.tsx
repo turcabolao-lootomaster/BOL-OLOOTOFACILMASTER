@@ -73,10 +73,11 @@ const Ranking: React.FC = () => {
     doc.text('Atualizações disponíveis na plataforma online', pageWidth / 2, 97, { align: 'center' });
 
     // Table
-    const headers = ['POS', 'PARTICIPANTE', 'VENDEDOR', 'NÚMEROS DA APOSTA', 'PONTOS ATUAIS', 'PROGRESSO (%)'];
-    const data = ranking.map(p => {
+    const headers = ['Nº', 'POS', 'PARTICIPANTE', 'VENDEDOR', 'NÚMEROS DA APOSTA', 'PONTOS ATUAIS', 'PROGRESSO (%)'];
+    const data = ranking.map((p, index) => {
       const progress = Math.min((p.points / RANKING_GOAL) * 100, 100).toFixed(1);
       return [
+        index + 1,
         `#${p.position}`,
         p.userName.toUpperCase(),
         p.sellerCode || '-',
@@ -91,22 +92,28 @@ const Ranking: React.FC = () => {
       body: data,
       startY: 105,
       theme: 'grid',
-      styles: { fontSize: 8, halign: 'center', cellPadding: 2 },
+      styles: { fontSize: 8, halign: 'center', cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.5 },
       headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' },
       columnStyles: {
-        0: { cellWidth: 15, fontStyle: 'bold' },
-        1: { halign: 'left', cellWidth: 60, fontStyle: 'bold' },
-        2: { cellWidth: 25 },
-        3: { cellWidth: 60 },
-        4: { fillColor: [243, 232, 255], textColor: [107, 33, 168], fontStyle: 'bold', cellWidth: 30 },
-        5: { cellWidth: 30 }
+        0: { fillColor: [255, 255, 255], cellWidth: 10, fontStyle: 'bold' },
+        1: { fillColor: [255, 255, 255], cellWidth: 15, fontStyle: 'bold' },
+        2: { fillColor: [255, 255, 255], halign: 'left', cellWidth: 55, fontStyle: 'bold' },
+        3: { fillColor: [255, 255, 255], cellWidth: 20 },
+        4: { cellWidth: 55 },
+        5: { fillColor: [243, 232, 255], textColor: [107, 33, 168], fontStyle: 'bold', cellWidth: 25 },
+        6: { cellWidth: 20 }
       },
       didParseCell: (data) => {
-        if (data.section === 'body' && data.column.index === 4) {
-          const points = parseInt(data.cell.raw as string);
-          if (points >= RANKING_GOAL) {
-            data.cell.styles.fillColor = [30, 58, 138]; // Dark Blue
-            data.cell.styles.textColor = [255, 215, 0]; // Gold
+        if (data.section === 'body') {
+          if (data.column.index <= 3) {
+            data.cell.styles.fillColor = [255, 255, 255];
+          }
+          if (data.column.index === 5) {
+            const points = parseInt(data.cell.raw as string);
+            if (points >= RANKING_GOAL) {
+              data.cell.styles.fillColor = [30, 58, 138]; // Dark Blue
+              data.cell.styles.textColor = [255, 215, 0]; // Gold
+            }
           }
         }
       }

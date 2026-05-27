@@ -702,12 +702,12 @@ const LiveRanking: React.FC = () => {
 
     // Table Headers - Reordered: S1, S2, S3, SOMA at the end
     const headers = [
-      'POS', 'CLIENTE', 'VENDEDOR', 
+      'Nº', 'POS', 'CLIENTE', 'VENDEDOR', 
       'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10',
       'S1', 'S2', 'S3', 'SOMA'
     ];
 
-    const data = rankingWithRanks.map((b: any) => {
+    const data = rankingWithRanks.map((b: any, index: number) => {
       const hits = b.hits || [0, 0, 0];
       const total = hits.reduce((sum: number, h: number) => sum + h, 0);
       const sortedNumbers = [...b.numbers].sort((a, b) => a - b);
@@ -734,6 +734,7 @@ const LiveRanking: React.FC = () => {
       const nameWithPrizes = `${(b.betName || b.userName).toUpperCase()} ${prizeLabels.join(' ')}`.trim();
       
       return [
+        index + 1,
         `${b.rank}º`,
         nameWithPrizes,
         b.sellerCode || '-',
@@ -754,18 +755,19 @@ const LiveRanking: React.FC = () => {
       startY: 15,
       theme: 'grid',
       margin: { left: 49.5 }, // Centering the table (297 - 198) / 2
-      styles: { fontSize: 7, halign: 'center', cellPadding: 1.2, font: 'helvetica' },
+      styles: { fontSize: 7, halign: 'center', cellPadding: 1.2, font: 'helvetica', lineColor: [0, 0, 0], lineWidth: 0.5 },
       headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' },
       columnStyles: {
-        0: { fillColor: [241, 245, 249], fontStyle: 'bold', cellWidth: 10 }, // POS
-        1: { halign: 'left', cellWidth: 60 }, // CLIENTE (Increased width)
-        2: { cellWidth: 20 }, // VENDEDOR
-        3: { cellWidth: 7 }, 4: { cellWidth: 7 }, 5: { cellWidth: 7 }, 6: { cellWidth: 7 }, 7: { cellWidth: 7 },
-        8: { cellWidth: 7 }, 9: { cellWidth: 7 }, 10: { cellWidth: 7 }, 11: { cellWidth: 7 }, 12: { cellWidth: 7 },
-        13: { fillColor: [219, 234, 254], textColor: [30, 58, 138], fontStyle: 'bold', cellWidth: 8 }, // S1
-        14: { fillColor: [255, 237, 213], textColor: [154, 52, 18], fontStyle: 'bold', cellWidth: 8 }, // S2
-        15: { fillColor: [243, 232, 255], textColor: [107, 33, 168], fontStyle: 'bold', cellWidth: 8 }, // S3
-        16: { fillColor: [30, 58, 138], textColor: [255, 215, 0], fontStyle: 'bold', fontSize: 9, cellWidth: 14 } // SOMA
+        0: { fillColor: [255, 255, 255], fontStyle: 'bold', cellWidth: 8 }, // Nº
+        1: { fillColor: [255, 255, 255], fontStyle: 'bold', cellWidth: 9 }, // POS
+        2: { fillColor: [255, 255, 255], halign: 'left', cellWidth: 55 }, // CLIENTE (Increased width)
+        3: { fillColor: [255, 255, 255], cellWidth: 18 }, // VENDEDOR
+        4: { cellWidth: 7 }, 5: { cellWidth: 7 }, 6: { cellWidth: 7 }, 7: { cellWidth: 7 }, 8: { cellWidth: 7 },
+        9: { cellWidth: 7 }, 10: { cellWidth: 7 }, 11: { cellWidth: 7 }, 12: { cellWidth: 7 }, 13: { cellWidth: 7 },
+        14: { fillColor: [219, 234, 254], textColor: [30, 58, 138], fontStyle: 'bold', cellWidth: 8 }, // S1
+        15: { fillColor: [255, 237, 213], textColor: [154, 52, 18], fontStyle: 'bold', cellWidth: 8 }, // S2
+        16: { fillColor: [243, 232, 255], textColor: [107, 33, 168], fontStyle: 'bold', cellWidth: 8 }, // S3
+        17: { fillColor: [30, 58, 138], textColor: [255, 215, 0], fontStyle: 'bold', fontSize: 9, cellWidth: 14 } // SOMA
       },
       alternateRowStyles: { fillColor: [252, 252, 252] },
       didParseCell: (data) => {
@@ -774,13 +776,18 @@ const LiveRanking: React.FC = () => {
           const betId = rowInfo.id;
           const rank = rowInfo.rank;
           
-          // Row Highlighting based on Rank
-          if (data.column.index <= 2) {
+          // Columns 0-3 background always white
+          if (data.column.index <= 3) {
+            data.cell.styles.fillColor = [255, 255, 255];
+          }
+
+          // Row Highlighting based on Rank (only applied to non-white column sections, i.e., index > 3 but not the individual numbers if hit or total hits soma)
+          if (data.column.index > 3 && data.column.index < 14) {
             if (rank === 1) {
-              data.cell.styles.fillColor = [255, 237, 213]; // Orange 100 (Gold/Bronze) - More distinct than Amber 50
+              data.cell.styles.fillColor = [255, 237, 213]; // Orange 100 (Gold/Bronze)
               data.cell.styles.fontStyle = 'bold';
             } else if (rank === 2) {
-              data.cell.styles.fillColor = [219, 234, 254]; // Blue 100 (Silver/Blue) - Clearly distinct from white
+              data.cell.styles.fillColor = [219, 234, 254]; // Blue 100 (Silver/Blue)
               data.cell.styles.fontStyle = 'bold';
             } else {
               // Check for other special winners (Rapidinha, 10pts etc)
@@ -796,7 +803,7 @@ const LiveRanking: React.FC = () => {
           }
 
           // Highlight hit numbers for the SELECTED draw only
-          if (data.column.index >= 3 && data.column.index <= 12) {
+          if (data.column.index >= 4 && data.column.index <= 13) {
             const num = data.cell.raw;
             if (typeof num === 'number' && currentDrawResults.includes(num)) {
               data.cell.styles.fillColor = [107, 33, 168]; // Purple highlight
@@ -1391,7 +1398,7 @@ const LiveRanking: React.FC = () => {
                       <Crown size={20} className="text-lotofacil-yellow" />
                       <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Bonus Especiais</h3>
                     </div>
-                    <div className="grid grid-cols-1 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <PrizeCard 
                         title="👑 SUPER BÔNUS 28" 
                         value={prizes.fixed28Plus} 
@@ -1432,7 +1439,7 @@ const LiveRanking: React.FC = () => {
                     <Trophy size={20} className="text-lotofacil-purple" />
                     <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Premiação por Performance</h3>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <PrizeCard 
                         title="⚡ RAPIDINHA" 
                         value={prizes.rapidinha} 
@@ -2294,140 +2301,130 @@ const PrizeCard: React.FC<PrizeCardProps> = ({
 }) => {
   const isPremium = variant === 'bonus28' || variant === 'bonus25';
   
+  // High contrast gradients for Jackpots/Special Bonuses, or gorgeous subtle pastel for standard cards
+  const containerClasses = cn(
+    "group relative flex flex-row items-center justify-between p-4 sm:p-5 rounded-2xl border transition-all duration-300 overflow-hidden",
+    variant === 'bonus28' ? "bg-gradient-to-br from-slate-900 via-amber-950/80 to-slate-950 text-white border-amber-500/30 shadow-[0_4px_20px_rgba(245,158,11,0.15)] hover:scale-[1.01]" :
+    variant === 'bonus25' ? "bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-950 text-white border-emerald-500/30 shadow-[0_4px_20px_rgba(16,185,129,0.15)] hover:scale-[1.01]" :
+    cn(
+      bg.includes('amber') || bg.includes('yellow') ? "bg-amber-50/40 border-amber-200/50 hover:border-amber-300" :
+      bg.includes('purple') ? "bg-purple-50/40 border-purple-200/60 hover:border-purple-300" :
+      bg.includes('slate') || bg.includes('gray') ? "bg-sky-50/40 border-sky-200/60 hover:border-sky-300" :
+      bg.includes('orange') ? "bg-slate-50/60 border-slate-200/60 hover:border-slate-300" :
+      "bg-slate-50 border-slate-200 hover:border-slate-350"
+    )
+  );
+
+  const iconContainerClasses = cn(
+    "w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300",
+    variant === 'bonus28' ? "bg-amber-500/20 border-amber-500/30 text-amber-400" :
+    variant === 'bonus25' ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" :
+    cn(
+      bg.includes('amber') || bg.includes('yellow') ? "bg-amber-100/50 text-amber-600 border-amber-200/50" :
+      bg.includes('purple') ? "bg-purple-100/50 text-lotofacil-purple border-purple-200/50" :
+      bg.includes('slate') || bg.includes('gray') ? "bg-sky-100/50 text-slate-600 border-sky-200/50" :
+      bg.includes('orange') ? "bg-slate-100/80 text-orange-600 border-slate-200/60" :
+      "bg-slate-100 text-slate-500 border-slate-200"
+    )
+  );
+
+  // Calculate divided value if multiple winners
+  const displayValue = count && count > 1 ? value / count : value;
+
   return (
     <motion.div 
-      whileHover={{ y: -4, scale: 1.01 }}
-      className={cn(
-        "group relative flex flex-row items-center justify-between p-4 sm:p-7 rounded-[28px] sm:rounded-[40px] border transition-all duration-500 overflow-hidden",
-        border,
-        variant === 'bonus28' ? "bg-slate-950 text-white border-lotofacil-yellow/30 shadow-[0_20px_50px_rgba(0,0,0,0.4)]" :
-        variant === 'bonus25' ? "bg-emerald-50 text-slate-900 border-emerald-500/20 shadow-[0_20px_50px_rgba(16,185,129,0.05)]" :
-        cn("bg-white border-slate-100 shadow-sm hover:shadow-xl hover:border-lotofacil-purple/20", bg)
-      )}
+      whileHover={{ y: -2 }}
+      className={containerClasses}
     >
-      {/* Decorative background elements */}
-      {variant === 'bonus28' ? (
-        <>
-          <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-from)_0%,_transparent_70%)] from-lotofacil-yellow/20 pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-lotofacil-purple/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
-        </>
-      ) : variant === 'bonus25' ? (
-        <>
-          <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-from)_0%,_transparent_70%)] from-emerald-400/20 pointer-events-none" />
-          <div className="absolute inset-0 opacity-[0.05] pointer-events-none">
-            <svg width="100%" height="100%"><pattern id="grid" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M 30 0 L 0 0 0 30" fill="none" stroke="currentColor" strokeWidth="0.5" /></pattern><rect width="100%" height="100%" fill="url(#grid)" /></svg>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className={cn(
-            "absolute top-0 right-0 w-32 h-32 -mr-12 -mt-12 rounded-full blur-3xl opacity-20 transition-transform group-hover:scale-150",
-            color.replace('text-', 'bg-')
-          )} />
-          <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)', backgroundSize: '24px 24px' }} />
-        </>
+      {/* Decorative bg glow for premium cards */}
+      {variant === 'bonus28' && (
+        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
       )}
-      
-      <div className="flex items-center gap-4 sm:gap-6 relative z-10 w-full">
-        {/* Icon Container */}
-        <div className={cn(
-          "w-14 h-14 sm:w-20 sm:h-20 rounded-[22px] sm:rounded-[28px] flex items-center justify-center shadow-2xl transition-all group-hover:scale-110 duration-700 shrink-0",
-          variant === 'bonus28' ? "bg-black text-lotofacil-yellow border border-lotofacil-yellow/50 -rotate-3" : 
-          variant === 'bonus25' ? "bg-emerald-500 text-white rotate-3" : 
-          cn("bg-white text-slate-900 border border-slate-50 shadow-inner group-hover:rotate-12", color)
-        )}>
-          <Icon className={cn("w-7 h-7 sm:w-10 sm:h-10")} />
-        </div>
+      {variant === 'bonus25' && (
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
+      )}
 
-        {/* Content */}
-        <div className="flex flex-row items-center justify-between w-full min-w-0">
-          <div className="min-w-0 pr-2 text-left">
+      <div className="flex items-center gap-4 relative z-10 w-full justify-between">
+        <div className="flex items-center gap-4 min-w-0">
+          {/* Icon */}
+          <div className={iconContainerClasses}>
+            <Icon className="w-5 h-5" />
+          </div>
+
+          {/* Core Info */}
+          <div className="min-w-0 text-left">
             <p className={cn(
-              "text-[8px] sm:text-[11px] font-black uppercase tracking-[0.2em] mb-1",
-              variant === 'bonus28' ? "text-lotofacil-yellow" : 
-              variant === 'bonus25' ? "text-emerald-600" : 
+              "text-[9px] font-black uppercase tracking-[0.15em] mb-0.5",
+              variant === 'bonus28' ? "text-amber-400" : 
+              variant === 'bonus25' ? "text-emerald-400" : 
+              bg.includes('amber') || bg.includes('yellow') ? "text-amber-700" :
+              bg.includes('purple') ? "text-purple-700" :
+              bg.includes('slate') || bg.includes('gray') ? "text-sky-700" :
+              bg.includes('orange') ? "text-slate-500" :
               "text-slate-400"
             )}>
               {pointsLabel || (variant === 'bonus28' ? "👑 Super Bônus" : variant === 'bonus25' ? "🔥 Bônus" : "Estimativa")}
             </p>
             <h3 className={cn(
-              "text-xs sm:text-2xl font-black uppercase tracking-widest truncate leading-tight",
-              variant === 'bonus28' ? "text-white" : "text-slate-900"
+              "text-xs sm:text-sm font-black uppercase tracking-wider truncate",
+              isPremium ? "text-slate-200" : "text-slate-800"
             )}>
               {title.replace('🔥 ', '').replace('👑 ', '')}
             </h3>
-            
-            {/* Status / Winners Badge */}
-            <div className="mt-2.5 flex">
+
+            {/* Badges for status or winners */}
+            <div className="mt-1.5 flex flex-wrap gap-2 items-center">
               {(!isFinished || (count !== undefined && count > 0)) ? (
                 <div className={cn(
-                  "px-2.5 sm:px-4 py-1.5 rounded-full border text-[8px] sm:text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm transition-all duration-300",
-                  variant === 'bonus28' ? "bg-white/10 border-white/20 text-white" : 
-                  variant === 'bonus25' ? "bg-white border-emerald-100 text-emerald-600" : 
-                  "bg-white border-slate-200 text-slate-600 group-hover:border-lotofacil-purple/30 group-hover:text-lotofacil-purple"
+                  "px-2 py-0.5 rounded-full border text-[7px] sm:text-[9px] font-bold uppercase tracking-widest flex items-center gap-1",
+                  isPremium ? "bg-white/5 border-white/10 text-slate-350" : 
+                  "bg-white/80 border-slate-150 text-slate-500"
                 )}>
-                  <span className={cn("w-2 h-2 rounded-full", isFinished ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-orange-400")} />
+                  <span className={cn("w-1.5 h-1.5 rounded-full", isFinished ? "bg-emerald-500" : "bg-orange-400 animate-pulse")} />
                   {isFinished ? `${count || 0} Ganhadores` : "Aguardando..."}
                 </div>
               ) : (
                 <div className={cn(
-                  "px-3 sm:px-4 py-1.5 rounded-full border text-[8px] sm:text-[11px] font-black uppercase tracking-widest transition-all duration-300",
-                  variant === 'bonus28' ? "bg-white text-red-500 border-red-50" : "bg-white text-red-500 border-red-50 shadow-sm"
+                  "px-2 py-0.5 rounded-full border text-[7px] sm:text-[9px] font-bold uppercase tracking-widest",
+                  isPremium ? "bg-white/5 border-red-500/20 text-red-400" : "bg-white/80 border-red-100 text-red-500"
                 )}>
                   Acumulado
                 </div>
               )}
-            </div>
-          </div>
 
-          <div className="text-right shrink-0">
-            <div className={cn(
-              "px-3 py-3 sm:px-10 sm:py-6 rounded-[22px] sm:rounded-[36px] border flex flex-col justify-center transition-all duration-500",
-              variant === 'bonus28' ? "bg-slate-900 border-lotofacil-yellow/20 shadow-2xl" : 
-              variant === 'bonus25' ? "bg-white border-emerald-100 shadow-xl" : 
-              "bg-white border-slate-100 shadow-sm group-hover:shadow-xl group-hover:border-lotofacil-purple/10"
-            )}>
-              <p className={cn(
-                "text-base sm:text-[40px] font-black tracking-tighter leading-none whitespace-nowrap",
-                variant === 'bonus28' ? "text-lotofacil-yellow" : 
-                variant === 'bonus25' ? "text-emerald-500" : 
-                color
-              )}>
-                {count && count > 1 
-                  ? (value / count).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                  : value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                }
-                {count && count > 1 && (
-                  <span className="text-[10px] sm:text-lg font-black uppercase tracking-normal h-fit ml-1 opacity-80">
-                    cada
-                  </span>
-                )}
-              </p>
-              {count && count > 1 && (
-                <p className={cn(
-                  "text-[8px] sm:text-[10px] font-black uppercase tracking-wider mt-1.5",
-                  variant === 'bonus28' ? "text-slate-400" : "text-slate-500"
-                )}>
-                  Total {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })} div. por {count}
-                </p>
+              {onInfoClick && (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onInfoClick();
+                  }}
+                  className={cn(
+                    "text-[7px] sm:text-[9px] items-center gap-0.5 font-bold uppercase tracking-widest transition-colors inline-flex border px-2 py-0.5 rounded-full",
+                    isPremium ? "bg-white/5 border-white/10 text-slate-300 hover:text-white" : "bg-white/80 border-slate-150 text-slate-400 hover:text-lotofacil-purple"
+                  )}
+                >
+                  Regras
+                </button>
               )}
             </div>
-            {onInfoClick && (
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onInfoClick();
-                }}
-                className={cn(
-                  "mt-2 text-[8px] sm:text-[11px] items-center gap-1 font-black uppercase tracking-widest transition-colors inline-flex",
-                  variant === 'bonus28' ? "text-white/40 hover:text-white" : "text-slate-400 hover:text-lotofacil-purple"
-                )}
-              >
-                Detalhes <HelpCircle size={12} />
-              </button>
-            )}
           </div>
+        </div>
+
+        {/* Pricing tag */}
+        <div className="text-right shrink-0">
+          <p className={cn(
+            "text-lg sm:text-xl font-black tracking-tight leading-none",
+            variant === 'bonus28' ? "text-amber-400" :
+            variant === 'bonus25' ? "text-emerald-400" :
+            "text-slate-900"
+          )}>
+            {displayValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            {count && count > 1 ? (
+              <span className="text-[8px] font-bold uppercase tracking-normal block mt-1 text-slate-400">
+                Cada
+              </span>
+            ) : null}
+          </p>
         </div>
       </div>
     </motion.div>

@@ -4070,7 +4070,8 @@ const WinnersTab: React.FC = () => {
           doc.text(cat.title, 14, currentY);
           currentY += 5;
 
-          const tableData = filtered.map(w => [
+          const tableData = filtered.map((w, index) => [
+            index + 1,
             w.draw,
             w.name,
             w.code,
@@ -4080,9 +4081,9 @@ const WinnersTab: React.FC = () => {
 
           autoTable(doc, {
             startY: currentY,
-            head: [['CATEGORIA', 'PARTICIPANTE', 'VENDEDOR', 'PONTOS', 'PRÊMIO']],
+            head: [['Nº', 'CATEGORIA', 'PARTICIPANTE', 'VENDEDOR', 'PONTOS', 'PRÊMIO']],
             body: tableData,
-            theme: 'striped',
+            theme: 'grid',
             headStyles: { 
               fillColor: [122, 154, 9],
               textColor: [255, 255, 255],
@@ -4091,10 +4092,19 @@ const WinnersTab: React.FC = () => {
               halign: 'center'
             },
             columnStyles: {
-              4: { halign: 'right', fontStyle: 'bold' },
-              3: { halign: 'center' }
+              0: { fillColor: [255, 255, 255], halign: 'center', cellWidth: 10 },
+              1: { fillColor: [255, 255, 255] },
+              2: { fillColor: [255, 255, 255] },
+              3: { fillColor: [255, 255, 255] },
+              4: { halign: 'center' },
+              5: { halign: 'right', fontStyle: 'bold' }
             },
-            styles: { fontSize: 8, cellPadding: 4 }
+            styles: { fontSize: 8, cellPadding: 4, lineColor: [0, 0, 0], lineWidth: 0.5 },
+            didParseCell: (data) => {
+              if (data.section === 'body' && data.column.index <= 3) {
+                data.cell.styles.fillColor = [255, 255, 255];
+              }
+            }
           });
 
           currentY = (doc as any).lastAutoTable.finalY + 15;

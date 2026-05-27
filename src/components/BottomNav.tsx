@@ -34,8 +34,35 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
     { id: 'logout', label: 'Sair', icon: LogOut, roles: ['master', 'admin', 'vendedor', 'cliente'] },
   ];
 
+  const getButtonClasses = (itemId: string, isActive: boolean) => {
+    const base = "flex-1 flex flex-col items-center justify-center gap-1 py-1.5 px-0.5 rounded-xl transition-all duration-300 relative border select-none h-[54px] min-w-[56px] sm:min-w-[72px]";
+    
+    if (isActive) {
+      if (itemId === 'bet') {
+        return cn(base, "bg-amber-400/20 border-amber-400 text-amber-300 font-bold shadow-[0_2px_8px_rgba(251,191,36,0.25)] scale-[1.03] z-10");
+      }
+      if (itemId === 'logout') {
+        return cn(base, "bg-red-500/20 border-red-500 text-red-300 font-bold shadow-[0_2px_8px_rgba(239,68,68,0.25)] scale-[1.03] z-10");
+      }
+      if (itemId === 'login') {
+        return cn(base, "bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold shadow-[0_2px_8px_rgba(16,185,129,0.25)] scale-[1.03] z-10");
+      }
+      return cn(base, "bg-lotofacil-yellow/20 border-lotofacil-yellow text-lotofacil-yellow font-bold shadow-[0_2px_8px_rgba(251,191,36,0.25)] scale-[1.03] z-10");
+    } else {
+      if (itemId === 'bet') {
+        return cn(base, "bg-amber-950/25 border-amber-500/25 text-amber-500 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/40");
+      }
+      if (itemId === 'logout') {
+        return cn(base, "bg-red-950/25 border-red-500/25 text-red-400 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/40");
+      }
+      if (itemId === 'login') {
+        return cn(base, "bg-emerald-950/25 border-emerald-500/25 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 hover:border-emerald-500/40");
+      }
+      return cn(base, "bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-850 hover:border-slate-700");
+    }
+  };
+
   // For Admins, we might want to show Admin instead of Sorteios or Sair
-  // But let's keep Sair as it's a direct request
   if (user && (user.role === 'admin' || user.role === 'master')) {
     const adminItem = { id: 'admin', label: 'Admin', icon: Settings, roles: ['master', 'admin'] };
     const items = [...mainItems];
@@ -44,63 +71,55 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
     const filteredItems = items.filter(item => item.roles.includes(user.role)).slice(0, 5);
     
     return (
-    <nav className="fixed bottom-0 left-0 lg:left-72 right-0 bg-slate-950/80 backdrop-blur-xl border-t border-sky-400/20 px-2 py-2 z-50 flex items-center justify-around shadow-[0_-8px_32px_rgba(14,165,233,0.15)]">
-      {filteredItems.map(item => (
-        <button
-          key={item.id}
-          onClick={() => item.id === 'logout' ? logout() : setView(item.id)}
-          className={cn(
-            "flex flex-col items-center gap-1.5 p-2 rounded-2xl transition-all min-w-[64px] relative group",
-            currentView === item.id 
-              ? (item.id === 'bet' ? "text-yellow-400 scale-115" : "text-lotofacil-yellow scale-110") 
-              : item.id === 'logout' ? "text-red-400" : "text-white/40 flex"
-          )}
-        >
-          {currentView === item.id && (
-            <motion.div 
-              layoutId="nav-glow"
-              className="absolute inset-0 bg-lotofacil-yellow/5 rounded-2xl blur-lg" 
-            />
-          )}
-          <div className={cn(
-            "p-1.5 rounded-xl transition-all relative",
-            currentView === item.id ? (item.id === 'bet' ? "bg-yellow-400/20 text-yellow-400" : "bg-lotofacil-yellow/10") : ""
-          )}>
-            <item.icon 
-              size={currentView === item.id ? 24 : 20} 
-              strokeWidth={currentView === item.id ? 3 : 2}
-              className={cn(
-                "transition-all",
-                currentView === item.id ? "drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]" : "",
-                item.id === 'participants' && currentView !== item.id ? "text-emerald-500" : ""
-              )} 
-            />
-            {item.id === 'participants' && currentView !== item.id && (
-              <div className="absolute -top-0.5 -right-0.5 px-0.5 rounded-sm bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.4)]">
-                <span className="text-[5px] font-black text-white leading-none">LIVE</span>
+      <nav className="fixed bottom-0 left-0 lg:left-72 right-0 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800/80 px-2.5 py-2.5 z-50 flex items-center justify-around gap-1.5 shadow-[0_-8px_24px_rgba(0,0,0,0.6)]">
+        {filteredItems.map(item => {
+          const isActive = currentView === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => item.id === 'logout' ? logout() : setView(item.id)}
+              className={getButtonClasses(item.id, isActive)}
+            >
+              {isActive && (
+                <motion.div 
+                  layoutId="nav-glow"
+                  className="absolute inset-0 rounded-xl blur-md opacity-30" 
+                  style={{
+                    backgroundColor: item.id === 'bet' ? '#f59e0b' : item.id === 'logout' ? '#ef4444' : '#facc15'
+                  }}
+                />
+              )}
+              <div className={cn(
+                "p-1 rounded-lg transition-all relative",
+                isActive ? "bg-white/5" : "bg-black/20"
+              )}>
+                <item.icon 
+                  size={isActive ? 20 : 18} 
+                  strokeWidth={isActive ? 2.5 : 2}
+                  className={cn(
+                    "transition-all",
+                    isActive ? "drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]" : "",
+                    item.id === 'participants' && !isActive ? "text-emerald-500" : ""
+                  )} 
+                />
+                {item.id === 'participants' && !isActive && (
+                  <div className="absolute -top-1 -right-1 px-1 rounded-sm bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.4)]">
+                    <span className="text-[5px] font-black text-white leading-none">LIVE</span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <span className={cn(
-            "text-[9px] font-bold uppercase tracking-widest transition-all",
-            currentView === item.id ? (item.id === 'bet' ? "opacity-100 translate-y-0 text-yellow-400" : "opacity-100 translate-y-0 text-lotofacil-yellow") : "opacity-40"
-          )}>
-            {item.label}
-          </span>
-          {currentView === item.id && (
-            <motion.div 
-              layoutId="nav-dot"
-              className="w-1.5 h-1.5 bg-lotofacil-yellow rounded-full mt-0.5 shadow-[0_0_8px_rgba(251,191,36,0.6)]" 
-            />
-          )}
-        </button>
-      ))}
-    </nav>
+              <span className={cn(
+                "text-[8px] sm:text-[10px] uppercase tracking-wider font-bold truncate max-w-full text-center header-text",
+                isActive ? "text-white opacity-100" : "opacity-80"
+              )}>
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
     );
   }
-
-  const logoutItem = { id: 'logout', label: 'Sair', icon: LogOut, roles: ['master', 'admin', 'vendedor', 'cliente'] };
-  const loginItem = { id: 'login', label: 'Entrar', icon: LogOut, roles: [] };
 
   const filteredItems = user 
     ? mainItems.filter(item => item.roles.includes(user.role)).slice(0, 5)
@@ -123,57 +142,52 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 lg:left-72 right-0 bg-slate-950/80 backdrop-blur-xl border-t border-sky-400/20 px-2 py-2 z-50 flex items-center justify-around shadow-[0_-8px_32px_rgba(14,165,233,0.15)]">
-      {filteredItems.map(item => (
-        <button
-          key={item.id}
-          onClick={() => handleAction(item.id)}
-          className={cn(
-            "flex flex-col items-center gap-1.5 p-2 rounded-2xl transition-all min-w-[64px] relative group",
-            currentView === item.id 
-              ? (item.id === 'bet' ? "text-yellow-400 scale-115" : "text-lotofacil-yellow scale-110") 
-              : item.id === 'logout' || item.id === 'login' ? (user ? "text-red-400" : "text-lotofacil-yellow") : "text-white/40 flex"
-          )}
-        >
-          {currentView === item.id && (
-            <motion.div 
-              layoutId="nav-glow-guest"
-              className="absolute inset-0 bg-lotofacil-yellow/5 rounded-2xl blur-lg" 
-            />
-          )}
-          <div className={cn(
-            "p-1.5 rounded-xl transition-all relative",
-            currentView === item.id ? (item.id === 'bet' ? "bg-yellow-400/20 text-yellow-400" : "bg-lotofacil-yellow/10") : ""
-          )}>
-            <item.icon 
-              size={currentView === item.id ? 24 : 20} 
-              strokeWidth={currentView === item.id ? 3 : 2}
-              className={cn(
-                "transition-all",
-                currentView === item.id ? "drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]" : "",
-                item.id === 'participants' && currentView !== item.id ? "text-emerald-500" : ""
-              )} 
-            />
-            {item.id === 'participants' && currentView !== item.id && (
-              <div className="absolute -top-0.5 -right-0.5 px-0.5 rounded-sm bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.4)]">
-                <span className="text-[5px] font-black text-white leading-none">LIVE</span>
-              </div>
+    <nav className="fixed bottom-0 left-0 lg:left-72 right-0 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800/80 px-2.5 py-2.5 z-50 flex items-center justify-around gap-1.5 shadow-[0_-8px_24px_rgba(0,0,0,0.6)]">
+      {filteredItems.map(item => {
+        const isActive = currentView === item.id;
+        return (
+          <button
+            key={item.id}
+            onClick={() => handleAction(item.id)}
+            className={getButtonClasses(item.id, isActive)}
+          >
+            {isActive && (
+              <motion.div 
+                layoutId="nav-glow-guest"
+                className="absolute inset-0 rounded-xl blur-md opacity-30" 
+                style={{
+                  backgroundColor: item.id === 'bet' ? '#f59e0b' : item.id === 'logout' ? '#ef4444' : item.id === 'login' ? '#10b981' : '#facc15'
+                }}
+              />
             )}
-          </div>
-          <span className={cn(
-            "text-[9px] font-bold uppercase tracking-widest transition-all",
-            currentView === item.id ? (item.id === 'bet' ? "opacity-100 text-yellow-400" : "opacity-100 text-lotofacil-yellow") : "opacity-40"
-          )}>
-            {item.label}
-          </span>
-          {currentView === item.id && (
-            <motion.div 
-              layoutId="nav-dot-guest"
-              className="w-1.5 h-1.5 bg-lotofacil-yellow rounded-full mt-0.5 shadow-[0_0_8px_rgba(251,191,36,0.6)]" 
-            />
-          )}
-        </button>
-      ))}
+            <div className={cn(
+              "p-1 rounded-lg transition-all relative",
+              isActive ? "bg-white/5" : "bg-black/20"
+            )}>
+              <item.icon 
+                size={isActive ? 20 : 18} 
+                strokeWidth={isActive ? 2.5 : 2}
+                className={cn(
+                  "transition-all",
+                  isActive ? "drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]" : "",
+                  item.id === 'participants' && !isActive ? "text-emerald-500" : ""
+                )} 
+              />
+              {item.id === 'participants' && !isActive && (
+                <div className="absolute -top-1 -right-1 px-1 rounded-sm bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.4)]">
+                  <span className="text-[5px] font-black text-white leading-none">LIVE</span>
+                </div>
+              )}
+            </div>
+            <span className={cn(
+              "text-[8px] sm:text-[10px] uppercase tracking-wider font-bold truncate max-w-full text-center header-text",
+              isActive ? "text-white opacity-100" : "opacity-80"
+            )}>
+              {item.label}
+            </span>
+          </button>
+        );
+      })}
     </nav>
   );
 };
