@@ -93,9 +93,19 @@ const LiveRanking: React.FC = () => {
   }, [activeContest, systemSettings]);
 
   useEffect(() => {
-    if (activeContest) {
+    if (activeContest && activeContest.draws) {
       const hasResults = activeContest.draws.some(d => d.results && d.results.length > 0);
       setSortBy(hasResults ? 'points' : 'name');
+
+      // Find the last draw index that has results or is completed
+      let lastCompletedIdx = 0;
+      for (let i = 0; i < activeContest.draws.length; i++) {
+        const d = activeContest.draws[i];
+        if ((d.results && d.results.length > 0) || d.status === 'concluido') {
+          lastCompletedIdx = i;
+        }
+      }
+      setSelectedDraw(lastCompletedIdx);
     }
   }, [activeContest?.draws]);
   const [selectedDraw, setSelectedDraw] = useState(0);
@@ -551,8 +561,8 @@ const LiveRanking: React.FC = () => {
     
     // Generate actual price list to show
     const prizeLines = [
-      { label: "1º LUGAR (CHAMPION)", value: prizes.campeao, sub: "Maior pontuação acumulada" },
-      { label: "2º LUGAR (VICE CHAMPION)", value: prizes.vice, sub: "Segunda maior pontuação" },
+      { label: "1º LUGAR (MAIS PONTOS)", value: prizes.campeao, sub: "Maior pontuação acumulada" },
+      { label: "2º LUGAR", value: prizes.vice, sub: "Segunda maior pontuação" },
       { label: "RAPIDINHA (1º SORT.)", value: prizes.rapidinha, sub: "Maior pontuação no Sorteio #1" },
       { label: "10 PONTOS (1º SORT.)", value: prizes.fixed10PtsDraw1, sub: "Dez dezenas no Sorteio #1" },
       { label: "10 PONTOS (2º SORT.)", value: prizes.fixed10PtsDraw2, sub: "Dez dezenas no Sorteio #2" },
