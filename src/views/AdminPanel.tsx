@@ -832,6 +832,55 @@ const DrawsTab: React.FC<{
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
 
+  const [fetchingCaixa, setFetchingCaixa] = useState<{ [key: number]: boolean }>({});
+  const [caixaContestInput, setCaixaContestInput] = useState<{ [key: number]: string }>({});
+  const [caixaMetadata, setCaixaMetadata] = useState<{ [key: number]: { concurso: string; data: string } }>({});
+
+  const handleFetchCaixaResult = async (drawNumber: number) => {
+    const contestNum = caixaContestInput[drawNumber]?.trim() || '';
+    
+    setFetchingCaixa(prev => ({ ...prev, [drawNumber]: true }));
+    try {
+      const isLatest = !contestNum;
+      const url = `https://loteriascaixa-api.herokuapp.com/api/lotofacil/${isLatest ? 'latest' : contestNum}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Não foi possível obter dados da API.');
+      }
+      
+      const data = await response.json();
+      if (!data || !Array.isArray(data.dezenas) || data.dezenas.length !== 15) {
+        throw new Error('Resultado ou formato inválido na API.');
+      }
+      
+      // Update state for this draw with pads
+      const fetchedDezenas = data.dezenas.map((d: string) => d.padStart(2, '0'));
+      
+      const newResults = [...drawResults];
+      newResults[drawNumber - 1] = fetchedDezenas;
+      setDrawResults(newResults);
+
+      const concursoStr = data.concurso ? String(data.concurso) : '';
+      const dataStr = data.data || data.dataConcurso || '';
+      
+      setCaixaMetadata(prev => ({
+        ...prev,
+        [drawNumber]: { concurso: concursoStr, data: dataStr }
+      }));
+      
+      showSuccess(`Concurso #${data.concurso} importado! Salve para gravar.`);
+    } catch (err: any) {
+      console.error(err);
+      showAlert(
+        'Erro na Importação',
+        'Não foi possível obter os resultados da Lotofácil da Caixa. Verifique o número do concurso ou sua conexão.'
+      );
+    } finally {
+      setFetchingCaixa(prev => ({ ...prev, [drawNumber]: false }));
+    }
+  };
+
   const fetchContest = async () => {
     const active = await firebaseService.getActiveContest();
     setContest(active);
@@ -886,7 +935,12 @@ const DrawsTab: React.FC<{
     }
 
     try {
-      await firebaseService.updateDrawResult(contest.id, drawNumber, results);
+      const metadata = caixaMetadata[drawNumber];
+      const matchDraw = contest.draws.find(d => d.number === drawNumber);
+      const cNumStr = metadata?.concurso || matchDraw?.caixaContest || '';
+      const cDateStr = metadata?.data || matchDraw?.caixaDate || '';
+
+      await firebaseService.updateDrawResult(contest.id, drawNumber, results, cNumStr, cDateStr);
       showSuccessConfirmed('SORTEIO VALIDADO', `Os resultados do Sorteio #${drawNumber} foram salvos e os acertos de todas as apostas foram calculados com sucesso!`);
       fetchContest();
     } catch (error) {
@@ -1166,6 +1220,51 @@ const DrawsTab: React.FC<{
               </div>
               
               <div className="space-y-4 sm:space-y-6">
+                {/* Integração API Caixa */}
+                <div className="bg-white p-3 rounded-xl border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-700 font-display">CONCURSO CAIXA</span>
+                    <span className="text-[8px] text-slate-400 font-medium">Lotofácil</span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      maxLength={5}
+                      placeholder="Último"
+                      value={caixaContestInput[num] || ''}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        setCaixaContestInput(prev => ({ ...prev, [num]: val }));
+                      }}
+                      className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100/50 text-[10px] font-bold text-slate-900 focus:outline-none focus:border-lotofacil-purple transition-all text-center h-8"
+                    />
+                    <button
+                      type="button"
+                      disabled={fetchingCaixa[num]}
+                      onClick={() => handleFetchCaixaResult(num)}
+                      className={cn(
+                        "px-3 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 h-8 font-sans border shadow-sm",
+                        fetchingCaixa[num] 
+                          ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed" 
+                          : "bg-gradient-to-r from-lotofacil-purple to-indigo-600 hover:from-lotofacil-purple/90 hover:to-indigo-600/90 text-white border-transparent active:scale-95 cursor-pointer"
+                      )}
+                    >
+                      <RefreshCcw size={11} className={cn(fetchingCaixa[num] && "animate-spin")} />
+                      {fetchingCaixa[num] ? "Buscando..." : "Buscar"}
+                    </button>
+                  </div>
+                  {(caixaMetadata[num]?.concurso || draw?.caixaContest) && (
+                    <div className="text-[9px] sm:text-[10px] text-slate-600 font-medium flex flex-col gap-1 mt-1 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                      <div className="flex justify-between">
+                        <span>Concurso: <strong className="text-lotofacil-purple">#{caixaMetadata[num]?.concurso || draw?.caixaContest}</strong></span>
+                        {(caixaMetadata[num]?.data || draw?.caixaDate) && (
+                          <span>Data: <strong>{caixaMetadata[num]?.data || draw?.caixaDate}</strong></span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex justify-between items-center">
                   <label className="block text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-600">15 Números</label>
                   <span className={cn(

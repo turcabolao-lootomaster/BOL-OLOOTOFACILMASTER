@@ -39,7 +39,23 @@ const Participants: React.FC = () => {
       if (activeContest) {
         unsubscribeBets();
         unsubscribeBets = firebaseService.subscribeToContestBets(activeContest.id, (contestBets) => {
-          setBets(contestBets);
+          // Assign stable numeric ticket/bet numbers alphabetically by name
+          const alphabeticallySorted = [...contestBets].sort((a, b) => {
+            const nameA = (a.betName || a.userName || '').trim().toLowerCase();
+            const nameB = (b.betName || b.userName || '').trim().toLowerCase();
+            if (nameA !== nameB) {
+              return nameA.localeCompare(nameB, 'pt', { sensitivity: 'base' });
+            }
+            return (a.id || '').localeCompare(b.id || '');
+          });
+          const mappedBets = contestBets.map(bet => {
+            const index = alphabeticallySorted.findIndex(b => b.id === bet.id);
+            return {
+              ...bet,
+              ticketNumber: index !== -1 ? (index + 1) : 1
+            };
+          });
+          setBets(mappedBets);
           setLoading(false);
         });
       } else {
@@ -215,7 +231,7 @@ const Participants: React.FC = () => {
 
     // Add column headers
     const headers = [
-      'ID', 'Participante', 
+      'Nº', 'Participante', 
       'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10', 'N11', 'N12', 'N13', 'N14', 'N15',
       'S1', 'S2', 'S3', 'Total', 'Vendedor'
     ];
@@ -236,7 +252,7 @@ const Participants: React.FC = () => {
       sortedNumbers.forEach((n, i) => { if (i < 15) numCols[i] = n; });
       
       const rowData = [
-        index + 1,
+        b.ticketNumber || (index + 1),
         b.betName || b.userName,
         ...numCols,
         hits[0], hits[1], hits[2],
@@ -587,8 +603,15 @@ const Participants: React.FC = () => {
               data.cell.styles.fontStyle = 'bold';
               data.cell.styles.fontSize = 11;
             } else if (data.column.index >= 5 && data.column.index <= 14) { // Numbers N1 to N10
-              data.cell.styles.fillColor = [255, 255, 255];
-              data.cell.styles.textColor = [0, 0, 0];
+              const numVal = Number(data.cell.text);
+              const isHit = !isNaN(numVal) && allResults.includes(numVal);
+              if (isHit) {
+                data.cell.styles.fillColor = [107, 33, 168]; // Purple background for hit
+                data.cell.styles.textColor = [255, 255, 255]; // White text
+              } else {
+                data.cell.styles.fillColor = [255, 215, 0]; // Gold/Yellow background for non-hit
+                data.cell.styles.textColor = [0, 0, 0]; // Black text
+              }
               data.cell.styles.fontSize = 9;
               data.cell.styles.fontStyle = 'bold'; // Bold numbers in table body!
             } else {
@@ -1021,6 +1044,12 @@ const Participants: React.FC = () => {
                       <td className="px-2 sm:px-6 py-4">
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
+                            <span className={cn(
+                              "font-mono text-[8px] sm:text-[9.5px] font-black px-1 rounded flex-shrink-0 tracking-tighter shadow-sm",
+                              isExpanded ? "bg-white/20 text-white" : "bg-amber-100 text-amber-900"
+                            )}>
+                              Nº {String(b.ticketNumber || '').padStart(2, '0')}
+                            </span>
                             <span className={cn(
                               "text-[11px] sm:text-sm font-bold truncate max-w-[110px] sm:max-w-none",
                               isExpanded ? "text-white" : 

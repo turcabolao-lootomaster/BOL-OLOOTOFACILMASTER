@@ -168,9 +168,16 @@ const CurrentContest: React.FC = () => {
               </div>
 
               {draw.status === 'concluido' && (
-                <div className="flex items-center gap-1 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 w-fit">
-                  <AlertCircle className="text-slate-300" size={8} />
-                  <span className="text-[7px] sm:text-xs text-slate-400">15 números sorteados</span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-1 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 w-fit">
+                    <AlertCircle className="text-slate-300" size={8} />
+                    <span className="text-[7px] sm:text-xs text-slate-400">15 números sorteados</span>
+                  </div>
+                  {draw.caixaContest && (
+                    <div className="flex items-center gap-1 bg-lotofacil-purple/5 text-lotofacil-purple px-1.5 py-0.5 rounded border border-lotofacil-purple/10 w-fit">
+                      <span className="text-[7px] sm:text-[10px] font-bold uppercase tracking-wider">Ref: Concurso #{draw.caixaContest}{draw.caixaDate ? ` - ${draw.caixaDate}` : ''}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

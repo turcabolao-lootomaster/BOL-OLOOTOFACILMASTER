@@ -40,6 +40,8 @@ export interface Draw {
   number: number;
   status: 'pendente' | 'concluido';
   results: number[];
+  caixaContest?: string;
+  caixaDate?: string;
 }
 
 export interface Contest {
@@ -102,6 +104,7 @@ export interface Bet {
   createdAt: any;
   hits?: number[]; // [hits1, hits2, hits3]
   repeat?: boolean;
+  ticketNumber?: number | string;
 }
 
 export interface UserRanking {

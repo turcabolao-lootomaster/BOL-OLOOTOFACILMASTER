@@ -158,7 +158,23 @@ const LiveRanking: React.FC = () => {
           
           if (unsubscribeBets) unsubscribeBets();
           unsubscribeBets = firebaseService.subscribeToContestBets(contest.id, (contestBets) => {
-            setBets(contestBets);
+            // Assign stable numeric ticket/bet numbers alphabetically by name
+            const alphabeticallySorted = [...contestBets].sort((a, b) => {
+              const nameA = (a.betName || a.userName || '').trim().toLowerCase();
+              const nameB = (b.betName || b.userName || '').trim().toLowerCase();
+              if (nameA !== nameB) {
+                return nameA.localeCompare(nameB, 'pt', { sensitivity: 'base' });
+              }
+              return (a.id || '').localeCompare(b.id || '');
+            });
+            const mappedBets = contestBets.map(bet => {
+              const index = alphabeticallySorted.findIndex(b => b.id === bet.id);
+              return {
+                ...bet,
+                ticketNumber: index !== -1 ? (index + 1) : 1
+              };
+            });
+            setBets(mappedBets);
             setLoading(false);
           });
         } else {
@@ -379,7 +395,7 @@ const LiveRanking: React.FC = () => {
 
     // Add column headers
     const headers = [
-      'Pos', 'Participante', 
+      'Nº', 'Pos', 'Participante', 
       'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10', 'N11', 'N12', 'N13', 'N14', 'N15',
       'S1', 'S2', 'S3', 'Total', 'Vendedor'
     ];
@@ -400,6 +416,7 @@ const LiveRanking: React.FC = () => {
       sortedNumbers.forEach((n, i) => { if (i < 15) numCols[i] = n; });
       
       const rowData = [
+        b.ticketNumber || (index + 1),
         b.rank,
         b.betName || b.userName,
         ...numCols,
@@ -429,7 +446,7 @@ const LiveRanking: React.FC = () => {
         };
 
         // Highlight hit numbers
-        if (colNumber >= 3 && colNumber <= 17) {
+        if (colNumber >= 4 && colNumber <= 18) {
           const num = cell.value as number;
           if (allResults.includes(num)) {
             cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -438,7 +455,7 @@ const LiveRanking: React.FC = () => {
         }
 
         // Highlight S1, S2, S3 and Total
-        if (colNumber >= 18 && colNumber <= 21) {
+        if (colNumber >= 19 && colNumber <= 22) {
           cell.font = { bold: true };
           if (cell.value as number >= 10) {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } }; // yellow-100
@@ -449,14 +466,15 @@ const LiveRanking: React.FC = () => {
     });
 
     // Column widths
-    worksheet.getColumn(1).width = 5;
-    worksheet.getColumn(2).width = 25;
-    for (let i = 3; i <= 17; i++) worksheet.getColumn(i).width = 4;
-    worksheet.getColumn(18).width = 6;
+    worksheet.getColumn(1).width = 5; // Nº
+    worksheet.getColumn(2).width = 5; // Pos
+    worksheet.getColumn(3).width = 25; // Participante
+    for (let i = 4; i <= 18; i++) worksheet.getColumn(i).width = 4;
     worksheet.getColumn(19).width = 6;
     worksheet.getColumn(20).width = 6;
-    worksheet.getColumn(21).width = 8;
-    worksheet.getColumn(22).width = 12;
+    worksheet.getColumn(21).width = 6;
+    worksheet.getColumn(22).width = 8;
+    worksheet.getColumn(23).width = 12;
 
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -482,223 +500,214 @@ const LiveRanking: React.FC = () => {
 
     // Header - Main Title
     doc.setFillColor(107, 33, 168); // lotofacil-purple
-    doc.rect(0, 0, pageWidth, 45, 'F');
-    doc.setFontSize(24);
+    doc.rect(0, 0, pageWidth, 56, 'F');
+    doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.text(`BOLÃO LOTOFÁCIL PRÊMIADA`, pageWidth / 2, 18, { align: 'center' });
+    doc.text(`BOLÃO LOTOFÁCIL PRÊMIADA`, 15, 14);
     
     doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Para acompanhar atualizações e mais detalhes, acesse: lotofacilpremiada.online`, pageWidth / 2, 26, { align: 'center' });
+    doc.setTextColor(251, 191, 36); // Amber
+    doc.text(`RANKING DE ACERTOS - CONCURSO #${activeContest.number}`, 15, 21);
     
-    doc.setFontSize(9);
-    doc.setTextColor(255, 255, 255);
-    doc.text(`Ranking atualizado automaticamente a cada concurso`, pageWidth / 2, 33, { align: 'center' });
-    doc.text(`Sistema exclusivo de pontuação acumulada`, pageWidth / 2, 38, { align: 'center' });
-    doc.text(`Acompanhe sua evolução a cada rodada`, pageWidth / 2, 43, { align: 'center' });
-
-    // Prize Cards in Header (Grid Layout matching the app)
-    const prizeCards = [
-      { 
-        label: 'RAPIDINHA', 
-        value: prizes.rapidinha, 
-        color: [255, 251, 235], 
-        textColor: [217, 119, 6],
-        count: rapidinhaWinnersCount,
-        isFinished: isDraw1Finished
-      },
-      { 
-        label: '1º LUGAR', 
-        value: prizes.campeao, 
-        color: [245, 243, 255], 
-        textColor: [124, 58, 237],
-        count: rankingWithRanks.filter(b => b.rank === 1 && maxTotalHits > 0).length,
-        isFinished: isThirdDrawFinished
-      },
-      { 
-        label: '2º LUGAR', 
-        value: prizes.vice, 
-        color: [239, 246, 255], 
-        textColor: [37, 99, 235],
-        count: rankingWithRanks.filter(b => b.rank === 2 && secondMaxTotalHits > 0).length,
-        isFinished: isThirdDrawFinished
-      },
-      { 
-        label: '1º SORTEIO 10 PTS', 
-        value: prizes.fixed10PtsDraw1, 
-        color: [255, 247, 237], 
-        textColor: [234, 88, 12],
-        count: winners10Pts[0].length,
-        isFinished: isDraw1Finished
-      },
-      { 
-        label: '2º SORTEIO 10 PTS', 
-        value: prizes.fixed10PtsDraw2, 
-        color: [255, 247, 237], 
-        textColor: [234, 88, 12],
-        count: winners10Pts[1].length,
-        isFinished: isDraw2Finished
-      },
-      { 
-        label: '3º SORTEIO 10 PTS', 
-        value: prizes.fixed10PtsDraw3, 
-        color: [255, 247, 237], 
-        textColor: [234, 88, 12],
-        count: winners10Pts[2].length,
-        isFinished: isThirdDrawFinished
-      }
-    ];
-
-    const bonusCards = [
-      { 
-        label: 'SUPER BÔNUS 28', 
-        value: prizes.fixed28Plus, 
-        color: [15, 23, 42], 
-        sub: '28 PTS NA SOMA TOTAL', 
-        isSuper: true,
-        count: winners28Plus.length,
-        isFinished: isDraw1Finished && isDraw2Finished && isThirdDrawFinished
-      },
-      { 
-        label: 'BÔNUS 25', 
-        value: prizes.fixed25Plus, 
-        color: [16, 185, 129], 
-        sub: '25 PTS NA SOMA TOTAL', 
-        isSuper: false,
-        count: winners25Plus.length,
-        isFinished: isDraw1Finished && isDraw2Finished && isThirdDrawFinished
-      }
-    ];
-
-    const cardWidth = (pageWidth - 40) / 3;
-    const cardHeight = 22;
-    const startX = 15;
-    const startY = 50;
-
-    // Drawing Bonus Cards First
-    bonusCards.forEach((card, i) => {
-      const y = startY + (16 + 3) * i;
-      doc.setFillColor(card.color[0], card.color[1], card.color[2]);
-      doc.roundedRect(startX, y, pageWidth - 30, 16, 3, 3, 'F');
-      
-      doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      doc.text(card.isSuper ? `COROA SUPER BÔNUS 28` : card.label, startX + 25, y + 7);
-      
-      doc.setFontSize(6);
-      doc.setTextColor(255, 255, 255);
-      doc.text(card.sub, startX + 25, y + 12);
-      
-      doc.setFontSize(11);
-      doc.setTextColor(255, 255, 255);
-      const valToPrint = card.count > 1 ? (card.value / card.count) : card.value;
-      const mainText = valToPrint.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + (card.count > 1 ? " cada" : "");
-      doc.text(mainText, pageWidth - 20, y + 10, { align: 'right' });
-
-      doc.setFontSize(6.5);
-      doc.setTextColor(255, 255, 255);
-      const statusText = card.isFinished 
-        ? `${card.count} Ganhador(es)` 
-        : "Aguardando conclusão...";
-      doc.text(statusText, pageWidth - 20, y + 14, { align: 'right' });
-    });
-
-    const prizeCardsStartY = startY + (16 + 3) * 2 + 5;
-
-    prizeCards.forEach((card, i) => {
-      const row = Math.floor(i / 3);
-      const col = i % 3;
-      const x = startX + (cardWidth + 5) * col;
-      const y = prizeCardsStartY + (cardHeight + 5) * row;
-
-      doc.setFillColor(255, 255, 255);
-      doc.setDrawColor(226, 232, 240);
-      doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'FD');
-      
-      // Icon placeholder
-      doc.setFillColor(card.color[0], card.color[1], card.color[2]);
-      doc.roundedRect(x + 4, y + 4, 12, 14, 2, 2, 'F');
-      
-      doc.setFontSize(5);
-      doc.setTextColor(148, 163, 184);
-      doc.text(card.isFinished ? 'VALOR PAGO' : 'ESTIMATIVA', x + cardWidth - 5, y + 6, { align: 'right' });
-      
-      doc.setFontSize(9);
-      doc.setTextColor(card.textColor[0], card.textColor[1], card.textColor[2]);
-      doc.setFont('helvetica', 'bold');
-      const valToPrint = card.isFinished && card.count > 1 ? (card.value / card.count) : card.value;
-      const prizeValStr = valToPrint.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + (card.isFinished && card.count > 1 ? " cada" : "");
-      doc.text(prizeValStr, x + cardWidth - 5, y + 11, { align: 'right' });
-      
-      doc.setFontSize(6);
-      doc.setTextColor(30, 41, 59);
-      doc.text(card.label, x + cardWidth - 5, y + 16, { align: 'right' });
-      
-      doc.setFontSize(4.5);
-      doc.setTextColor(148, 163, 184);
-      const statusStr = card.isFinished 
-        ? `${card.count} GANHADOR(ES)` 
-        : 'AGUARDANDO...';
-      doc.text(statusStr, x + cardWidth - 5, y + 20, { align: 'right' });
-    });
-
-    // Subheader Info - Centralized
-    doc.setFontSize(11);
-    doc.setTextColor(30, 41, 59);
-    doc.setFont('helvetica', 'bold');
-    
-    // Use contest start date if available, otherwise global start date
+    // Format Date Info
     const displayStartDate = activeContest.startDate || systemSettings?.poolStartDate || '10/04/2026';
     const displayStartTime = activeContest.startTime || systemSettings?.poolStartTime || '';
-    
     const formattedStartDate = displayStartDate.includes('-') 
       ? displayStartDate.split('-').reverse().join('/') 
       : displayStartDate;
-      
-    const startInfo = displayStartTime ? `${formattedStartDate} | ${displayStartTime}` : formattedStartDate;
+    const startInfo = displayStartTime ? `${formattedStartDate} - ${displayStartTime}` : formattedStartDate;
+    
+    doc.setFontSize(7.5);
+    doc.setTextColor(226, 232, 240);
+    doc.text(`ATUALIZADO EM: ${new Date().toLocaleString('pt-BR')}  |  INÍCIO: ${startInfo}`, 15, 27);
 
-    doc.text(`CLASSIFICAÇÃO | CONCURSO #${activeContest.number} | INICIO: ${startInfo}`, pageWidth / 2, 150, { align: 'center' });
-    
-    // Draw Results Section (3 Lines) - Centralized with Balls
-    const ballRadius = 2.5;
-    const ballGap = 1.2;
-    const totalDrawWidth = (ballRadius * 2 * 15) + (ballGap * 14);
-    
+    // Render results of draws 1, 2, 3 in the header banner
     activeContest.draws.forEach((draw, idx) => {
-      const yPos = 160 + (idx * 8);
-      doc.setFontSize(8);
-      doc.setTextColor(71, 85, 105);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${idx + 1}º SORTEIO:`, pageWidth / 2 - totalDrawWidth / 2 - 25, yPos + 1);
+      const yDraw = 35 + (idx * 5.6);
+      doc.setFontSize(8.5);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.text(`SORTEIO ${idx + 1}:`, 15, yDraw);
+      
+      const resStr = draw.results && draw.results.length > 0 
+        ? draw.results.sort((a, b) => a - b).map(n => String(n).padStart(2, '0')).join(' - ') 
+        : 'AGUARDANDO SORTEIO...';
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(253, 224, 71); // Gold
+      doc.text(resStr, 35, yDraw);
+    });
 
-      const sortedRes = [...draw.results].sort((a, b) => a - b);
-      if (sortedRes.length > 0) {
-        sortedRes.forEach((num, nIdx) => {
-          const xPos = pageWidth / 2 - totalDrawWidth / 2 + (ballRadius * 2 + ballGap) * nIdx;
-          doc.setFillColor(107, 33, 168); // Purple ball
-          doc.circle(xPos, yPos, ballRadius, 'F');
-          doc.setFontSize(6);
-          doc.setTextColor(255, 255, 255);
-          doc.text(num.toString().padStart(2, '0'), xPos, yPos + 0.8, { align: 'center' });
+    // Separator line in banner
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.3);
+    doc.line(165, 5, 165, 51);
+
+    // Tabela de Premiações on Right Side of Header Banner
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(253, 224, 71); // Gold Yellow
+    doc.text("TABELA DE PREMIAÇÕES", 172, 11);
+    
+    // Generate actual price list to show
+    const prizeLines = [
+      { label: "1º LUGAR (CHAMPION)", value: prizes.campeao, sub: "Maior pontuação acumulada" },
+      { label: "2º LUGAR (VICE CHAMPION)", value: prizes.vice, sub: "Segunda maior pontuação" },
+      { label: "RAPIDINHA (1º SORT.)", value: prizes.rapidinha, sub: "Maior pontuação no Sorteio #1" },
+      { label: "10 PONTOS (1º SORT.)", value: prizes.fixed10PtsDraw1, sub: "Dez dezenas no Sorteio #1" },
+      { label: "10 PONTOS (2º SORT.)", value: prizes.fixed10PtsDraw2, sub: "Dez dezenas no Sorteio #2" },
+      { label: "10 PONTOS (3º SORT.)", value: prizes.fixed10PtsDraw3, sub: "Dez dezenas no Sorteio #3" },
+    ];
+    
+    prizeLines.forEach((p, idx) => {
+      const yPrize = 17 + (idx * 5.8);
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(255, 255, 255);
+      doc.text(p.label, 172, yPrize);
+      doc.setFontSize(6);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(203, 213, 225); // Slate 300
+      doc.text(`(${p.sub})`, 172, yPrize + 2.4);
+      
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(253, 224, 71); // Gold
+      const valStr = p.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      doc.text(valStr, pageWidth - 15, yPrize + 1, { align: 'right' });
+    });
+
+    // GANHADORES DO CONCURSO Area starts at Y = 62
+    doc.setFillColor(21, 128, 61); // Emerald Green for winners
+    doc.rect(11, 60, pageWidth - 22, 6, 'F');
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 255, 255);
+    doc.text("GANHADORES DO CONCURSO", 15, 64.2);
+
+    // Calculate dynamically who won what prize
+    const winnersData: any[] = [];
+    
+    // Group metrics
+    const championWinners = rankingWithRanks.filter(b => b.rank === 1 && maxTotalHits > 0);
+    const champPrizePerWinner = prizes.campeao / (championWinners.length || 1);
+    
+    const viceWinners = rankingWithRanks.filter(b => b.rank === 2 && secondMaxTotalHits > 0);
+    const vicePrizePerWinner = prizes.vice / (viceWinners.length || 1);
+    
+    const rapidinhaWinners = bets.filter(b => (b.hits?.[0] || 0) === maxS1Hits && maxS1Hits > 0);
+    const rapidinhaPrizePerWinner = prizes.rapidinha / (rapidinhaWinners.length || 1);
+    
+    const d1Winners = winners10Pts[0] || [];
+    const d1PrizePerWinner = prizes.fixed10PtsDraw1 / (d1Winners.length || 1);
+    
+    const d2Winners = winners10Pts[1] || [];
+    const d2PrizePerWinner = prizes.fixed10PtsDraw2 / (d2Winners.length || 1);
+    
+    const d3Winners = winners10Pts[2] || [];
+    const d3PrizePerWinner = prizes.fixed10PtsDraw3 / (d3Winners.length || 1);
+    
+    const bonus28Winners = winners28Plus || [];
+    const bonus28PrizePerWinner = prizes.fixed28Plus / (bonus28Winners.length || 1);
+    
+    const bonus25Winners = winners25Plus || [];
+    const bonus25PrizePerWinner = prizes.fixed25Plus / (bonus25Winners.length || 1);
+
+    // Map winners
+    rankingWithRanks.forEach((b: any, index: number) => {
+      const hits = b.hits || [0, 0, 0];
+      const itemPrizes: { label: string; value: number }[] = [];
+      
+      if (b.rank === 1 && maxTotalHits > 0 && isThirdDrawFinished) {
+        itemPrizes.push({ label: "1º LUGAR", value: champPrizePerWinner });
+      }
+      if (b.rank === 2 && secondMaxTotalHits > 0 && isThirdDrawFinished) {
+        itemPrizes.push({ label: "2º LUGAR", value: vicePrizePerWinner });
+      }
+      if (hits[0] === maxS1Hits && maxS1Hits > 0 && isDraw1Finished) {
+        itemPrizes.push({ label: "RAPIDINHA", value: rapidinhaPrizePerWinner });
+      }
+      if (hits[0] >= 10 && isDraw1Finished) {
+        itemPrizes.push({ label: "10 PTS (1º SORT.)", value: d1PrizePerWinner });
+      }
+      if (hits[1] >= 10 && isDraw2Finished) {
+        itemPrizes.push({ label: "10 PTS (2º SORT.)", value: d2PrizePerWinner });
+      }
+      if (hits[2] >= 10 && isThirdDrawFinished) {
+        itemPrizes.push({ label: "10 PTS (3º SORT.)", value: d3PrizePerWinner });
+      }
+      if (b.totalHits >= 28 && isDraw1Finished && isDraw2Finished && isThirdDrawFinished) {
+        itemPrizes.push({ label: "SUPER BÔNUS 28", value: bonus28PrizePerWinner });
+      }
+      if (b.totalHits >= 25 && b.totalHits < 28 && isDraw1Finished && isDraw2Finished && isThirdDrawFinished) {
+        itemPrizes.push({ label: "BÔNUS 25", value: bonus25PrizePerWinner });
+      }
+      
+      if (itemPrizes.length > 0) {
+        const totalPrizeVal = itemPrizes.reduce((sum, p) => sum + p.value, 0);
+        const prizeLabelsStr = itemPrizes.map(p => p.label).join(' + ');
+        
+        winnersData.push({
+          ticketNum: `Nº ${String(b.ticketNumber || b.id || index + 1).padStart(2, '0')}`,
+          name: (b.betName || b.userName).toUpperCase(),
+          seller: b.sellerCode || '-',
+          range: prizeLabelsStr,
+          value: totalPrizeVal
         });
-      } else {
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'italic');
-        doc.text('Aguardando sorteio...', pageWidth / 2, yPos + 1, { align: 'center' });
       }
     });
 
-    // Info Row
-    doc.setFontSize(9);
-    doc.setTextColor(71, 85, 105);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')} | Total de Apostas: ${bets.length}`, pageWidth / 2, 185, { align: 'center' });
-    doc.text(`Relatório automatizado — Bolão Lotofácil Premiada`, pageWidth / 2, 193, { align: 'center' });
-    doc.text(`Atualizações disponíveis na plataforma online`, pageWidth / 2, 198, { align: 'center' });
+    const winnersHeaders = ["Nº BILHETE", "CLIENTE/PARTICIPANTE", "VENDEDOR/LOCAL", "FAIXA DE ACERTOS", "VALOR APURADO"];
+    const winnersBody = winnersData.map(w => [
+      w.ticketNum,
+      w.name,
+      w.seller,
+      w.range,
+      w.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    ]);
 
-    // Table starts on 2nd page
-    doc.addPage();
+    if (winnersBody.length === 0) {
+      winnersBody.push([
+        '-',
+        'AGUARDANDO FINALIZAÇÃO DOS RESULTADOS PARA LISTAR GANHADORES...',
+        '-',
+        '-',
+        'R$ 0,00'
+      ]);
+    }
+
+    autoTable(doc, {
+      head: [winnersHeaders],
+      body: winnersBody,
+      startY: 67,
+      theme: 'grid',
+      margin: { left: 11 },
+      styles: { fontSize: 7, halign: 'center', cellPadding: 1, font: 'helvetica', lineColor: [0, 0, 0], lineWidth: 0.5 },
+      headStyles: { fillColor: [21, 128, 61], textColor: [255, 255, 255], fontStyle: 'bold', lineColor: [0, 0, 0], lineWidth: 0.5 },
+      columnStyles: {
+        0: { fillColor: [254, 240, 138], textColor: [0, 0, 0], fontStyle: 'bold', cellWidth: 25 }, // Nº Bilhete
+        1: { fillColor: [255, 255, 255], fontStyle: 'bold', halign: 'left', cellWidth: 70 }, // Cliente
+        2: { fillColor: [255, 255, 255], cellWidth: 40 }, // Vendedor
+        3: { fillColor: [255, 247, 237], textColor: [154, 52, 18], fontStyle: 'bold', cellWidth: 90 }, // Faixa de acertos
+        4: { fillColor: [254, 240, 138], textColor: [0, 0, 0], fontStyle: 'bold', cellWidth: 50 } // Valor Apurado
+      }
+    });
+
+    // Check height remaining for general classification
+    let startYForClassif = (doc as any).lastAutoTable.finalY + 14;
+    if (startYForClassif > 170) {
+      doc.addPage();
+      startYForClassif = 22;
+    }
+
+    // Classification General Section Title
+    const headerTitleY = startYForClassif - 8;
+    doc.setFillColor(30, 58, 138); // Navy blue for classification
+    doc.rect(11, headerTitleY, pageWidth - 22, 6, 'F');
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 255, 255);
+    doc.text("CLASSIFICAÇÃO GERAL / LISTA DE CONFERÊNCIA", 15, headerTitleY + 4.2);
 
     // Table Headers - Reordered: S1, S2, S3, SOMA at the end
     const headers = [
@@ -738,7 +747,7 @@ const LiveRanking: React.FC = () => {
       const nameWithPrizes = `${(b.betName || b.userName).toUpperCase()} ${prizeLabels.join(' ')}`.trim();
       
       return [
-        index + 1,
+        b.ticketNumber || (index + 1),
         `${b.rank}º`,
         nameWithPrizes,
         b.sellerCode || '-',
@@ -759,7 +768,7 @@ const LiveRanking: React.FC = () => {
     autoTable(doc, {
       head: [headers],
       body: data,
-      startY: 15,
+      startY: startYForClassif,
       theme: 'grid',
       margin: { left: 11 }, // Bring closer to the margins (297 - 275) / 2
       styles: { fontSize: 7, halign: 'center', cellPadding: 1.2, font: 'helvetica', lineColor: [0, 0, 0], lineWidth: 0.5 },
@@ -840,8 +849,15 @@ const LiveRanking: React.FC = () => {
               data.cell.styles.fontStyle = 'bold';
               data.cell.styles.fontSize = 11;
             } else if (data.column.index >= 5 && data.column.index <= 14) { // Numbers N1 to N10
-              data.cell.styles.fillColor = [255, 255, 255];
-              data.cell.styles.textColor = [0, 0, 0];
+              const numVal = Number(data.cell.text);
+              const isHit = !isNaN(numVal) && currentDrawResults.includes(numVal);
+              if (isHit) {
+                data.cell.styles.fillColor = [107, 33, 168]; // Purple background for hit
+                data.cell.styles.textColor = [255, 255, 255]; // White text
+              } else {
+                data.cell.styles.fillColor = [255, 215, 0]; // Gold/Yellow background for non-hit
+                data.cell.styles.textColor = [0, 0, 0]; // Black text
+              }
               data.cell.styles.fontSize = 9;
               data.cell.styles.fontStyle = 'bold'; // Bold numbers in table body!
             } else {
@@ -1650,9 +1666,16 @@ const LiveRanking: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-1 relative z-10">
-              <p className="font-bold uppercase tracking-widest" style={{ fontSize: '9px', color: '#85d707' }}>
-                {selectedDraw + 1}º Sorteio Realizado
-              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-bold uppercase tracking-widest" style={{ fontSize: '9px', color: '#85d707' }}>
+                  {selectedDraw + 1}º Sorteio Realizado
+                </p>
+                {activeContest.draws[selectedDraw]?.caixaContest && (
+                  <span className="text-[8px] font-black uppercase tracking-widest bg-white/15 text-white/95 px-1.5 py-0.5 rounded border border-white/15">
+                    Ref: Concurso #{activeContest.draws[selectedDraw].caixaContest}{activeContest.draws[selectedDraw].caixaDate ? ` - ${activeContest.draws[selectedDraw].caixaDate}` : ''}
+                  </span>
+                )}
+              </div>
               <div className="grid grid-cols-10 gap-2 w-fit">
                 {activeContest.draws[selectedDraw]?.results?.length > 0 ? (
                   activeContest.draws[selectedDraw].results.sort((a, b) => a - b).map((num, i) => (
@@ -1755,7 +1778,13 @@ const LiveRanking: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-1 py-2.5 sm:py-3 pr-4">
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center justify-start gap-1.5">
+                          <span className={cn(
+                            "font-mono text-[8px] sm:text-[9.5px] font-black px-1 rounded flex-shrink-0 tracking-tighter shadow-sm",
+                            isExpanded ? "bg-white/20 text-white" : "bg-amber-100 text-amber-900"
+                          )}>
+                            Nº {String(b.ticketNumber || '').padStart(2, '0')}
+                          </span>
                           <p className={cn(
                             "text-[10px] sm:text-xs font-bold uppercase truncate max-w-[100px] sm:max-w-none leading-tight",
                             isExpanded ? "text-white" : 

@@ -7,7 +7,6 @@ import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
-import MobileZoomHint from './components/MobileZoomHint';
 import Login from './views/Login';
 import Dashboard from './views/Dashboard';
 import Betting from './views/Betting';
@@ -195,7 +194,6 @@ const AppContent: React.FC = () => {
       />
       
       <main className="flex-1 lg:ml-72 min-h-screen flex flex-col">
-        <MobileZoomHint />
         
         {/* General Notice Banner */}
         {user && (!user.name || !user.whatsapp || !user.pixKey) && (
