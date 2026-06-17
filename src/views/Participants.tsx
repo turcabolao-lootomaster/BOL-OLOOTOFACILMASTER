@@ -472,7 +472,7 @@ const Participants: React.FC = () => {
 
     // Table Headers - Reordered: S1, S2, S3, SOMA at the end
     const headers = [
-      'Nº', 'POS', 'CLIENTE', 'VENDEDOR', 
+      'Nº', 'CLIENTE', 'VENDEDOR', 
       '', // Spacing after Vendedor (no borders)
       'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10',
       '', // Spacing after Numbers (no borders)
@@ -501,8 +501,7 @@ const Participants: React.FC = () => {
       const nameWithPrizes = `${(b.betName || b.userName).toUpperCase()} ${prizeLabels.join(' ')}`.trim();
       
       return [
-        index + 1,
-        `${index + 1}º`,
+        b.ticketNumber || (index + 1),
         nameWithPrizes,
         b.sellerCode || '-',
         '', // Spacing after Vendedor
@@ -525,84 +524,83 @@ const Participants: React.FC = () => {
       startY: 15,
       theme: 'grid',
       margin: { left: 11 }, // Bring closer to the margins (297 - 275) / 2
-      styles: { fontSize: 7, halign: 'center', cellPadding: 1.2, font: 'helvetica', lineColor: [0, 0, 0], lineWidth: 0.5 },
-      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineColor: [0, 0, 0], lineWidth: 0.5 },
+      styles: { fontSize: 7, halign: 'center', cellPadding: 1.2, font: 'helvetica', lineColor: [0, 0, 0], lineWidth: 0.15 },
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', lineColor: [0, 0, 0], lineWidth: 0.15 },
       columnStyles: {
         0: { fillColor: [255, 255, 255], fontStyle: 'bold', cellWidth: 8 }, // Nº
-        1: { fillColor: [255, 255, 255], fontStyle: 'bold', cellWidth: 9 }, // POS
-        2: { fillColor: [255, 255, 255], halign: 'left', cellWidth: 65 }, // CLIENTE (Increased width)
-        3: { fillColor: [255, 255, 255], cellWidth: 27 }, // VENDEDOR (Increased width to avoid wrapping)
-        4: { fillColor: [255, 255, 255], cellWidth: 3.5 }, // Spacing after Vendedor (blank)
-        5: { cellWidth: 11 }, 6: { cellWidth: 11 }, 7: { cellWidth: 11 }, 8: { cellWidth: 11 }, 9: { cellWidth: 11 },
-        10: { cellWidth: 11 }, 11: { cellWidth: 11 }, 12: { cellWidth: 11 }, 13: { cellWidth: 11 }, 14: { cellWidth: 11 }, // N1 to N10 (indices 5-14) (Wider & more rectangular)
-        15: { fillColor: [255, 255, 255], cellWidth: 3.5 }, // Spacing after Numbers (blank)
-        16: { fillColor: [219, 234, 254], textColor: [30, 58, 138], fontStyle: 'bold', cellWidth: 10 }, // S1
-        17: { fillColor: [255, 237, 213], textColor: [154, 52, 18], fontStyle: 'bold', cellWidth: 10 }, // S2
-        18: { fillColor: [243, 232, 255], textColor: [107, 33, 168], fontStyle: 'bold', cellWidth: 10 }, // S3
-        19: { fillColor: [255, 255, 255], cellWidth: 3.5 }, // Spacing after S3 (blank)
-        20: { fillColor: [30, 58, 138], textColor: [255, 215, 0], fontStyle: 'bold', fontSize: 11, cellWidth: 15.5 } // SOMA
+        1: { fillColor: [255, 255, 255], halign: 'left', cellWidth: 74 }, // CLIENTE (Increased width)
+        2: { fillColor: [255, 255, 255], cellWidth: 27 }, // VENDEDOR (Increased width to avoid wrapping)
+        3: { fillColor: [255, 255, 255], cellWidth: 3.5 }, // Spacing after Vendedor (blank)
+        4: { cellWidth: 11 }, 5: { cellWidth: 11 }, 6: { cellWidth: 11 }, 7: { cellWidth: 11 }, 8: { cellWidth: 11 },
+        9: { cellWidth: 11 }, 10: { cellWidth: 11 }, 11: { cellWidth: 11 }, 12: { cellWidth: 11 }, 13: { cellWidth: 11 }, // N1 to N10 (indices 4-13) (Wider & more rectangular)
+        14: { fillColor: [255, 255, 255], cellWidth: 3.5 }, // Spacing after Numbers (blank)
+        15: { fillColor: [219, 234, 254], textColor: [30, 58, 138], fontStyle: 'bold', cellWidth: 10 }, // S1
+        16: { fillColor: [255, 237, 213], textColor: [154, 52, 18], fontStyle: 'bold', cellWidth: 10 }, // S2
+        17: { fillColor: [243, 232, 255], textColor: [107, 33, 168], fontStyle: 'bold', cellWidth: 10 }, // S3
+        18: { fillColor: [255, 255, 255], cellWidth: 3.5 }, // Spacing after S3 (blank)
+        19: { fillColor: [30, 58, 138], textColor: [255, 215, 0], fontStyle: 'bold', fontSize: 11, cellWidth: 15.5 } // SOMA
       },
       alternateRowStyles: { fillColor: [255, 255, 255] },
       didParseCell: (data) => {
         // Clear borders and colors of spacing columns
-        if (data.column.index === 4 || data.column.index === 15 || data.column.index === 19) {
+        if (data.column.index === 3 || data.column.index === 14 || data.column.index === 18) {
           data.cell.styles.lineWidth = 0;
           data.cell.styles.lineColor = [255, 255, 255];
           data.cell.styles.fillColor = [255, 255, 255];
         } else {
           // Keep thick black borders on normal cells
-          data.cell.styles.lineWidth = 0.5;
+          data.cell.styles.lineWidth = 0.15;
           data.cell.styles.lineColor = [0, 0, 0];
           
           if (data.section === 'head') {
-            if (data.column.index === 16) { // S1
+            if (data.column.index === 15) { // S1
                data.cell.styles.fillColor = [219, 234, 254];
                data.cell.styles.textColor = [30, 58, 138];
                data.cell.styles.fontSize = 10;
-            } else if (data.column.index === 17) { // S2
+            } else if (data.column.index === 16) { // S2
                data.cell.styles.fillColor = [255, 237, 213];
                data.cell.styles.textColor = [154, 52, 18];
                data.cell.styles.fontSize = 10;
-            } else if (data.column.index === 18) { // S3
+            } else if (data.column.index === 17) { // S3
                data.cell.styles.fillColor = [243, 232, 255];
                data.cell.styles.textColor = [107, 33, 168];
                data.cell.styles.fontSize = 10;
-            } else if (data.column.index === 20) { // SOMA
+            } else if (data.column.index === 19) { // SOMA
                data.cell.styles.fillColor = [30, 58, 138];
                data.cell.styles.textColor = [255, 215, 0];
                data.cell.styles.fontSize = 11;
-            } else if (data.column.index >= 5 && data.column.index <= 14) { // Numbers N1 to N10
+            } else if (data.column.index >= 4 && data.column.index <= 13) { // Numbers N1 to N10
               data.cell.styles.fillColor = [107, 33, 168]; // Purple background
               data.cell.styles.textColor = [255, 255, 255]; // White Text
               data.cell.styles.fontSize = 9;
               data.cell.styles.fontStyle = 'bold';
-            } else { // Nº, POS, CLIENTE, VENDEDOR (0, 1, 2, 3)
+            } else { // Nº, CLIENTE, VENDEDOR (0, 1, 2)
               data.cell.styles.fillColor = [107, 33, 168]; // Purple background
               data.cell.styles.textColor = [255, 255, 255]; // White Text
               data.cell.styles.fontStyle = 'bold';
             }
           } else if (data.section === 'body') {
-            if (data.column.index === 16) { // S1
+            if (data.column.index === 15) { // S1
               data.cell.styles.fillColor = [219, 234, 254];
               data.cell.styles.textColor = [30, 58, 138];
               data.cell.styles.fontStyle = 'bold';
               data.cell.styles.fontSize = 10;
-            } else if (data.column.index === 17) { // S2
+            } else if (data.column.index === 16) { // S2
               data.cell.styles.fillColor = [255, 237, 213];
               data.cell.styles.textColor = [154, 52, 18];
               data.cell.styles.fontStyle = 'bold';
               data.cell.styles.fontSize = 10;
-            } else if (data.column.index === 18) { // S3
+            } else if (data.column.index === 17) { // S3
               data.cell.styles.fillColor = [243, 232, 255];
               data.cell.styles.textColor = [107, 33, 168];
               data.cell.styles.fontStyle = 'bold';
               data.cell.styles.fontSize = 10;
-            } else if (data.column.index === 20) { // SOMA
+            } else if (data.column.index === 19) { // SOMA
               data.cell.styles.fillColor = [30, 58, 138];
               data.cell.styles.textColor = [255, 215, 0];
               data.cell.styles.fontStyle = 'bold';
               data.cell.styles.fontSize = 11;
-            } else if (data.column.index >= 5 && data.column.index <= 14) { // Numbers N1 to N10
+            } else if (data.column.index >= 4 && data.column.index <= 13) { // Numbers N1 to N10
               const numVal = Number(data.cell.text);
               const isHit = !isNaN(numVal) && allResults.includes(numVal);
               if (isHit) {
@@ -617,7 +615,7 @@ const Participants: React.FC = () => {
             } else {
               data.cell.styles.fillColor = [255, 255, 255];
               data.cell.styles.textColor = [0, 0, 0];
-              data.cell.styles.fontStyle = (data.column.index <= 1) ? 'bold' : 'normal';
+              data.cell.styles.fontStyle = (data.column.index === 0) ? 'bold' : 'normal';
             }
           }
         }
