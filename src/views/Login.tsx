@@ -338,7 +338,7 @@ const Login: React.FC = () => {
                 </button>
                 {error && activeTab === 'google' && (
                   <p className="text-center text-[9px] text-slate-400 uppercase tracking-widest mt-2">
-                    Dica: Se tiver problemas com o Google, tente entrar via <span className="text-lotofacil-purple font-bold cursor-pointer" onClick={() => { setActiveTab('client'); setLoginMethod('whatsapp'); }}>WhatsApp</span> ou <span className="text-lotofacil-purple font-bold cursor-pointer" onClick={() => { setActiveTab('client'); setLoginMethod('code'); }}>Código</span>.
+                    Dica: Se tiver problemas com o Google, tente entrar via <span className="text-lotofacil-purple font-bold cursor-pointer" onClick={() => { setActiveTab('client'); setLoginMethod('whatsapp'); }}>WhatsApp</span>.
                   </p>
                 )}
               </motion.div>
@@ -352,125 +352,59 @@ const Login: React.FC = () => {
                 exit={{ opacity: 0, x: 10 }}
                 className="space-y-4"
               >
-                <div className="flex items-center gap-2 mb-4">
-                  <button 
-                    onClick={() => setLoginMethod('whatsapp')}
-                    className={cn(
-                      "flex-1 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-widest border transition-all",
-                      loginMethod === 'whatsapp' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-white text-slate-400 border-slate-100"
-                    )}
-                  >
-                    Via WhatsApp
-                  </button>
-                  <button 
-                    onClick={() => setLoginMethod('code')}
-                    className={cn(
-                      "flex-1 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-widest border transition-all",
-                      loginMethod === 'code' ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-400 border-slate-100"
-                    )}
-                  >
-                    Via Nome e Código
-                  </button>
-                </div>
-
-                {loginMethod === 'whatsapp' ? (
-                  <form onSubmit={handleWhatsAppLogin} className="space-y-4">
-                    <div className="space-y-3 sm:space-y-4">
-                      <div>
-                        <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Seu Nome</label>
-                        <div className="relative">
-                          <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                          <input 
-                            type="text" 
-                            value={waName}
-                            onChange={(e) => setWaName(e.target.value)}
-                            placeholder="Ex: João Silva"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Número do WhatsApp</label>
-                        <div className="relative">
-                          <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                          <input 
-                            type="tel" 
-                            value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
-                            placeholder="xx9xxxx-xxxx"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Código do Vendedor</label>
-                        <div className="relative">
-                          <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                          <input 
-                            type="text" 
-                            value={sellerCode}
-                            onChange={(e) => setSellerCode(e.target.value.toUpperCase())}
-                            placeholder="Ex: REF123"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900 font-bold"
-                            required
-                          />
-                        </div>
+                <form onSubmit={handleWhatsAppLogin} className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
+                    <div>
+                      <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Seu Nome</label>
+                      <div className="relative">
+                        <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                        <input 
+                          type="text" 
+                          value={waName}
+                          onChange={(e) => setWaName(e.target.value)}
+                          placeholder="Ex: João Silva"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
+                          required
+                        />
                       </div>
                     </div>
-                    <button 
-                      type="submit"
-                      disabled={loading || !phoneNumber || !waName || !sellerCode}
-                      className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white py-3 sm:py-4 rounded-xl flex items-center justify-center gap-3 font-bold uppercase tracking-widest text-[10px] sm:text-xs transition-all shadow-[0_4px_15px_rgba(37,211,102,0.2)] disabled:opacity-50"
-                    >
-                      {loading ? 'PROCESSANDO...' : 'ENTRAR COM WHATSAPP'}
-                    </button>
-                  </form>
-                ) : (
-                  <form onSubmit={handleCodeLogin} className="space-y-4">
-                    <div className="space-y-3 sm:space-y-4">
-                      <div>
-                        <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Seu Nome</label>
-                        <div className="relative">
-                          <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                          <input 
-                            type="text" 
-                            value={accessName}
-                            onChange={(e) => setAccessName(e.target.value)}
-                            placeholder="Ex: João Silva"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Código do Vendedor</label>
-                        <div className="relative">
-                          <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                          <input 
-                            type="text" 
-                            value={accessCode}
-                            onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
-                            placeholder="Ex: REF123"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900 font-bold tracking-widest"
-                            required
-                          />
-                        </div>
+                    <div>
+                      <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Número do WhatsApp</label>
+                      <div className="relative">
+                        <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                        <input 
+                          type="tel" 
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          placeholder="xx9xxxx-xxxx"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900"
+                          required
+                        />
                       </div>
                     </div>
-                    <button 
-                      type="submit"
-                      disabled={loading || !accessCode || !accessName.trim()}
-                      className="w-full bg-slate-900 text-white shadow-slate-900/10 py-3 sm:py-4 rounded-xl flex items-center justify-center gap-3 font-bold uppercase tracking-widest text-[10px] sm:text-xs transition-all shadow-lg disabled:opacity-50"
-                    >
-                      {loading ? 'PROCESSANDO...' : 'ENTRAR COMO CONVIDADO'}
-                    </button>
-                    <p className="text-center text-[9px] text-slate-400 uppercase tracking-widest mt-2">
-                      Dica: Use o código que seu vendedor te passou para ver seus pontos e bilhetes.
-                    </p>
-                  </form>
-                )}
+                    <div>
+                      <label className="block text-[9px] uppercase tracking-widest text-slate-400 mb-1.5 ml-1 font-bold">Código do Vendedor</label>
+                      <div className="relative">
+                        <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                        <input 
+                          type="text" 
+                          value={sellerCode}
+                          onChange={(e) => setSellerCode(e.target.value.toUpperCase())}
+                          placeholder="Ex: REF123"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-xs sm:text-sm text-slate-900 font-bold"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <button 
+                    type="submit"
+                    disabled={loading || !phoneNumber || !waName || !sellerCode}
+                    className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white py-3 sm:py-4 rounded-xl flex items-center justify-center gap-3 font-bold uppercase tracking-widest text-[10px] sm:text-xs transition-all shadow-[0_4px_15px_rgba(37,211,102,0.2)] disabled:opacity-50"
+                  >
+                    {loading ? 'PROCESSANDO...' : 'ENTRAR COM WHATSAPP'}
+                  </button>
+                </form>
               </motion.div>
             )}
 

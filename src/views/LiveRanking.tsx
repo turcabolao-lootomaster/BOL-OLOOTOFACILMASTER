@@ -97,8 +97,8 @@ const LiveRanking: React.FC = () => {
       const hasResults = activeContest.draws.some(d => d.results && d.results.length > 0);
       setSortBy(hasResults ? 'points' : 'name');
 
-      // Find the last draw index that has results or is completed
-      let lastCompletedIdx = 0;
+      // Find the last draw index that has results or is completed, defaulting to the last draw in the list instead of the first
+      let lastCompletedIdx = Math.max(0, activeContest.draws.length - 1);
       for (let i = 0; i < activeContest.draws.length; i++) {
         const d = activeContest.draws[i];
         if ((d.results && d.results.length > 0) || d.status === 'concluido') {
@@ -878,7 +878,7 @@ const LiveRanking: React.FC = () => {
       }
     });
 
-    doc.save(`Ranking_Bolao_Premiada_S${selectedDraw + 1}_Conc_${activeContest.number}.pdf`);
+    doc.save(`Resultado_Parcial_S${selectedDraw + 1}_Concurso_${activeContest.number}.pdf`);
   };
 
   const handleEditBet = (bet: Bet) => {

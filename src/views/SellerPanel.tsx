@@ -225,7 +225,7 @@ const SellerPanel: React.FC = () => {
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 sm:gap-6">
         <div>
           <h1 className="text-2xl sm:text-4xl font-display tracking-widest text-slate-900">PAINEL DO <span className="text-lotofacil-purple uppercase">VENDEDOR</span></h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1 sm:mt-2">Gerencie suas vendas e acompanhe suas comissões em tempo real.</p>
+          <p className="text-xs sm:text-sm text-slate-700 font-medium mt-1 sm:mt-2">Gerencie suas vendas e acompanhe suas comissões em tempo real.</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="glass-card px-4 sm:px-6 py-2 sm:py-3 flex items-center gap-3 border-lotofacil-purple/20">
@@ -240,8 +240,8 @@ const SellerPanel: React.FC = () => {
         <button 
           onClick={() => setActiveTab('sales')}
           className={cn(
-            "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
-            activeTab === 'sales' ? "bg-white text-lotofacil-purple shadow-sm" : "text-slate-400 hover:text-slate-600"
+            "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-widest transition-all",
+            activeTab === 'sales' ? "bg-white text-lotofacil-purple shadow-sm" : "text-slate-600 hover:text-slate-900"
           )}
         >
           Minhas Vendas
@@ -249,8 +249,8 @@ const SellerPanel: React.FC = () => {
         <button 
           onClick={() => setActiveTab('finance')}
           className={cn(
-            "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
-            activeTab === 'finance' ? "bg-white text-lotofacil-purple shadow-sm" : "text-slate-400 hover:text-slate-600"
+            "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-widest transition-all",
+            activeTab === 'finance' ? "bg-white text-lotofacil-purple shadow-sm" : "text-slate-600 hover:text-slate-900"
           )}
         >
           Financeiro
@@ -258,8 +258,8 @@ const SellerPanel: React.FC = () => {
         <button 
           onClick={() => setActiveTab('clients')}
           className={cn(
-            "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
-            activeTab === 'clients' ? "bg-white text-lotofacil-purple shadow-sm" : "text-slate-400 hover:text-slate-600"
+            "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-widest transition-all",
+            activeTab === 'clients' ? "bg-white text-lotofacil-purple shadow-sm" : "text-slate-600 hover:text-slate-900"
           )}
         >
           Meus Clientes
@@ -267,8 +267,8 @@ const SellerPanel: React.FC = () => {
         <button 
           onClick={() => setActiveTab('config')}
           className={cn(
-            "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
-            activeTab === 'config' ? "bg-white text-lotofacil-purple shadow-sm" : "text-slate-400 hover:text-slate-600"
+            "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-widest transition-all",
+            activeTab === 'config' ? "bg-white text-lotofacil-purple shadow-sm" : "text-slate-600 hover:text-slate-900"
           )}
         >
           Configurações
@@ -297,7 +297,7 @@ const SellerPanel: React.FC = () => {
               </div>
               <div className="flex-1 max-w-md w-full">
                 <div className="flex items-center gap-2 p-1.5 sm:p-2 bg-slate-100 rounded-xl sm:rounded-2xl border border-slate-200">
-                  <div className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 font-mono text-[10px] sm:text-xs text-slate-400 truncate">
+                  <div className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 font-mono text-[10px] sm:text-xs text-slate-700 font-semibold truncate">
                     {window.location.origin}/?ref={seller.code}
                   </div>
                   <button 
@@ -315,7 +315,7 @@ const SellerPanel: React.FC = () => {
           {/* Recent Sales Table */}
           <div className="glass-card p-5 sm:p-8 space-y-6 sm:space-y-8">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">VENDAS <span className="text-slate-200">DOS MEUS CLIENTES</span></h2>
+              <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">VENDAS <span className="text-slate-500 font-black">DOS MEUS CLIENTES</span></h2>
               <div className="flex items-center gap-4">
                 {selectedIds.length > 0 && (
                   <div className="flex items-center gap-2 bg-white/50 backdrop-blur-sm border border-slate-200 p-1 rounded-xl shadow-sm pr-2">
@@ -337,7 +337,7 @@ const SellerPanel: React.FC = () => {
                     </button>
                   </div>
                 )}
-                <span className="hidden xs:inline text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+                <span className="hidden xs:inline text-[10px] sm:text-xs font-bold text-slate-700 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
                   {recentSales.length} {recentSales.length === 1 ? 'Aposta' : 'Apostas'}
                 </span>
               </div>
@@ -361,10 +361,10 @@ const SellerPanel: React.FC = () => {
                         {selectedIds.length === recentSales.length && recentSales.length > 0 && <Check size={10} strokeWidth={4} />}
                       </div>
                     </th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold font-display">Data</th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold font-display">Cliente</th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold font-display">Status</th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold font-display text-center">Ações</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-950 font-black font-display">Data</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-950 font-black font-display">Cliente</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-950 font-black font-display">Status</th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-950 font-black font-display text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -392,19 +392,19 @@ const SellerPanel: React.FC = () => {
                           {selectedIds.includes(sale.id) && <Check size={10} strokeWidth={4} />}
                         </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-4 sm:py-5 text-[10px] sm:text-xs text-slate-400 uppercase tracking-widest">
+                      <td className="px-4 sm:px-6 py-4 sm:py-5 text-[10px] sm:text-xs text-slate-900 font-bold uppercase tracking-widest">
                         {sale.createdAt instanceof Date ? sale.createdAt.toLocaleDateString() : 'Recent'}
                       </td>
                       <td className="px-4 sm:px-6 py-4 sm:py-5">
-                        <p className="text-xs sm:text-sm font-bold text-slate-900 truncate max-w-[120px] sm:max-w-none">{sale.betName || sale.userName}</p>
+                        <p className="text-xs sm:text-sm font-bold text-slate-950 truncate max-w-[120px] sm:max-w-none">{sale.betName || sale.userName}</p>
                         <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
-                          <p className="text-[8px] sm:text-[10px] text-slate-300 uppercase tracking-widest">ID: {sale.id.substring(0, 4).toUpperCase()}</p>
-                          <span className="text-slate-100">•</span>
-                          <p className="text-[8px] sm:text-[10px] text-slate-300 uppercase tracking-widest">Conc: #{sale.contestNumber}</p>
+                          <p className="text-[8px] sm:text-[10px] text-slate-600 font-bold uppercase tracking-widest">ID: {sale.id.substring(0, 4).toUpperCase()}</p>
+                          <span className="text-slate-300">•</span>
+                          <p className="text-[8px] sm:text-[10px] text-slate-600 font-bold uppercase tracking-widest">Conc: #{sale.contestNumber}</p>
                         </div>
                         <div className="flex flex-wrap gap-1 mt-2">
                           {sale.numbers.map(n => (
-                            <span key={n} className="text-[8px] font-mono text-lotofacil-purple/60">{n.toString().padStart(2, '0')}</span>
+                            <span key={n} className="text-[8px] font-mono text-lotofacil-purple font-bold">{n.toString().padStart(2, '0')}</span>
                           ))}
                         </div>
                       </td>
@@ -491,7 +491,7 @@ const SellerPanel: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-sm font-bold text-slate-900">{sale.betName || sale.userName}</p>
-                        <p className="text-[10px] text-slate-400 uppercase tracking-widest">
+                        <p className="text-[10px] text-slate-700 font-bold uppercase tracking-widest">
                           {sale.createdAt instanceof Date ? sale.createdAt.toLocaleDateString() : 'Recent'} • ID: {sale.id.substring(0, 4).toUpperCase()}
                         </p>
                       </div>
@@ -543,15 +543,15 @@ const SellerPanel: React.FC = () => {
       ) : activeTab === 'clients' ? (
         <div className="glass-card p-5 sm:p-8 space-y-6 sm:space-y-8">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">MEUS <span className="text-slate-200">CLIENTES VINCULADOS</span></h2>
-            <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+            <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">MEUS <span className="text-slate-500 font-black">CLIENTES VINCULADOS</span></h2>
+            <span className="text-[10px] sm:text-xs font-bold text-slate-700 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
               {linkedUsers.length} {linkedUsers.length === 1 ? 'Cliente' : 'Clientes'}
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {linkedUsers.length === 0 ? (
-              <div className="col-span-full py-10 text-center text-slate-400 text-xs uppercase tracking-widest italic">
+              <div className="col-span-full py-10 text-center text-slate-700 font-bold text-xs uppercase tracking-widest italic">
                 Nenhum cliente vinculado ao seu código ainda.
               </div>
             ) : (
@@ -562,7 +562,7 @@ const SellerPanel: React.FC = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-slate-900 truncate">{u.name || 'Sem Nome'}</p>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{u.email}</p>
+                    <p className="text-[10px] text-slate-800 font-bold uppercase tracking-widest truncate">{u.email}</p>
                   </div>
                 </div>
               ))
@@ -572,26 +572,26 @@ const SellerPanel: React.FC = () => {
       ) : activeTab === 'config' ? (
         <div className="glass-card p-5 sm:p-8 space-y-6 sm:space-y-8">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">MINHAS <span className="text-slate-200">CONFIGURAÇÕES</span></h2>
+            <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">MINHAS <span className="text-slate-500 font-black">CONFIGURAÇÕES</span></h2>
           </div>
 
           <div className="max-w-md space-y-6">
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <p className="text-[10px] text-slate-400 uppercase font-bold">Seu Código de Vendedor:</p>
+              <p className="text-[10px] text-slate-700 uppercase font-extrabold">Seu Código de Vendedor:</p>
               <p className="text-xl font-mono font-black text-lotofacil-purple">{seller.code}</p>
-              <p className="text-[10px] text-slate-500 leading-relaxed">
+              <p className="text-[10px] text-slate-700 font-medium leading-relaxed">
                 Este código é usado pelos seus clientes para vincular as apostas a você.
               </p>
             </div>
 
             <div className="space-y-4">
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Alterar Senha de Acesso</h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-700 font-medium">
                 Esta senha é usada para você logar no painel através do seu código de vendedor.
               </p>
               
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nova Senha</label>
+                <label className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Nova Senha</label>
                 <input 
                   type="text" 
                   value={newPassword}
@@ -645,7 +645,7 @@ const SellerPanel: React.FC = () => {
                   <stat.icon className={stat.color} size={20} />
                 </div>
                 <div className="min-w-0 w-full">
-                  <p className="text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-400 mb-0.5 sm:mb-1 truncate">{stat.label}</p>
+                  <p className="text-[8px] sm:text-[10px] uppercase tracking-widest text-slate-750 font-black mb-0.5 sm:mb-1 truncate">{stat.label}</p>
                   <h3 className="text-base sm:text-2xl font-bold text-slate-900 truncate">{stat.value}</h3>
                 </div>
               </motion.div>
@@ -654,17 +654,17 @@ const SellerPanel: React.FC = () => {
 
           {/* Financial Breakdown */}
           <div className="glass-card p-5 sm:p-8 space-y-6 sm:space-y-8">
-            <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">RESUMO <span className="text-slate-200">FINANCEIRO</span></h2>
+            <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">RESUMO <span className="text-slate-500 font-black">FINANCEIRO</span></h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-6">
                 <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Instruções de Repasse</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">
-                    O valor de <span className="font-bold text-slate-900">R$ {toSend.toFixed(2)}</span> deve ser enviado ao administrador para validação final das suas comissões.
+                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Instruções de Repasse</h3>
+                  <p className="text-sm text-slate-850 font-medium leading-relaxed">
+                    O valor de <span className="font-extrabold text-slate-950">R$ {toSend.toFixed(2)}</span> deve ser enviado ao administrador para validação final das suas comissões.
                   </p>
                   <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-2">
-                    <p className="text-[10px] text-slate-400 uppercase font-bold">Sua Chave PIX Cadastrada:</p>
+                    <p className="text-[10px] text-slate-705 uppercase font-black">Sua Chave PIX Cadastrada:</p>
                     <p className="text-sm font-mono font-bold text-lotofacil-purple">{seller.pixKey || 'Não cadastrada'}</p>
                   </div>
                 </div>
@@ -672,15 +672,15 @@ const SellerPanel: React.FC = () => {
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 border-b border-slate-100">
-                  <span className="text-xs font-medium text-slate-500 uppercase tracking-widest">Total Bruto (Validadas)</span>
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-widest">Total Bruto (Validadas)</span>
                   <span className="text-sm font-bold text-slate-900">R$ {totalSalesValue.toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between p-4 border-b border-slate-100">
-                  <span className="text-xs font-medium text-slate-500 uppercase tracking-widest">Sua Comissão ({seller.commissionPct}%)</span>
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-widest">Sua Comissão ({seller.commissionPct}%)</span>
                   <span className="text-sm font-bold text-emerald-600">- R$ {totalCommission.toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-                  <span className="text-xs font-bold text-slate-900 uppercase tracking-widest">Líquido a Enviar</span>
+                  <span className="text-xs font-bold text-slate-905 uppercase tracking-widest">Líquido a Enviar</span>
                   <span className="text-lg font-bold text-orange-600">R$ {toSend.toFixed(2)}</span>
                 </div>
               </div>

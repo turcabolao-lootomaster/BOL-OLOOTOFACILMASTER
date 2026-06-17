@@ -12,7 +12,8 @@ import {
   Trophy,
   Settings,
   LogOut,
-  BookOpen
+  BookOpen,
+  Store
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../utils';
@@ -26,10 +27,17 @@ interface BottomNavProps {
 const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
   const { user, logout } = useAuth();
 
+  const hasSellerAccess = user && ['master', 'admin', 'vendedor'].includes(user.role);
+
   const mainItems = [
     { id: 'dashboard', label: 'Início', icon: LayoutDashboard, roles: ['master', 'admin', 'vendedor', 'cliente'] },
     { id: 'bet', label: 'Apostar', icon: Ticket, roles: ['master', 'admin', 'vendedor', 'cliente'] },
-    { id: 'my-bets', label: 'Minhas', icon: History, roles: ['master', 'admin', 'vendedor', 'cliente'] },
+    { 
+      id: hasSellerAccess ? 'seller' : 'my-bets', 
+      label: hasSellerAccess ? 'Vendedor' : 'Minhas', 
+      icon: hasSellerAccess ? Store : History, 
+      roles: ['master', 'admin', 'vendedor', 'cliente'] 
+    },
     { id: 'participants', label: 'Ao Vivo', icon: Users, roles: ['master', 'admin', 'vendedor', 'cliente'] },
     { id: 'logout', label: 'Sair', icon: LogOut, roles: ['master', 'admin', 'vendedor', 'cliente'] },
   ];
@@ -85,7 +93,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
                   layoutId="nav-glow"
                   className="absolute inset-0 rounded-xl blur-md opacity-30" 
                   style={{
-                    backgroundColor: item.id === 'bet' ? '#f59e0b' : item.id === 'logout' ? '#ef4444' : '#facc15'
+                    backgroundColor: item.id === 'bet' ? '#f59e0b' : item.id === 'logout' ? '#ef4444' : item.id === 'seller' ? '#10b981' : '#facc15'
                   }}
                 />
               )}
@@ -156,7 +164,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
                 layoutId="nav-glow-guest"
                 className="absolute inset-0 rounded-xl blur-md opacity-30" 
                 style={{
-                  backgroundColor: item.id === 'bet' ? '#f59e0b' : item.id === 'logout' ? '#ef4444' : item.id === 'login' ? '#10b981' : '#facc15'
+                  backgroundColor: item.id === 'bet' ? '#f59e0b' : item.id === 'logout' ? '#ef4444' : item.id === 'login' ? '#10b981' : item.id === 'seller' ? '#10b981' : '#facc15'
                 }}
               />
             )}

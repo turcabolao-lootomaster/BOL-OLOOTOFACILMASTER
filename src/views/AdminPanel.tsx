@@ -667,12 +667,12 @@ const BetsTab: React.FC<{
                   {selectedIds.length === filteredBets.length && filteredBets.length > 0 && <Check size={10} strokeWidth={4} />}
                 </div>
               </th>
-              <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-bold text-lotofacil-purple">Data</th>
-              <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-bold text-center text-lotofacil-purple">Conc.</th>
-              <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-bold text-lotofacil-purple">Cliente / Vendedor</th>
-              <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-bold text-center text-lotofacil-purple">Números Escolhidos</th>
-              <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-bold text-center text-lotofacil-purple">Pontos (S1/S2/S3)</th>
-              <th className="px-4 py-3 text-[9px] uppercase tracking-widest text-slate-500 font-bold text-center">Ações</th>
+              <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-black text-slate-950">Data</th>
+              <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-black text-center text-slate-950">Conc.</th>
+              <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-black text-slate-950">Cliente / Vendedor</th>
+              <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-black text-center text-slate-950">Números Escolhidos</th>
+              <th className="px-4 py-3 text-[9px] uppercase tracking-widest font-black text-center text-slate-950">Pontos (S1/S2/S3)</th>
+              <th className="px-4 py-3 text-[9px] uppercase tracking-widest text-slate-955 font-black text-center">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -701,20 +701,20 @@ const BetsTab: React.FC<{
                     {selectedIds.includes(bet.id) && <Check size={10} strokeWidth={4} />}
                   </div>
                 </td>
-                <td className="px-4 py-4 text-[10px] text-slate-600 uppercase tracking-widest">
+                <td className="px-4 py-4 text-[10px] text-slate-900 font-bold uppercase tracking-widest">
                   {bet.createdAt instanceof Date ? bet.createdAt.toLocaleDateString() : 'Recent'}
                 </td>
                 <td className="px-4 py-4 text-center">
-                  <span className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-600 border border-slate-200 mx-auto">
+                  <span className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-900 border border-slate-300 mx-auto">
                     #{bet.contestNumber}
                   </span>
                 </td>
                 <td className="px-4 py-4">
-                  <p className="text-xs font-bold text-slate-900 truncate max-w-[150px]">
+                  <p className="text-xs font-black text-slate-950 truncate max-w-[150px]">
                     {bet.betName || bet.userName}
                   </p>
-                  {bet.sellerCode && <p className="text-[9px] text-lotofacil-yellow uppercase tracking-widest mt-0.5 font-bold">Vendedor: {bet.sellerCode}</p>}
-                  <p className="text-[8px] text-slate-500 uppercase tracking-widest mt-0.5 font-medium">ID: {bet.userId.slice(-6).toUpperCase()}</p>
+                  {bet.sellerCode && <p className="text-[9px] text-[#7a9a09] uppercase tracking-widest mt-0.5 font-bold">Vendedor: {bet.sellerCode}</p>}
+                  <p className="text-[8px] text-slate-850 uppercase tracking-widest mt-0.5 font-extrabold">ID: {bet.userId.slice(-6).toUpperCase()}</p>
                 </td>
                 <td className="px-4 py-4 text-center">
                   <div className="flex flex-wrap justify-center gap-1 max-w-[200px] mx-auto">
@@ -2975,15 +2975,15 @@ const SellersTab: React.FC<{
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Código</th>
-              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Vendedor</th>
-              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">WhatsApp</th>
-              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Comissão %</th>
-              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Vendas</th>
-              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Senha</th>
-              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Total Comissão</th>
-              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Chave PIX</th>
-              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Ações</th>
+              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-950 font-black">Código</th>
+              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-950 font-black">Vendedor</th>
+              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-950 font-black">WhatsApp</th>
+              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-950 font-black text-center">Comissão %</th>
+              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-950 font-black text-center">Vendas</th>
+              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-950 font-black text-center">Senha</th>
+              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-950 font-black text-center">Total Comissão</th>
+              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-950 font-black text-center">Chave PIX</th>
+              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-950 font-black text-center">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -3134,10 +3134,10 @@ const UsersTab: React.FC<{
         <table className="w-full text-left border-collapse">
           <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold">Nome / E-mail</th>
-                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Vendedor Vinculado</th>
-                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Cargo Atual</th>
-                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-600 font-bold text-center">Ações</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-955 font-black">Nome / E-mail</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-955 font-black text-center">Vendedor Vinculado</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-955 font-black text-center">Cargo Atual</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-slate-955 font-black text-center">Ações</th>
               </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
