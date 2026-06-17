@@ -195,15 +195,6 @@ const AppContent: React.FC = () => {
       
       <main className="flex-1 lg:ml-72 min-h-screen flex flex-col">
         
-        {/* General Notice Banner */}
-        {user && (!user.name || !user.whatsapp || !user.pixKey) && (
-          <div className="bg-lotofacil-yellow/10 border-b border-lotofacil-yellow/20 px-4 py-1 flex items-center justify-center gap-2 animate-pulse">
-            <span className="text-[8px] sm:text-[10px] font-bold text-lotofacil-yellow uppercase tracking-widest text-center">
-              ⚠️ ATENÇÃO: COMPLETE SEU PERFIL (NOME, WHATSAPP, PIX) PARA RECEBER PRÊMIOS!
-            </span>
-          </div>
-        )}
-
         {/* Modern Header */}
         <header className={cn(
           "sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b px-4 sm:px-8 py-2 sm:py-3 flex items-center justify-between",

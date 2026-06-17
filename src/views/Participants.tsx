@@ -609,7 +609,7 @@ const Participants: React.FC = () => {
                 data.cell.styles.fillColor = [107, 33, 168]; // Purple background for hit
                 data.cell.styles.textColor = [255, 255, 255]; // White text
               } else {
-                data.cell.styles.fillColor = [255, 215, 0]; // Gold/Yellow background for non-hit
+                data.cell.styles.fillColor = [255, 255, 255]; // White background for non-hit
                 data.cell.styles.textColor = [0, 0, 0]; // Black text
               }
               data.cell.styles.fontSize = 9;
