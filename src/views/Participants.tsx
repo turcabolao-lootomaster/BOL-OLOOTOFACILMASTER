@@ -580,20 +580,42 @@ const Participants: React.FC = () => {
               data.cell.styles.fontStyle = 'bold';
             }
           } else if (data.section === 'body') {
+            const rowData = filteredBets[data.row.index];
+            const rowHits = rowData?.hits || [0, 0, 0];
+            const has10HitsInAnyDraw = rowHits[0] >= 10 || rowHits[1] >= 10 || rowHits[2] >= 10;
+
             if (data.column.index === 15) { // S1
-              data.cell.styles.fillColor = [219, 234, 254];
-              data.cell.styles.textColor = [30, 58, 138];
-              data.cell.styles.fontStyle = 'bold';
+              if (rowHits[0] >= 10) {
+                data.cell.styles.fillColor = [255, 215, 0]; // Gold/Yellow
+                data.cell.styles.textColor = [0, 0, 0]; // Black text
+                data.cell.styles.fontStyle = 'bold';
+              } else {
+                data.cell.styles.fillColor = [219, 234, 254];
+                data.cell.styles.textColor = [30, 58, 138];
+                data.cell.styles.fontStyle = 'bold';
+              }
               data.cell.styles.fontSize = 10;
             } else if (data.column.index === 16) { // S2
-              data.cell.styles.fillColor = [255, 237, 213];
-              data.cell.styles.textColor = [154, 52, 18];
-              data.cell.styles.fontStyle = 'bold';
+              if (rowHits[1] >= 10) {
+                data.cell.styles.fillColor = [255, 215, 0]; // Gold/Yellow
+                data.cell.styles.textColor = [0, 0, 0]; // Black text
+                data.cell.styles.fontStyle = 'bold';
+              } else {
+                data.cell.styles.fillColor = [255, 237, 213];
+                data.cell.styles.textColor = [154, 52, 18];
+                data.cell.styles.fontStyle = 'bold';
+              }
               data.cell.styles.fontSize = 10;
             } else if (data.column.index === 17) { // S3
-              data.cell.styles.fillColor = [243, 232, 255];
-              data.cell.styles.textColor = [107, 33, 168];
-              data.cell.styles.fontStyle = 'bold';
+              if (rowHits[2] >= 10) {
+                data.cell.styles.fillColor = [255, 215, 0]; // Gold/Yellow
+                data.cell.styles.textColor = [0, 0, 0]; // Black text
+                data.cell.styles.fontStyle = 'bold';
+              } else {
+                data.cell.styles.fillColor = [243, 232, 255];
+                data.cell.styles.textColor = [107, 33, 168];
+                data.cell.styles.fontStyle = 'bold';
+              }
               data.cell.styles.fontSize = 10;
             } else if (data.column.index === 19) { // SOMA
               data.cell.styles.fillColor = [30, 58, 138];
@@ -605,7 +627,11 @@ const Participants: React.FC = () => {
               const isHit = !isNaN(numVal) && allResults.includes(numVal);
               if (isHit) {
                 data.cell.styles.fillColor = [107, 33, 168]; // Purple background for hit
-                data.cell.styles.textColor = [255, 255, 255]; // White text
+                if (has10HitsInAnyDraw) {
+                  data.cell.styles.textColor = [255, 215, 0]; // Gold/Yellow text
+                } else {
+                  data.cell.styles.textColor = [255, 255, 255]; // White text
+                }
               } else {
                 data.cell.styles.fillColor = [255, 255, 255]; // White background for non-hit
                 data.cell.styles.textColor = [0, 0, 0]; // Black text
@@ -1078,11 +1104,24 @@ const Participants: React.FC = () => {
                           {/* Mobile Numbers Display */}
                           {!isExpanded && (
                             <div className="flex flex-wrap gap-0.5 mt-1 sm:hidden">
-                              {b.numbers.map(num => (
-                                <span key={num} className="text-[9px] font-bold text-lotofacil-purple bg-lotofacil-purple/5 px-0.5 rounded border border-lotofacil-purple/10">
-                                  {num.toString().padStart(2, '0')}
-                                </span>
-                              ))}
+                              {b.numbers.map(num => {
+                                const allResults = contest?.draws?.flatMap(d => d.results || []) || [];
+                                const isHit = allResults.includes(num);
+                                const has10HitsInAnyDraw = hits[0] >= 10 || hits[1] >= 10 || hits[2] >= 10;
+                                return (
+                                  <span 
+                                    key={num} 
+                                    className={cn(
+                                      "text-[9px] font-bold px-0.5 rounded border transition-all",
+                                      isHit 
+                                        ? (has10HitsInAnyDraw ? "bg-purple-700 text-[#ffd700] border-amber-400 font-black shadow-[0_0_4px_rgba(251,191,36,0.6)]" : "bg-lotofacil-purple text-white border-lotofacil-purple")
+                                        : "bg-slate-50 border-slate-200 text-slate-600"
+                                    )}
+                                  >
+                                    {num.toString().padStart(2, '0')}
+                                  </span>
+                                );
+                              })}
                             </div>
                           )}
 
@@ -1108,13 +1147,14 @@ const Participants: React.FC = () => {
                           {b.numbers.map(num => {
                             const allResults = contest?.draws?.flatMap(d => d.results) || [];
                             const isHit = allResults.includes(num);
+                            const has10HitsInAnyDraw = hits[0] >= 10 || hits[1] >= 10 || hits[2] >= 10;
                             return (
                               <div 
                                 key={num} 
                                 className={cn(
                                   "w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold border transition-all",
                                   isHit 
-                                    ? (isExpanded ? "bg-white text-slate-900 border-white" : "bg-lotofacil-purple border-lotofacil-purple text-white")
+                                    ? (isExpanded ? "bg-white text-slate-900 border-white" : has10HitsInAnyDraw ? "bg-purple-700 border-2 border-amber-400 text-[#ffd700] shadow-[0_0_8px_rgba(251,191,36,0.6)] font-black scale-105" : "bg-lotofacil-purple border-lotofacil-purple text-white")
                                     : (isExpanded ? "bg-white/10 border-white/10 text-white/40" : "bg-slate-50 border-slate-200 text-slate-600")
                                 )}
                               >
@@ -1179,13 +1219,14 @@ const Participants: React.FC = () => {
                                   {b.numbers.map(num => {
                                     const allResults = contest?.draws?.flatMap(d => d.results || []) || [];
                                     const isHit = allResults.includes(num);
+                                    const has10HitsInAnyDraw = hits[0] >= 10 || hits[1] >= 10 || hits[2] >= 10;
                                     return (
                                       <div 
                                         key={num}
                                         className={cn(
                                           "aspect-square rounded-xl flex items-center justify-center text-sm sm:text-xl font-black border-2 transition-all",
                                           isHit 
-                                            ? "bg-white border-white text-slate-900 shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-105" 
+                                            ? (has10HitsInAnyDraw ? "bg-purple-700 border-2 border-amber-400 text-[#ffd700] shadow-[0_0_15px_rgba(251,191,36,0.6)] scale-105 font-black" : "bg-white border-white text-slate-900 shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-105") 
                                             : "bg-white/5 border-white/10 text-white/20"
                                         )}
                                       >
@@ -1456,15 +1497,28 @@ const WinnerBadge = ({ label, color }: { label: string, color: string }) => (
 );
 
 const DrawScore = ({ score, isWinner, isExpanded }: { score: number, isWinner: boolean, isExpanded?: boolean }) => (
-  <td className="px-1 sm:px-4 py-4 text-center">
-    <div className="flex flex-col items-center gap-1">
-      <span className={cn(
-        "text-xs sm:text-sm font-bold font-mono",
-        isExpanded ? "text-white" : isWinner ? "text-lotofacil-purple" : score >= 9 ? "text-lotofacil-purple" : "text-slate-400"
-      )}>
-        {score.toString().padStart(2, '0')}
-      </span>
-      {isWinner && <div className={cn("w-1 h-1 rounded-full animate-ping", isExpanded ? "bg-white" : "bg-lotofacil-purple")} />}
+  <td className={cn(
+    "px-1 sm:px-4 py-4 text-center transition-all",
+    !isExpanded && isWinner ? "bg-purple-700 border-2 border-amber-400" : ""
+  )}>
+    <div className="flex flex-col items-center justify-center gap-1">
+      {isWinner && !isExpanded ? (
+        <div className="w-8 h-8 rounded-full bg-[#ffd700] border border-amber-500 text-black flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse">
+          <span className="text-xs sm:text-sm font-black font-mono">
+            {score.toString().padStart(2, '0')}
+          </span>
+        </div>
+      ) : (
+        <span className={cn(
+          "text-xs sm:text-sm font-black font-mono",
+          isExpanded ? "text-white" : isWinner ? "text-[#ffd700]" : score >= 9 ? "text-lotofacil-purple font-black" : "text-slate-400"
+        )}>
+          {score.toString().padStart(2, '0')}
+        </span>
+      )}
+      {isWinner && !isExpanded ? null : (
+        isWinner && <div className={cn("w-1.5 h-1.5 rounded-full animate-ping animate-pulse", isExpanded ? "bg-white" : "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]")} />
+      )}
     </div>
   </td>
 );

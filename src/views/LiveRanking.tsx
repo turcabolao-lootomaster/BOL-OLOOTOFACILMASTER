@@ -836,20 +836,41 @@ const LiveRanking: React.FC = () => {
               data.cell.styles.fontStyle = 'bold';
             }
           } else if (data.section === 'body') {
+            const rowData = rankingWithRanks[data.row.index];
+            const rowHits = rowData?.hits || [0, 0, 0];
+
             if (data.column.index === 15) { // S1
-              data.cell.styles.fillColor = [219, 234, 254];
-              data.cell.styles.textColor = [30, 58, 138];
-              data.cell.styles.fontStyle = 'bold';
+              if (rowHits[0] >= 10) {
+                data.cell.styles.fillColor = [255, 215, 0]; // Gold/Yellow
+                data.cell.styles.textColor = [0, 0, 0]; // Black text
+                data.cell.styles.fontStyle = 'bold';
+              } else {
+                data.cell.styles.fillColor = [219, 234, 254];
+                data.cell.styles.textColor = [30, 58, 138];
+                data.cell.styles.fontStyle = 'bold';
+              }
               data.cell.styles.fontSize = 10;
             } else if (data.column.index === 16) { // S2
-              data.cell.styles.fillColor = [255, 237, 213];
-              data.cell.styles.textColor = [154, 52, 18];
-              data.cell.styles.fontStyle = 'bold';
+              if (rowHits[1] >= 10) {
+                data.cell.styles.fillColor = [255, 215, 0]; // Gold/Yellow
+                data.cell.styles.textColor = [0, 0, 0]; // Black text
+                data.cell.styles.fontStyle = 'bold';
+              } else {
+                data.cell.styles.fillColor = [255, 237, 213];
+                data.cell.styles.textColor = [154, 52, 18];
+                data.cell.styles.fontStyle = 'bold';
+              }
               data.cell.styles.fontSize = 10;
             } else if (data.column.index === 17) { // S3
-              data.cell.styles.fillColor = [243, 232, 255];
-              data.cell.styles.textColor = [107, 33, 168];
-              data.cell.styles.fontStyle = 'bold';
+              if (rowHits[2] >= 10) {
+                data.cell.styles.fillColor = [255, 215, 0]; // Gold/Yellow
+                data.cell.styles.textColor = [0, 0, 0]; // Black text
+                data.cell.styles.fontStyle = 'bold';
+              } else {
+                data.cell.styles.fillColor = [243, 232, 255];
+                data.cell.styles.textColor = [107, 33, 168];
+                data.cell.styles.fontStyle = 'bold';
+              }
               data.cell.styles.fontSize = 10;
             } else if (data.column.index === 19) { // SOMA
               data.cell.styles.fillColor = [30, 58, 138];
@@ -859,9 +880,14 @@ const LiveRanking: React.FC = () => {
             } else if (data.column.index >= 4 && data.column.index <= 13) { // Numbers N1 to N10
               const numVal = Number(data.cell.text);
               const isHit = !isNaN(numVal) && currentDrawResults.includes(numVal);
+              const has10HitsOnSelected = rowHits[selectedDraw] >= 10;
               if (isHit) {
                 data.cell.styles.fillColor = [107, 33, 168]; // Purple background for hit
-                data.cell.styles.textColor = [255, 255, 255]; // White text
+                if (has10HitsOnSelected) {
+                  data.cell.styles.textColor = [255, 215, 0]; // Gold/Yellow text
+                } else {
+                  data.cell.styles.textColor = [255, 255, 255]; // White text
+                }
               } else {
                 data.cell.styles.fillColor = [255, 255, 255]; // White background for non-hit
                 data.cell.styles.textColor = [0, 0, 0]; // Black text
@@ -878,7 +904,21 @@ const LiveRanking: React.FC = () => {
       }
     });
 
-    doc.save(`Resultado_Parcial_S${selectedDraw + 1}_Concurso_${activeContest.number}.pdf`);
+    let fileName = '';
+    const hasAnyResults = activeContest.draws.some(d => d.results && d.results.length > 0);
+    if (!hasAnyResults) {
+      fileName = `Lista_Participantes_Concurso_${activeContest.number}.pdf`;
+    } else {
+      if (selectedDraw === 0) {
+        fileName = `Resultado_S1_Concurso_${activeContest.number}.pdf`;
+      } else if (selectedDraw === 1) {
+        fileName = `Resultado_S2_Concurso_${activeContest.number}.pdf`;
+      } else {
+        fileName = `Resultado_S3-final_Concurso_${activeContest.number}.pdf`;
+      }
+    }
+
+    doc.save(fileName);
   };
 
   const handleEditBet = (bet: Bet) => {
@@ -1837,13 +1877,14 @@ const LiveRanking: React.FC = () => {
                           <div className="flex flex-nowrap gap-0.5 mt-1 sm:hidden">
                             {b.numbers.map(num => {
                               const isHit = currentDrawResults.includes(num);
+                              const has10HitsOnSelected = hits[selectedDraw] >= 10;
                               return (
                                 <span 
                                   key={num} 
                                   className={cn(
                                     "text-[7px] font-bold px-0.5 rounded-[2px] border transition-all shrink-0",
                                     isHit 
-                                      ? "bg-lotofacil-purple text-white border-lotofacil-purple shadow-[0_0_4px_rgba(107,33,168,0.4)] z-10" 
+                                      ? (has10HitsOnSelected ? "bg-purple-700 text-[#ffd700] border-amber-400 font-black scale-105 z-10 shadow-[0_0_6px_rgba(251,191,36,0.6)]" : "bg-lotofacil-purple text-white border-lotofacil-purple shadow-[0_0_4px_rgba(107,33,168,0.4)] z-10") 
                                       : "bg-[#ffd700] text-black border-black/50"
                                   )}
                                 >
@@ -1866,13 +1907,14 @@ const LiveRanking: React.FC = () => {
                         <div className="flex items-center justify-center gap-1">
                           {b.numbers.map(num => {
                             const isHit = currentDrawResults.includes(num);
+                            const has10HitsOnSelected = hits[selectedDraw] >= 10;
                             return (
                               <div 
                                 key={num} 
                                 className={cn(
                                   "w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-bold border transition-all",
                                   isHit 
-                                    ? (isExpanded ? "bg-white text-slate-900 border-white" : "bg-lotofacil-purple border-lotofacil-purple text-white shadow-sm scale-110 z-10")
+                                    ? (isExpanded ? "bg-white text-slate-900 border-white" : has10HitsOnSelected ? "bg-purple-700 border-2 border-amber-400 text-[#ffd700] font-black scale-110 z-10 shadow-[0_0_8px_rgba(251,191,36,0.8)]" : "bg-lotofacil-purple border-lotofacil-purple text-white shadow-sm scale-110 z-10")
                                     : (isExpanded ? "bg-white/10 border-white/10 text-white/40" : "bg-[#ffd700] border-black text-black")
                                 )}
                               >
@@ -1883,37 +1925,67 @@ const LiveRanking: React.FC = () => {
                         </div>
                       </td>
                       <td className={cn(
-                        "px-0.5 py-2.5 sm:py-3 text-center transition-all",
-                        isExpanded ? "bg-white/5" : selectedDraw === 0 ? "bg-lotofacil-purple/10" : "bg-blue-50/30"
+                        "px-0.5 py-1.5 sm:py-2 text-center transition-all",
+                        isExpanded ? "bg-white/5" : hits[0] >= 10 ? "bg-purple-700 text-[#ffd700] border-2 border-amber-400" : selectedDraw === 0 ? "bg-lotofacil-purple/10" : "bg-blue-50/30"
                       )}>
-                        <span className={cn(
-                          "text-[10px] sm:text-xs font-bold px-0.5 py-0.5 rounded-md",
-                          isExpanded ? "text-white" : hits[0] >= 10 ? "bg-green-100 text-green-700" : "text-blue-700"
-                        )}>
-                          {hits[0]}
-                        </span>
+                        <div className="flex items-center justify-center">
+                          {hits[0] >= 10 && !isExpanded ? (
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#ffd700] border border-amber-500 text-black font-black flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse">
+                              <span className="text-[10px] sm:text-xs font-black">
+                                {hits[0]}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className={cn(
+                              "text-[10px] sm:text-xs font-bold px-0.5 py-0.5 rounded-md",
+                              isExpanded ? "text-white" : hits[0] >= 10 ? "text-[#ffd700] font-black" : "text-blue-700"
+                            )}>
+                              {hits[0]}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className={cn(
-                        "px-0.5 py-2.5 sm:py-3 text-center transition-all",
-                        isExpanded ? "bg-white/10" : selectedDraw === 1 ? "bg-lotofacil-purple/10" : "bg-green-50/30"
+                        "px-0.5 py-1.5 sm:py-2 text-center transition-all",
+                        isExpanded ? "bg-white/10" : hits[1] >= 10 ? "bg-purple-700 text-[#ffd700] border-2 border-amber-400" : selectedDraw === 1 ? "bg-lotofacil-purple/10" : "bg-green-50/30"
                       )}>
-                        <span className={cn(
-                          "text-[10px] sm:text-xs font-bold px-0.5 py-0.5 rounded-md",
-                          isExpanded ? "text-white" : hits[1] >= 10 ? "bg-green-100 text-green-700" : "text-green-700"
-                        )}>
-                          {hits[1]}
-                        </span>
+                        <div className="flex items-center justify-center">
+                          {hits[1] >= 10 && !isExpanded ? (
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#ffd700] border border-amber-500 text-black font-black flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse">
+                              <span className="text-[10px] sm:text-xs font-black">
+                                {hits[1]}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className={cn(
+                              "text-[10px] sm:text-xs font-bold px-0.5 py-0.5 rounded-md",
+                              isExpanded ? "text-white" : hits[1] >= 10 ? "text-[#ffd700] font-black" : "text-green-700"
+                            )}>
+                              {hits[1]}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className={cn(
-                        "px-0.5 py-2.5 sm:py-3 text-center transition-all",
-                        isExpanded ? "bg-white/5" : selectedDraw === 2 ? "bg-lotofacil-purple/10" : "bg-purple-50/30"
+                        "px-0.5 py-1.5 sm:py-2 text-center transition-all",
+                        isExpanded ? "bg-white/5" : hits[2] >= 10 ? "bg-purple-700 text-[#ffd700] border-2 border-amber-400" : selectedDraw === 2 ? "bg-lotofacil-purple/10" : "bg-purple-50/30"
                       )}>
-                        <span className={cn(
-                          "text-[10px] sm:text-xs font-bold px-0.5 py-0.5 rounded-md",
-                          isExpanded ? "text-white" : hits[2] >= 10 ? "bg-green-100 text-green-700" : "text-purple-700"
-                        )}>
-                          {hits[2]}
-                        </span>
+                        <div className="flex items-center justify-center">
+                          {hits[2] >= 10 && !isExpanded ? (
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#ffd700] border border-amber-500 text-black font-black flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse">
+                              <span className="text-[10px] sm:text-xs font-black">
+                                {hits[2]}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className={cn(
+                              "text-[10px] sm:text-xs font-bold px-0.5 py-0.5 rounded-md",
+                              isExpanded ? "text-white" : hits[2] >= 10 ? "text-[#ffd700] font-black" : "text-purple-700"
+                            )}>
+                              {hits[2]}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className={cn(
                         "px-0.5 py-2.5 sm:py-3 text-center transition-all",
@@ -1962,13 +2034,14 @@ const LiveRanking: React.FC = () => {
                                 <div className="grid grid-cols-5 sm:grid-cols-15 gap-2 sm:gap-3">
                                   {b.numbers.map(num => {
                                     const isHit = currentDrawResults.includes(num);
+                                    const has10HitsOnSelected = hits[selectedDraw] >= 10;
                                     return (
                                       <div 
                                         key={num}
                                         className={cn(
                                           "aspect-square rounded-xl flex items-center justify-center text-sm sm:text-xl font-black border-2 transition-all",
                                           isHit 
-                                            ? "bg-lotofacil-purple border-lotofacil-purple text-white shadow-[0_0_15px_rgba(147,51,234,0.3)] scale-105" 
+                                            ? (has10HitsOnSelected ? "bg-purple-700 border-2 border-amber-400 text-[#ffd700] shadow-[0_0_15px_rgba(251,191,36,0.6)] scale-105 font-black" : "bg-lotofacil-purple border-lotofacil-purple text-white shadow-[0_0_15px_rgba(147,51,234,0.3)] scale-105") 
                                             : "bg-[#ffd700] border-black text-black"
                                         )}
                                       >

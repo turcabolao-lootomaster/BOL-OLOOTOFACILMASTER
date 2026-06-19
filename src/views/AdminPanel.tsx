@@ -202,6 +202,92 @@ const BetsTab: React.FC<{
   const [editBetNumbers, setEditBetNumbers] = useState<number[]>([]);
   const [isUpdatingBet, setIsUpdatingBet] = useState(false);
 
+  // States for scanning duplicate bets
+  const [showScanModal, setShowScanModal] = useState(false);
+  const [duplicateGroups, setDuplicateGroups] = useState<{
+    key: string;
+    name: string;
+    seller: string;
+    numbers: number[];
+    bets: Bet[];
+  }[]>([]);
+  const [scanSelectedIds, setScanSelectedIds] = useState<string[]>([]);
+  const [isScanningDeleting, setIsScanningDeleting] = useState(false);
+
+  const handleScanDuplicates = () => {
+    const groups: { [key: string]: Bet[] } = {};
+    
+    // Scan loaded bets for the selected contest (or all if "todos" is chosen)
+    const betsToScan = contestFilter === 'todos' ? bets : bets.filter(b => b.contestId === contestFilter);
+    
+    betsToScan.forEach(bet => {
+      const name = (bet.betName || bet.userName).trim().toUpperCase();
+      const seller = (bet.sellerCode || '').trim().toUpperCase();
+      const numbersKey = [...bet.numbers].sort((a, b) => a - b).join(',');
+      const key = `${name}|${seller}|${numbersKey}`;
+      
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(bet);
+    });
+    
+    const duplicateGroupsList = Object.entries(groups)
+      .filter(([_, groupBets]) => groupBets.length > 1)
+      .map(([key, groupBets]) => {
+        // Sort so the oldest is first (index 0 is the original/kept), based on createdAt timestamp
+        const sortedBets = [...groupBets].sort((a, b) => {
+          const timeA = a.createdAt instanceof Date ? a.createdAt.getTime() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+          const timeB = b.createdAt instanceof Date ? b.createdAt.getTime() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+          return timeA - timeB;
+        });
+        
+        const [name, seller, numbers] = key.split('|');
+        return {
+          key,
+          name,
+          seller,
+          numbers: numbers.split(',').map(Number),
+          bets: sortedBets,
+        };
+      });
+      
+    setDuplicateGroups(duplicateGroupsList);
+    
+    // Auto-select duplicate bets (all except index 0 / original in each group)
+    const toDeleteIds: string[] = [];
+    duplicateGroupsList.forEach(g => {
+      g.bets.slice(1).forEach(b => {
+        toDeleteIds.push(b.id);
+      });
+    });
+    setScanSelectedIds(toDeleteIds);
+    setShowScanModal(true);
+  };
+
+  const toggleScanSelect = (id: string) => {
+    setScanSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleConfirmScanDelete = async () => {
+    if (scanSelectedIds.length === 0) return;
+    
+    setIsScanningDeleting(true);
+    try {
+      await Promise.all(scanSelectedIds.map(id => firebaseService.deleteBet(id)));
+      showSuccess(`${scanSelectedIds.length} aposta(s) duplicada(s) excluída(s) com sucesso!`);
+      setShowScanModal(false);
+      await fetchBets();
+    } catch (error) {
+      console.error('Erro ao excluir apostas duplicadas:', error);
+      showAlert('Erro', 'Ocorreu um erro ao excluir as apostas selecionadas.');
+    } finally {
+      setIsScanningDeleting(false);
+    }
+  };
+
   const fetchBets = async () => {
     setLoading(true);
     try {
@@ -468,6 +554,14 @@ const BetsTab: React.FC<{
             />
           </div>
           <button 
+            onClick={handleScanDuplicates}
+            className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all shadow-md"
+            title="Varrer Apostas Duplicadas"
+          >
+            <AlertTriangle size={14} />
+            <span>Varredura</span>
+          </button>
+          <button 
             onClick={handleDownloadExcel}
             className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all shadow-md"
             title="Baixar Excel"
@@ -590,6 +684,171 @@ const BetsTab: React.FC<{
                   Excluir
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+        
+        {showScanModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl p-6 sm:p-8 space-y-6 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center animate-pulse">
+                    <AlertTriangle size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-display tracking-widest uppercase text-slate-900">Varredura de Duplicados</h3>
+                    <p className="text-[9px] text-slate-400 uppercase tracking-widest font-bold">
+                      {contestFilter === 'todos' ? 'Buscando em todos os concursos' : `Filtro atual: Concurso #${contests.find(c => c.id === contestFilter)?.number || ''}`}
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setShowScanModal(false)} className="text-slate-400 hover:text-slate-600 transition-all">
+                  <X size={24} />
+                </button>
+              </div>
+
+              {duplicateGroups.length === 0 ? (
+                <div className="flex-1 py-12 flex flex-col items-center justify-center text-center space-y-4">
+                  <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-lg">
+                    <CheckCircle size={36} />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold uppercase tracking-widest text-slate-900">Nenhum Duplicado Encontrado</h4>
+                    <p className="text-xs text-slate-500 font-medium">Todas as apostas listadas possuem combinações únicas de (Nome, Vendedor, Dezenas).</p>
+                  </div>
+                  <button 
+                    onClick={() => setShowScanModal(false)}
+                    className="px-6 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs uppercase tracking-widest hover:bg-slate-800 transition-all font-sans"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                    <Info className="text-amber-500 mt-0.5" size={16} />
+                    <div className="space-y-1 text-slate-600 text-xs font-medium leading-relaxed">
+                      <p>Foram detectados <strong className="text-slate-900">{duplicateGroups.length} grupo(s)</strong> de apostas idênticas para o mesmo cliente, vendedor e dezenas.</p>
+                      <p className="text-[10px] text-amber-700">Apenas os jogos excedentes (repetidos) foram selecionados por padrão para exclusão automática, mantendo o primeiro intacto.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                    {duplicateGroups.map((g) => (
+                      <div key={g.key} className="p-4 border border-slate-200 rounded-2xl bg-slate-50 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200">
+                          <div>
+                            <p className="text-xs font-black text-slate-900 uppercase tracking-wide">
+                              {g.name}
+                            </p>
+                            {g.seller && (
+                              <p className="text-[9px] text-[#7a9a09] uppercase tracking-widest font-black mt-0.5">
+                                Vendedor: {g.seller}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-1">
+                            {g.numbers.sort((a, b) => a - b).map((num: number) => (
+                              <span key={num} className="w-5 h-5 rounded-full bg-slate-200 text-slate-900 text-[9px] font-black flex items-center justify-center border border-slate-300">
+                                {num.toString().padStart(2, '0')}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          {g.bets.map((bet: Bet, idx: number) => {
+                            const isOriginal = idx === 0;
+                            const isSelected = scanSelectedIds.includes(bet.id);
+                            return (
+                              <div 
+                                key={bet.id} 
+                                className={cn(
+                                  "p-2.5 rounded-lg flex items-center justify-between text-xs transition-all border",
+                                  isOriginal 
+                                    ? "bg-emerald-50/50 border-emerald-100 text-emerald-900" 
+                                    : (isSelected ? "bg-red-50/50 border-red-100 text-red-900" : "bg-white border-slate-200 text-slate-700")
+                                )}
+                              >
+                                <div className="flex items-center gap-2">
+                                  {!isOriginal && (
+                                    <div 
+                                      onClick={() => toggleScanSelect(bet.id)}
+                                      className={cn(
+                                        "w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all",
+                                        isSelected 
+                                          ? "bg-red-500 border-red-500 text-white" 
+                                          : "border-slate-300 bg-white hover:border-slate-400"
+                                      )}
+                                    >
+                                      {isSelected && <Check size={10} strokeWidth={4} />}
+                                    </div>
+                                  )}
+                                  <div className="space-y-0.5">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-mono text-[9px] text-slate-400 font-bold uppercase tracking-wider">#{bet.id.slice(-6).toUpperCase()}</span>
+                                      {isOriginal ? (
+                                        <span className="px-1.5 py-0.5 rounded bg-emerald-500 text-white text-[7px] font-black uppercase tracking-widest">Original (Manter)</span>
+                                      ) : (
+                                        <span className="px-1.5 py-0.5 rounded bg-amber-500 text-white text-[7px] font-black uppercase tracking-widest">Duplicada (Excluir)</span>
+                                      )}
+                                    </div>
+                                    <p className="text-[9px] text-slate-400">
+                                      {bet.createdAt instanceof Date ? bet.createdAt.toLocaleString('pt-BR') : 'Data recente'}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="text-[10px] font-bold">
+                                  {bet.status === 'validado' ? (
+                                    <span className="text-emerald-600 font-black uppercase tracking-widest text-[8px]">VALIDADA</span>
+                                  ) : (
+                                    <span className="text-amber-600 font-black uppercase tracking-widest text-[8px]">PENDENTE</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-3 pt-2 font-sans">
+                    <button 
+                      onClick={() => setShowScanModal(false)}
+                      className="flex-1 py-3 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all uppercase tracking-widest text-[10px] font-bold border border-slate-200"
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      onClick={handleConfirmScanDelete}
+                      disabled={isScanningDeleting || scanSelectedIds.length === 0}
+                      className="flex-1 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-all uppercase tracking-widest text-[10px] font-bold shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {isScanningDeleting ? (
+                        'EXCLUINDO...'
+                      ) : (
+                        <>
+                          <Trash2 size={12} />
+                          Excluir {scanSelectedIds.length} Duplicada(s)
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}
