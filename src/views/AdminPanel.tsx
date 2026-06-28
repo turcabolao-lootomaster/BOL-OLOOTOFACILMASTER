@@ -39,6 +39,10 @@ import {
   Clock,
   Crown,
   RefreshCcw,
+  ChevronDown,
+  ChevronUp,
+  Database,
+  Zap,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
@@ -46,6 +50,7 @@ import { cn, RANKING_GOAL } from '../utils';
 import { Bet, Contest, ContestStatus, Seller, User as AppUser, SellerRequest } from '../types';
 import autoTable from 'jspdf-autotable';
 import { jsPDF } from 'jspdf';
+import { FirestoreQuotaTab } from '../components/FirestoreQuotaTab';
 
 const AdminPanel: React.FC = () => {
   const { user } = useAuth();
@@ -76,8 +81,62 @@ const AdminPanel: React.FC = () => {
     { id: 'relatorios', label: 'Relatórios', icon: BarChart3 },
     { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
     { id: 'ganhadores', label: 'Ganhadores', icon: Crown },
+    { id: 'banco', label: 'Uso Firestore', icon: Database },
     { id: 'config', label: 'Config', icon: Save },
   ];
+
+  const [activeContest, setActiveContest] = useState<Contest | null>(null);
+  const [contestBets, setContestBets] = useState<Bet[]>([]);
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
+  useEffect(() => {
+    if (user?.role !== 'admin' && user?.role !== 'master') return;
+
+    // 1. Subscribe to active contest
+    const unsubscribeContest = firebaseService.subscribeToActiveContest((contest) => {
+      setActiveContest(contest);
+    });
+
+    // 2. Subscribe to users
+    const unsubscribeUsers = firebaseService.subscribeToAllUsers((users) => {
+      setTotalUsersCount(users.length);
+    });
+
+    // 3. Fetch/Interval for seller requests
+    const fetchRequests = async () => {
+      try {
+        const reqs = await firebaseService.getAllSellerRequests();
+        setPendingRequestsCount(reqs.filter(r => r.status === 'pendente').length);
+      } catch (err) {
+        console.error("Error fetching requests:", err);
+      }
+    };
+    fetchRequests();
+    const interval = setInterval(fetchRequests, 15000); // refresh requests every 15s
+
+    return () => {
+      unsubscribeContest();
+      unsubscribeUsers();
+      clearInterval(interval);
+    };
+  }, [user]);
+
+  // Subscribe to bets of the active contest whenever it changes
+  useEffect(() => {
+    if (!activeContest) return;
+    
+    const unsubscribeBets = firebaseService.subscribeToContestBets(activeContest.id, (bets) => {
+      setContestBets(bets);
+    });
+
+    return () => {
+      unsubscribeBets();
+    };
+  }, [activeContest]);
+
+  const pendingBetsCount = contestBets.filter(b => b.status === 'pendente').length;
+  const validatedBetsCount = contestBets.filter(b => b.status === 'validado').length;
 
   if (user?.role !== 'admin' && user?.role !== 'master') {
     return (
@@ -93,7 +152,106 @@ const AdminPanel: React.FC = () => {
       <div className="flex flex-col gap-6">
         <div className="text-center sm:text-left">
           <h1 className="text-xl sm:text-4xl font-display tracking-widest text-slate-900">PAINEL <span className="text-lotofacil-purple uppercase">ADMINISTRATIVO</span></h1>
-          <p className="text-[10px] sm:text-sm text-slate-600 mt-1">Gestão completa do sistema, sorteios e relatórios.</p>
+          <p className="text-[10px] sm:text-sm text-slate-600 mt-1">Gestão completa do sistema, sorteios e relatórios em tempo real.</p>
+        </div>
+
+        {/* Real-time Counters Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+          {/* Card 1: Active Contest */}
+          <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between gap-4">
+            <div className="space-y-1 sm:space-y-2">
+              <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Concurso Ativo</p>
+              <h3 className="text-lg sm:text-2xl font-black text-slate-900">
+                {activeContest ? `Nº ${activeContest.number}` : 'Nenhum'}
+              </h3>
+              <p className="text-[10px] text-slate-500 font-medium">
+                Preço: R$ {(activeContest?.betPrice || 10).toFixed(2)}
+              </p>
+            </div>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100/30">
+              <Settings size={20} className="sm:w-6 sm:h-6" />
+            </div>
+          </div>
+
+          {/* Card 2: Pending Bets */}
+          <div className={cn(
+            "p-4 sm:p-6 rounded-2xl border shadow-sm flex items-center justify-between gap-4 transition-all duration-300",
+            pendingBetsCount > 0 
+              ? "bg-amber-50/70 border-amber-300/80 shadow-[0_4px_12px_rgba(245,158,11,0.08)] animate-pulse" 
+              : "bg-white border-slate-200/80"
+          )}>
+            <div className="space-y-1 sm:space-y-2">
+              <p className={cn(
+                "text-[9px] uppercase tracking-widest font-bold",
+                pendingBetsCount > 0 ? "text-amber-700" : "text-slate-500"
+              )}>Apostas Pendentes</p>
+              <h3 className={cn(
+                "text-lg sm:text-2xl font-black",
+                pendingBetsCount > 0 ? "text-amber-800" : "text-slate-900"
+              )}>
+                {pendingBetsCount}
+              </h3>
+              <p className="text-[10px] text-slate-500 font-medium">
+                Aguardando validação
+              </p>
+            </div>
+            <div className={cn(
+              "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 border",
+              pendingBetsCount > 0 
+                ? "bg-amber-100 text-amber-600 border-amber-200" 
+                : "bg-slate-50 text-slate-500 border-slate-100"
+            )}>
+              <Ticket size={20} className="sm:w-6 sm:h-6" />
+            </div>
+          </div>
+
+          {/* Card 3: Validated Bets */}
+          <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between gap-4">
+            <div className="space-y-1 sm:space-y-2">
+              <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Apostas Validadas</p>
+              <h3 className="text-lg sm:text-2xl font-black text-emerald-600">
+                {validatedBetsCount}
+              </h3>
+              <p className="text-[10px] text-slate-500 font-medium truncate">
+                Total: R$ {(validatedBetsCount * (activeContest?.betPrice || 10)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100/30">
+              <ShieldCheck size={20} className="sm:w-6 sm:h-6" />
+            </div>
+          </div>
+
+          {/* Card 4: Seller Requests & Total Users */}
+          <div className={cn(
+            "p-4 sm:p-6 rounded-2xl border shadow-sm flex items-center justify-between gap-4 transition-all duration-300",
+            pendingRequestsCount > 0 
+              ? "bg-purple-50/70 border-purple-300/80 shadow-[0_4px_12px_rgba(147,51,234,0.08)]" 
+              : "bg-white border-slate-200/80"
+          )}>
+            <div className="space-y-1 sm:space-y-2">
+              <p className={cn(
+                "text-[9px] uppercase tracking-widest font-bold",
+                pendingRequestsCount > 0 ? "text-purple-700" : "text-slate-500"
+              )}>Pedidos de Vendedor</p>
+              <h3 className={cn(
+                "text-lg sm:text-2xl font-black",
+                pendingRequestsCount > 0 ? "text-purple-800" : "text-slate-900"
+              )}>
+                {pendingRequestsCount}
+              </h3>
+              <p className="text-[10px] text-slate-500 font-medium">
+                {totalUsersCount} usuários
+              </p>
+            </div>
+            <div className={cn(
+              "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 border",
+              pendingRequestsCount > 0 
+                ? "bg-purple-100 text-purple-600 border-purple-200" 
+                : "bg-slate-50 text-slate-500 border-slate-100"
+            )}>
+              <Users size={20} className="sm:w-6 sm:h-6" />
+            </div>
+          </div>
         </div>
         
         <div className="flex flex-wrap items-center justify-center gap-1.5 bg-slate-50 p-1.5 rounded-2xl border border-dark-border/40 w-full max-w-5xl mx-auto">
@@ -131,6 +289,7 @@ const AdminPanel: React.FC = () => {
           {activeTab === 'relatorios' && <ReportsTab />}
           {activeTab === 'financeiro' && <FinanceiroTab />}
           {activeTab === 'ganhadores' && <WinnersTab />}
+          {activeTab === 'banco' && <FirestoreQuotaTab />}
           {activeTab === 'config' && <ConfigTab showAlert={showAlert} />}
         </motion.div>
       </AnimatePresence>
@@ -1740,6 +1899,7 @@ const ContestsTab: React.FC<{
 
   const [isResetting, setIsResetting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetConfirmationText, setResetConfirmationText] = useState('');
 
   useEffect(() => {
     fetchContests();
@@ -1931,34 +2091,70 @@ const ContestsTab: React.FC<{
       </div>
 
       {showResetConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-y-auto">
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white border border-slate-200 p-8 rounded-3xl max-w-md w-full space-y-6 text-center shadow-2xl"
+            className="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl max-w-lg w-full space-y-6 text-center shadow-2xl my-8"
           >
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
               <AlertTriangle className="text-red-600" size={32} />
             </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">ATENÇÃO!</h3>
-              <p className="text-slate-600 text-sm">
-                Esta ação irá deletar <span className="text-slate-900 font-bold">TODOS</span> os concursos, apostas e zerar os pontos de todos os usuários. Esta ação não pode ser desfeita.
+            <div className="space-y-4">
+              <h3 className="text-xl font-display tracking-widest text-slate-900 uppercase">ATENÇÃO: RISCO DE PERDA DE DADOS!</h3>
+              
+              <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-left space-y-2">
+                <p className="text-red-800 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                  ⚠️ PERIGO PARA A CORRIDA DOS CAMPEÕES
+                </p>
+                <p className="text-red-700 text-xs leading-relaxed">
+                  Os pontos acumulados dos participantes são calculados dinamicamente a partir das apostas passadas. Se você apagar todos os concursos e apostas, <strong>toda a pontuação da Corrida dos Campeões (a partir do concurso 5) será perdida permanentemente</strong> e os usuários voltarão a ter apenas a pontuação inicial.
+                </p>
+              </div>
+
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-left space-y-2">
+                <p className="text-emerald-800 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                  💡 RECOMENDAÇÃO DE USO SEGURO
+                </p>
+                <p className="text-emerald-700 text-xs leading-relaxed">
+                  Se você quer apenas iniciar uma nova rodada de apostas de um novo concurso, <strong>NÃO clique em "Zerar Tudo"</strong>. 
+                  Basta clicar no botão verde <strong>"NOVO CONCURSO"</strong> no painel administrativo. O sistema fechará o concurso atual e iniciará o novo mantendo todas as pontuações e histórico da Corrida dos Campeões totalmente seguros.
+                </p>
+              </div>
+
+              <p className="text-slate-600 text-xs leading-relaxed">
+                Se você realmente deseja apagar tudo e resetar o banco de dados do zero (limpeza de testes), digite exatamente <strong className="text-slate-900 select-all uppercase">EXCLUIR TUDO</strong> abaixo para habilitar a ação:
               </p>
+
+              <input 
+                type="text" 
+                value={resetConfirmationText}
+                onChange={(e) => setResetConfirmationText(e.target.value)}
+                placeholder="Digite EXCLUIR TUDO para confirmar"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-center text-xs font-bold text-slate-900 focus:outline-none focus:border-red-500 uppercase placeholder:text-slate-400"
+              />
             </div>
             <div className="flex gap-4">
               <button 
-                onClick={() => setShowResetConfirm(false)}
+                onClick={() => {
+                  setShowResetConfirm(false);
+                  setResetConfirmationText('');
+                }}
                 className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all"
               >
                 Cancelar
               </button>
               <button 
-                onClick={handleResetAll}
-                disabled={isResetting}
-                className="flex-1 py-3 bg-red-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition-all disabled:opacity-50 shadow-lg"
+                onClick={() => {
+                  if (resetConfirmationText.toUpperCase().trim() === 'EXCLUIR TUDO') {
+                    handleResetAll();
+                    setResetConfirmationText('');
+                  }
+                }}
+                disabled={isResetting || resetConfirmationText.toUpperCase().trim() !== 'EXCLUIR TUDO'}
+                className="flex-1 py-3 bg-red-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg"
               >
-                {isResetting ? 'ZERANDO...' : 'SIM, ZERAR TUDO'}
+                {isResetting ? 'ZERANDO...' : 'SIM, EXCLUIR TUDO'}
               </button>
             </div>
           </motion.div>
@@ -3845,6 +4041,85 @@ const ConfigTab: React.FC<{
           </AnimatePresence>
         </div>
       </form>
+
+      {/* Quota and Usage Explanations */}
+      <div className="mt-8 pt-8 border-t border-slate-100">
+        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100/60 p-5 sm:p-6 space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/10">
+                <Database size={20} />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-black text-slate-900 uppercase tracking-wider">Cotas & Limites do Banco de Dados</h3>
+                <p className="text-[10px] text-indigo-700 font-bold uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
+                  <Zap size={10} className="fill-indigo-700" />
+                  Consumo Estimado do Firestore (50k gratuitos)
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-600 leading-relaxed">
+            O Firestore (banco de dados do Google) possui um limite diário de <strong>50.000 leituras gratuitas</strong>. Quando esse limite é atingido, o Google bloqueia novas consultas até a meia-noite (horário dos EUA).
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div className="bg-white/80 backdrop-blur-md p-4 rounded-xl border border-indigo-100/40 space-y-2">
+              <span className="text-[9px] uppercase tracking-widest font-black text-indigo-800">Por que o limite estoura?</span>
+              <ul className="text-[11px] text-slate-600 space-y-1.5 list-disc list-inside">
+                <li>
+                  <strong className="text-slate-800">Multiplicador de Usuários:</strong> Se você tem 140 apostas e 100 participantes ativos. Quando cada um abre o app 3 vezes para ver o ranking ou suas apostas, isso gera <strong className="text-indigo-600">42.000 leituras</strong> apenas visualizando!
+                </li>
+                <li>
+                  <strong className="text-slate-800">Sincronização em Tempo Real:</strong> Cada vez que uma aposta nova é feita ou aprovada, todos os usuários conectados recebem a atualização instantaneamente.
+                </li>
+                <li>
+                  <strong className="text-slate-800">Páginas de Relatórios:</strong> Abrir o Painel Admin ou carregar listas extensas recarrega os dados diretamente do servidor.
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-white/80 backdrop-blur-md p-4 rounded-xl border border-indigo-100/40 space-y-2">
+              <span className="text-[9px] uppercase tracking-widest font-black text-emerald-800">⚡ Otimizações Recém-Aplicadas!</span>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                Nós acabamos de reescrever a função de contagem de apostas por concurso para usar <strong className="text-emerald-600">getCountFromServer</strong> do Firebase. 
+              </p>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                Antes, para contar as apostas, o app baixava todas as apostas do banco. Agora, o cálculo é feito diretamente nos servidores do Google, consumindo <strong>até 1000x menos cota</strong>! Isso vai ajudar a economizar drasticamente suas leituras diárias daqui para frente.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-amber-500/10 to-amber-600/5 border border-amber-500/20 rounded-2xl p-4 sm:p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="text-amber-600" size={18} />
+              <h4 className="text-xs sm:text-sm font-black text-amber-900 uppercase tracking-wider">Como Resolver Definitivamente (Plano Blaze)</h4>
+            </div>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              Para evitar que o seu bolão saia do ar nos dias mais importantes (como no fechamento ou dia de sorteios), a recomendação oficial é fazer o upgrade do seu projeto Firebase para o <strong className="text-amber-950">Plano Blaze (Pay-as-you-go)</strong>.
+            </p>
+            <div className="space-y-2 text-[11px] text-amber-900 leading-relaxed">
+              <p><strong>Por que o Plano Blaze é extremamente seguro e barato?</strong></p>
+              <ul className="list-decimal list-inside space-y-1 ml-1 font-medium">
+                <li>Você <strong>continua com as mesmas 50.000 leituras diárias 100% gratuitas</strong> todos os dias.</li>
+                <li>Você só paga se e quando ultrapassar as 50.000 leituras gratuitas em um único dia.</li>
+                <li>O custo de uso extra é de meros <strong>$0.06 dólares (cerca de R$ 0,33) a cada 100.000 leituras excedentes</strong>! Ou seja, mesmo se o seu app bombar e fizer 150.000 leituras em um dia mega ativo, você pagará apenas <strong>R$ 0,66</strong> por esse dia.</li>
+              </ul>
+            </div>
+            <div className="pt-2">
+              <a 
+                href="https://console.firebase.google.com/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md shadow-amber-600/10"
+              >
+                IR PARA O CONSOLE DO FIREBASE
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

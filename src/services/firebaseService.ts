@@ -6,24 +6,187 @@
 import { 
   collection, 
   doc, 
-  getDoc, 
-  getDocs, 
+  getDoc as firestoreGetDoc, 
+  getDocs as firestoreGetDocs, 
   addDoc, 
   updateDoc, 
   setDoc,
   deleteDoc, 
   query, 
   where, 
-  onSnapshot,
+  onSnapshot as firestoreOnSnapshot,
   Timestamp,
   orderBy,
   limit,
   serverTimestamp,
   increment,
-  writeBatch
+  writeBatch,
+  getCountFromServer as firestoreGetCountFromServer
 } from 'firebase/firestore';
+
+// --- Client-Side Firestore Read Tracking ---
+export function trackLocalReads(count: number) {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const storedDate = localStorage.getItem('reads_date');
+    let currentReads = 0;
+    
+    if (storedDate === today) {
+      currentReads = parseInt(localStorage.getItem('reads_count') || '0', 10);
+    } else {
+      localStorage.setItem('reads_date', today);
+    }
+    
+    currentReads += count;
+    localStorage.setItem('reads_count', currentReads.toString());
+    
+    // Notify application via custom window event
+    window.dispatchEvent(new CustomEvent('firestore-reads-updated', { detail: currentReads }));
+  } catch (e) {
+    console.error('Error tracking reads:', e);
+  }
+}
+
+export function getLocalReadsToday(): number {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const storedDate = localStorage.getItem('reads_date');
+    if (storedDate === today) {
+      return parseInt(localStorage.getItem('reads_count') || '0', 10);
+    }
+  } catch (e) {}
+  return 0;
+}
+
+// Intercept getDoc
+async function getDoc(docRef: any): Promise<any> {
+  trackLocalReads(1);
+  return firestoreGetDoc(docRef);
+}
+
+// Intercept getDocs
+async function getDocs(q: any): Promise<any> {
+  const querySnapshot = await firestoreGetDocs(q);
+  trackLocalReads(querySnapshot.size);
+  return querySnapshot;
+}
+
+// Intercept getCountFromServer
+async function getCountFromServer(q: any): Promise<any> {
+  const snapshot = await firestoreGetCountFromServer(q);
+  const count = snapshot.data().count;
+  // Firestore counts 1 read per up to 1000 items in query count
+  const reads = Math.max(1, Math.ceil(count / 1000));
+  trackLocalReads(reads);
+  return snapshot;
+}
+
+// Intercept onSnapshot
+function onSnapshot(q: any, onNext: (snapshot: any) => void, onError?: (error: any) => void): any {
+  let isFirstLoad = true;
+  return firestoreOnSnapshot(q, (snapshot: any) => {
+    const isQuerySnapshot = typeof snapshot.size === 'number' && Array.isArray(snapshot.docs);
+    const size = isQuerySnapshot ? snapshot.size : 1;
+    
+    if (isFirstLoad) {
+      trackLocalReads(size);
+      isFirstLoad = false;
+    } else {
+      if (isQuerySnapshot) {
+        const changesCount = snapshot.docChanges().filter((change: any) => change.type === 'added' || change.type === 'modified').length;
+        if (changesCount > 0) {
+          trackLocalReads(changesCount);
+        }
+      } else {
+        trackLocalReads(1);
+      }
+    }
+    onNext(snapshot);
+  }, onError);
+}
 import { db, auth } from '../firebase';
 import { User, Bet, Contest, Draw, UserRanking, Commission, ContestStatus, Seller, Settings, SellerRequest, PageViewStats } from '../types';
+import { 
+  getLocalStorageData, 
+  setLocalStorageData, 
+  mockSettings, 
+  mockContests, 
+  mockBets, 
+  mockSellers, 
+  mockUsers, 
+  mockRankings, 
+  mockSellerRequests,
+  initializeDemoDatabase
+} from './demoData';
+
+export function isDemoMode(): boolean {
+  return typeof window !== 'undefined' && localStorage.getItem('demo_mode') === 'true';
+}
+
+const demoListeners: { [topic: string]: Set<(data: any) => void> } = {};
+
+export function registerDemoListener(topic: string, callback: (data: any) => void): () => void {
+  if (!demoListeners[topic]) {
+    demoListeners[topic] = new Set();
+  }
+  demoListeners[topic].add(callback);
+  
+  // Call immediately with current data
+  const currentData = getDemoTopicData(topic);
+  callback(currentData);
+  
+  return () => {
+    demoListeners[topic].delete(callback);
+  };
+}
+
+export function notifyDemoListeners(topic: string) {
+  if (demoListeners[topic]) {
+    const data = getDemoTopicData(topic);
+    demoListeners[topic].forEach(callback => {
+      try {
+        callback(data);
+      } catch (e) {
+        console.error('Error in demo listener callback for topic:', topic, e);
+      }
+    });
+  }
+}
+
+function getDemoTopicData(topic: string): any {
+  if (topic === 'settings') {
+    return getLocalStorageData('demo_settings', mockSettings);
+  }
+  if (topic === 'activeContest') {
+    const contests = getLocalStorageData<Contest[]>('demo_contests', mockContests);
+    return contests.find(c => c.status === 'aberto') || contests[contests.length - 1] || null;
+  }
+  if (topic === 'allUsers') {
+    return getLocalStorageData('demo_users', mockUsers);
+  }
+  if (topic === 'allSellers') {
+    return getLocalStorageData('demo_sellers', mockSellers);
+  }
+  if (topic.startsWith('contestBets_')) {
+    const contestId = topic.replace('contestBets_', '');
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    return bets.filter(b => b.contestId === contestId);
+  }
+  if (topic === 'ranking') {
+    return getLocalStorageData('demo_rankings', mockRankings);
+  }
+  if (topic.startsWith('sellerSales_')) {
+    const code = topic.replace('sellerSales_', '');
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    return bets.filter(b => b.sellerCode === code);
+  }
+  if (topic.startsWith('sellerData_')) {
+    const userId = topic.replace('sellerData_', '');
+    const sellers = getLocalStorageData<Seller[]>('demo_sellers', mockSellers);
+    return sellers.find(s => s.userId === userId) || null;
+  }
+  return null;
+}
 
 enum OperationType {
   CREATE = 'create',
@@ -61,6 +224,19 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
+
+  // Custom quota/limit exceeded check
+  const errorMsg = errInfo.error.toLowerCase();
+  if (errorMsg.includes('quota') || errorMsg.includes('limit exceeded') || errorMsg.includes('resource_exhausted')) {
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('firestore-quota-error', { detail: errInfo }));
+      }
+    } catch (e) {
+      console.error('Failed to dispatch quota error event:', e);
+    }
+  }
+
   throw new Error(JSON.stringify(errInfo));
 }
 
@@ -80,7 +256,7 @@ export function getNormalizedParticipantKey(name: string): string {
   return normalized;
 }
 
-export const firebaseService = {
+const baseFirebaseService = {
   // Seller Requests
   async createSellerRequest(requestData: Omit<SellerRequest, 'id' | 'status' | 'createdAt'>): Promise<void> {
     const docRef = doc(collection(db, 'sellerRequests'));
@@ -397,8 +573,8 @@ export const firebaseService = {
           where('contestId', '==', contestId)
         );
       }
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.size;
+      const countSnapshot = await getCountFromServer(q);
+      return countSnapshot.data().count;
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, path);
       return 0;
@@ -1653,3 +1829,617 @@ export const firebaseService = {
     }
   }
 };
+
+const demoFirebaseService: any = {
+  // Seller Requests
+  async createSellerRequest(requestData: any): Promise<void> {
+    const reqs = getLocalStorageData<any[]>('demo_sellerRequests', mockSellerRequests);
+    const newReq = {
+      ...requestData,
+      id: `demo_req_${Date.now()}`,
+      status: 'pendente',
+      createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
+    };
+    reqs.push(newReq);
+    setLocalStorageData('demo_sellerRequests', reqs);
+  },
+
+  async getAllSellerRequests(): Promise<any[]> {
+    return getLocalStorageData<any[]>('demo_sellerRequests', mockSellerRequests);
+  },
+
+  async updateSellerRequestStatus(requestId: string, status: any): Promise<void> {
+    const reqs = getLocalStorageData<any[]>('demo_sellerRequests', mockSellerRequests);
+    const req = reqs.find(r => r.id === requestId);
+    if (req) {
+      req.status = status;
+      setLocalStorageData('demo_sellerRequests', reqs);
+    }
+  },
+
+  async deleteSellerRequest(requestId: string): Promise<void> {
+    const reqs = getLocalStorageData<any[]>('demo_sellerRequests', mockSellerRequests);
+    const filtered = reqs.filter(r => r.id !== requestId);
+    setLocalStorageData('demo_sellerRequests', filtered);
+  },
+
+  // Users
+  async getUser(userId: string): Promise<User | null> {
+    const users = getLocalStorageData<User[]>('demo_users', mockUsers);
+    return users.find(u => u.id === userId) || null;
+  },
+
+  async getAllUsers(): Promise<User[]> {
+    return getLocalStorageData<User[]>('demo_users', mockUsers);
+  },
+
+  subscribeToAllUsers(callback: (users: User[]) => void) {
+    return registerDemoListener('allUsers', callback);
+  },
+
+  // Contests
+  subscribeToActiveContest(callback: (contest: Contest | null) => void) {
+    return registerDemoListener('activeContest', callback);
+  },
+
+  async getActiveContest(): Promise<Contest | null> {
+    const contests = getLocalStorageData<Contest[]>('demo_contests', mockContests);
+    return contests.find(c => c.status === 'aberto') || contests[contests.length - 1] || null;
+  },
+
+  async getAllContests(): Promise<Contest[]> {
+    return getLocalStorageData<Contest[]>('demo_contests', mockContests);
+  },
+
+  async updateContestStartInfo(contestId: string, startDate: string, startTime: string): Promise<void> {
+    const contests = getLocalStorageData<Contest[]>('demo_contests', mockContests);
+    const c = contests.find(con => con.id === contestId);
+    if (c) {
+      c.startDate = startDate;
+      c.startTime = startTime;
+      setLocalStorageData('demo_contests', contests);
+      notifyDemoListeners('activeContest');
+    }
+  },
+
+  async updateContestStatus(contestId: string, status: ContestStatus): Promise<void> {
+    const contests = getLocalStorageData<Contest[]>('demo_contests', mockContests);
+    const c = contests.find(con => con.id === contestId);
+    if (c) {
+      c.status = status;
+      setLocalStorageData('demo_contests', contests);
+      notifyDemoListeners('activeContest');
+    }
+  },
+
+  async createBet(bet: any): Promise<string> {
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    const contest = await this.getActiveContest();
+    const newBet: Bet = {
+      ...bet,
+      id: `demo_bet_${Date.now()}`,
+      contestNumber: contest?.number || 5,
+      createdAt: new Date(),
+      status: 'validado',
+      hits: [0, 0, 0]
+    };
+    bets.push(newBet);
+    setLocalStorageData('demo_bets', bets);
+    notifyDemoListeners(`contestBets_${bet.contestId}`);
+    notifyDemoListeners(`sellerSales_${bet.sellerCode}`);
+    return newBet.id;
+  },
+
+  async getUserBets(userId: string): Promise<Bet[]> {
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    return bets.filter(b => b.userId === userId);
+  },
+
+  async getContestBets(contestId: string): Promise<Bet[]> {
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    return bets.filter(b => b.contestId === contestId);
+  },
+
+  subscribeToContestBets(contestId: string, callback: (bets: Bet[]) => void) {
+    return registerDemoListener(`contestBets_${contestId}`, callback);
+  },
+
+  async getContestTotalBets(contestId: string, status?: any): Promise<number> {
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    const contestBets = bets.filter(b => b.contestId === contestId);
+    if (status) {
+      return contestBets.filter(b => b.status === status).length;
+    }
+    return contestBets.length;
+  },
+
+  subscribeToRanking(callback: (ranking: UserRanking[]) => void, limitCount = 100) {
+    return registerDemoListener('ranking', callback);
+  },
+
+  async getRanking(limitCount = 100): Promise<UserRanking[]> {
+    const r = getLocalStorageData<UserRanking[]>('demo_rankings', mockRankings);
+    return r.slice(0, limitCount);
+  },
+
+  async validateBet(betId: string, status: any): Promise<void> {
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    const bet = bets.find(b => b.id === betId);
+    if (bet) {
+      bet.status = status;
+      setLocalStorageData('demo_bets', bets);
+      notifyDemoListeners(`contestBets_${bet.contestId}`);
+      if (bet.sellerCode) {
+        notifyDemoListeners(`sellerSales_${bet.sellerCode}`);
+      }
+    }
+  },
+
+  async updateBet(betId: string, data: any): Promise<void> {
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    const bet = bets.find(b => b.id === betId);
+    if (bet) {
+      Object.assign(bet, data);
+      setLocalStorageData('demo_bets', bets);
+      notifyDemoListeners(`contestBets_${bet.contestId}`);
+      if (bet.sellerCode) {
+        notifyDemoListeners(`sellerSales_${bet.sellerCode}`);
+      }
+    }
+  },
+
+  async deleteBet(betId: string): Promise<void> {
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    const bet = bets.find(b => b.id === betId);
+    if (bet) {
+      const filtered = bets.filter(b => b.id !== betId);
+      setLocalStorageData('demo_bets', filtered);
+      notifyDemoListeners(`contestBets_${bet.contestId}`);
+      if (bet.sellerCode) {
+        notifyDemoListeners(`sellerSales_${bet.sellerCode}`);
+      }
+    }
+  },
+
+  async createContest(
+    number: number,
+    draws: any[],
+    startDate: string,
+    startTime: string,
+    betPrice: number,
+    prizes?: any,
+    prizeConfig?: any
+  ): Promise<void> {
+    const contests = getLocalStorageData<Contest[]>('demo_contests', mockContests);
+    const newContest: Contest = {
+      id: `demo_contest_${number}`,
+      number,
+      status: 'aberto',
+      draws: draws.map((d, idx) => ({
+        id: `demo_draw_${number}_${idx + 1}`,
+        number: idx + 1,
+        status: 'pendente',
+        results: []
+      })),
+      createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
+      betPrice,
+      prizes: prizes || {
+        draw1: 'A definir',
+        draw2: 'A definir',
+        draw3: 'A definir',
+        rapidinha1: 'A definir',
+        rapidinha2: 'A definir',
+        rankeada: 'A definir'
+      },
+      prizeConfig: prizeConfig || {
+        fixed10PtsDraw1: 10,
+        fixed10PtsDraw2: 10,
+        fixed10PtsDraw3: 10,
+        fixed25PlusTotal: 50,
+        fixed28PlusTotal: 100,
+        pctRapidinha: 10,
+        pctChampion: 40,
+        pctVice: 20,
+        pctSeller: 10,
+        pctAdmin: 10,
+        pctReserve: 10
+      },
+      startDate,
+      startTime
+    };
+    
+    // Close other contests
+    contests.forEach(c => {
+      if (c.status === 'aberto') c.status = 'encerrado';
+    });
+    
+    contests.push(newContest);
+    setLocalStorageData('demo_contests', contests);
+    notifyDemoListeners('activeContest');
+  },
+
+  async deleteContest(contestId: string): Promise<void> {
+    const contests = getLocalStorageData<Contest[]>('demo_contests', mockContests);
+    const filtered = contests.filter(c => c.id !== contestId);
+    setLocalStorageData('demo_contests', filtered);
+    notifyDemoListeners('activeContest');
+  },
+
+  async updateMaintenanceMode(active: boolean, message: string): Promise<void> {
+    const settings = getLocalStorageData<Settings>('demo_settings', mockSettings);
+    settings.maintenanceMode = active;
+    settings.maintenanceMessage = message;
+    setLocalStorageData('demo_settings', settings);
+    notifyDemoListeners('settings');
+  },
+
+  subscribeToSettings(callback: (settings: Settings) => void) {
+    return registerDemoListener('settings', callback);
+  },
+
+  subscribeToSellerSales(sellerCode: string, callback: (bets: Bet[]) => void) {
+    return registerDemoListener(`sellerSales_${sellerCode}`, callback);
+  },
+
+  subscribeToSellerData(userId: string, callback: (seller: Seller | null) => void) {
+    return registerDemoListener(`sellerData_${userId}`, callback);
+  },
+
+  async getSellerRecentSales(sellerCode: string): Promise<Bet[]> {
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    return bets.filter(b => b.sellerCode === sellerCode).sort((a, b) => {
+      const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : 0;
+      const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : 0;
+      return dateB - dateA;
+    });
+  },
+
+  async getAllSellers(): Promise<Seller[]> {
+    return getLocalStorageData<Seller[]>('demo_sellers', mockSellers);
+  },
+
+  subscribeToAllSellers(callback: (sellers: Seller[]) => void) {
+    return registerDemoListener('allSellers', callback);
+  },
+
+  async createSeller(seller: any): Promise<string> {
+    const sellers = getLocalStorageData<Seller[]>('demo_sellers', mockSellers);
+    const newSeller: Seller = {
+      ...seller,
+      id: `demo_seller_${Date.now()}`,
+      totalSales: 0,
+      totalCommission: 0
+    };
+    sellers.push(newSeller);
+    setLocalStorageData('demo_sellers', sellers);
+    notifyDemoListeners('allSellers');
+    return newSeller.id;
+  },
+
+  async updateSeller(sellerId: string, data: any): Promise<void> {
+    const sellers = getLocalStorageData<Seller[]>('demo_sellers', mockSellers);
+    const s = sellers.find(sel => sel.id === sellerId);
+    if (s) {
+      Object.assign(s, data);
+      setLocalStorageData('demo_sellers', sellers);
+      notifyDemoListeners('allSellers');
+      notifyDemoListeners(`sellerData_${s.userId}`);
+    }
+  },
+
+  async deleteSeller(sellerId: string, userId: string, resetRole: boolean = true): Promise<void> {
+    const sellers = getLocalStorageData<Seller[]>('demo_sellers', mockSellers);
+    const filtered = sellers.filter(s => s.id !== sellerId);
+    setLocalStorageData('demo_sellers', filtered);
+    notifyDemoListeners('allSellers');
+    notifyDemoListeners(`sellerData_${userId}`);
+  },
+
+  async toggleBlockSeller(sellerId: string, blocked: boolean): Promise<void> {
+    const sellers = getLocalStorageData<Seller[]>('demo_sellers', mockSellers);
+    const s = sellers.find(sel => sel.id === sellerId);
+    if (s) {
+      s.blocked = blocked;
+      setLocalStorageData('demo_sellers', sellers);
+      notifyDemoListeners('allSellers');
+      notifyDemoListeners(`sellerData_${s.userId}`);
+    }
+  },
+
+  async updateUserRole(userId: string, role: any): Promise<void> {
+    const users = getLocalStorageData<User[]>('demo_users', mockUsers);
+    const u = users.find(usr => usr.id === userId);
+    if (u) {
+      u.role = role;
+      setLocalStorageData('demo_users', users);
+      notifyDemoListeners('allUsers');
+    }
+  },
+
+  async updateUserProfile(userId: string, data: any): Promise<void> {
+    const users = getLocalStorageData<User[]>('demo_users', mockUsers);
+    const u = users.find(usr => usr.id === userId);
+    if (u) {
+      Object.assign(u, data);
+      setLocalStorageData('demo_users', users);
+      notifyDemoListeners('allUsers');
+    }
+  },
+
+  async updateContestPrizes(contestId: string, prizes: any): Promise<void> {
+    const contests = getLocalStorageData<Contest[]>('demo_contests', mockContests);
+    const c = contests.find(con => con.id === contestId);
+    if (c) {
+      c.prizes = prizes;
+      setLocalStorageData('demo_contests', contests);
+      notifyDemoListeners('activeContest');
+    }
+  },
+
+  async updateContestDisplayPrizes(contestId: string, displayPrizes: any): Promise<void> {
+    const contests = getLocalStorageData<Contest[]>('demo_contests', mockContests);
+    const c = contests.find(con => con.id === contestId);
+    if (c) {
+      c.displayPrizes = displayPrizes;
+      setLocalStorageData('demo_contests', contests);
+      notifyDemoListeners('activeContest');
+    }
+  },
+
+  async updateContestPublicLink(contestId: string, publicLink: string): Promise<void> {
+    const contests = getLocalStorageData<Contest[]>('demo_contests', mockContests);
+    const c = contests.find(con => con.id === contestId);
+    if (c) {
+      c.publicLink = publicLink;
+      setLocalStorageData('demo_contests', contests);
+      notifyDemoListeners('activeContest');
+    }
+  },
+
+  async updateContestBetPrice(contestId: string, betPrice: number): Promise<void> {
+    const contests = getLocalStorageData<Contest[]>('demo_contests', mockContests);
+    const c = contests.find(con => con.id === contestId);
+    if (c) {
+      c.betPrice = betPrice;
+      setLocalStorageData('demo_contests', contests);
+      notifyDemoListeners('activeContest');
+    }
+  },
+
+  async updateDrawResult(contestId: string, drawNumber: number, results: number[], caixaContest?: string, caixaDate?: string): Promise<void> {
+    const contests = getLocalStorageData<Contest[]>('demo_contests', mockContests);
+    const c = contests.find(con => con.id === contestId);
+    if (c) {
+      const draw = c.draws.find(d => d.number === drawNumber);
+      if (draw) {
+        draw.status = 'concluido';
+        draw.results = results;
+        if (caixaContest) draw.caixaContest = caixaContest;
+        if (caixaDate) draw.caixaDate = caixaDate;
+        
+        // Simular hits para todas as apostas do concurso
+        const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+        bets.forEach(b => {
+          if (b.contestId === contestId) {
+            if (!b.hits) b.hits = [0, 0, 0];
+            const hitCount = b.numbers.filter(n => results.includes(n)).length;
+            b.hits[drawNumber - 1] = hitCount;
+          }
+        });
+        setLocalStorageData('demo_bets', bets);
+        notifyDemoListeners(`contestBets_${contestId}`);
+      }
+      setLocalStorageData('demo_contests', contests);
+      notifyDemoListeners('activeContest');
+    }
+  },
+
+  async recalculateGeneralRanking(): Promise<void> {
+    const users = getLocalStorageData<User[]>('demo_users', mockUsers);
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    
+    // Calcular pontos de cada usuário baseado nas apostas validadas
+    const pointsMap: Record<string, { name: string, points: number, sellerCode?: string, numbers: number[] }> = {};
+    
+    bets.filter(b => b.status === 'validado').forEach(b => {
+      const uid = b.userId;
+      if (!pointsMap[uid]) {
+        pointsMap[uid] = { name: b.userName, points: 0, sellerCode: b.sellerCode, numbers: b.numbers };
+      }
+      const totalBetPoints = (b.hits || [0, 0, 0]).reduce((sum, h) => sum + h, 0);
+      pointsMap[uid].points += totalBetPoints;
+    });
+    
+    let rank = 1;
+    const ranking: UserRanking[] = Object.keys(pointsMap).map(uid => ({
+      userId: uid,
+      userName: pointsMap[uid].name,
+      points: pointsMap[uid].points,
+      position: 1,
+      sellerCode: pointsMap[uid].sellerCode,
+      numbers: pointsMap[uid].numbers
+    })).sort((a, b) => b.points - a.points);
+    
+    let lastScore = -1;
+    ranking.forEach((r, idx) => {
+      if (r.points !== lastScore) {
+        rank = idx + 1;
+        lastScore = r.points;
+      }
+      r.position = rank;
+      
+      // Atualizar também no cadastro de usuários demo
+      const user = users.find(u => u.id === r.userId);
+      if (user) {
+        user.totalPoints = r.points;
+      }
+    });
+    
+    setLocalStorageData('demo_rankings', ranking);
+    setLocalStorageData('demo_users', users);
+    notifyDemoListeners('ranking');
+    notifyDemoListeners('allUsers');
+  },
+
+  async getSettings(): Promise<Settings | null> {
+    return getLocalStorageData<Settings>('demo_settings', mockSettings);
+  },
+
+  async updateSettings(settings: Partial<Settings>): Promise<void> {
+    const current = getLocalStorageData<Settings>('demo_settings', mockSettings);
+    const updated = { ...current, ...settings, updatedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 } };
+    setLocalStorageData('demo_settings', updated);
+    notifyDemoListeners('settings');
+  },
+
+  async getSellerByCode(code: string): Promise<Seller | null> {
+    const sellers = getLocalStorageData<Seller[]>('demo_sellers', mockSellers);
+    return sellers.find(s => s.code === code.toUpperCase()) || null;
+  },
+
+  async getSellerByUserId(userId: string): Promise<Seller | null> {
+    const sellers = getLocalStorageData<Seller[]>('demo_sellers', mockSellers);
+    return sellers.find(s => s.userId === userId) || null;
+  },
+
+  async getUsersBySellerCode(sellerCode: string): Promise<User[]> {
+    const users = getLocalStorageData<User[]>('demo_users', mockUsers);
+    return users.filter(u => u.linkedSellerCode === sellerCode.toUpperCase());
+  },
+
+  async getPageViewStats(): Promise<any> {
+    return {
+      adminCount: 15,
+      sellerCount: 42,
+      clientCount: 118,
+      pages: {
+        'dashboard': 150,
+        'live_ranking': 340,
+        'seller_panel': 95,
+        'admin_panel': 50
+      }
+    };
+  },
+
+  async processSellerBonuses(contestId: string): Promise<void> {
+    console.log(`[Demo Mode] Processed seller bonuses for contest ${contestId}`);
+  },
+
+  async getBetsByStatus(status?: 'pendente' | 'validado' | 'rejeitado'): Promise<Bet[]> {
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    if (status) {
+      return bets.filter(b => b.status === status);
+    }
+    return bets;
+  },
+
+  async getAllPendingBets(): Promise<Bet[]> {
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    return bets.filter(b => b.status === 'pendente');
+  },
+
+  async cleanupInactiveUsers(currentContestNumber: number): Promise<void> {
+    console.log(`[Demo Mode] Cleanup inactive users for contest ${currentContestNumber}`);
+  },
+
+  async toggleBetRepeat(betId: string, repeat: boolean): Promise<void> {
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    const bet = bets.find(b => b.id === betId);
+    if (bet) {
+      bet.repeat = repeat;
+      setLocalStorageData('demo_bets', bets);
+      notifyDemoListeners(`contestBets_${bet.contestId}`);
+    }
+  },
+
+  async resetAllContests(): Promise<void> {
+    setLocalStorageData('demo_contests', []);
+    setLocalStorageData('demo_bets', []);
+    setLocalStorageData('demo_rankings', []);
+    notifyDemoListeners('activeContest');
+    notifyDemoListeners('ranking');
+  },
+
+  async resetSellersFinancialStats(): Promise<void> {
+    const sellers = getLocalStorageData<Seller[]>('demo_sellers', mockSellers);
+    sellers.forEach(s => {
+      s.totalSales = 0;
+      s.totalCommission = 0;
+    });
+    setLocalStorageData('demo_sellers', sellers);
+    notifyDemoListeners('allSellers');
+  },
+
+  async updateContestBasicInfo(contestId: string, number: number, betPrice: number): Promise<void> {
+    const contests = getLocalStorageData<Contest[]>('demo_contests', mockContests);
+    const c = contests.find(con => con.id === contestId);
+    if (c) {
+      c.number = number;
+      c.betPrice = betPrice;
+      setLocalStorageData('demo_contests', contests);
+      notifyDemoListeners('activeContest');
+    }
+  },
+
+  async linkUserToSeller(userId: string, sellerCode: string): Promise<void> {
+    const users = getLocalStorageData<User[]>('demo_users', mockUsers);
+    const u = users.find(usr => usr.id === userId);
+    if (u) {
+      u.linkedSellerCode = sellerCode.toUpperCase();
+      setLocalStorageData('demo_users', users);
+      notifyDemoListeners('allUsers');
+    }
+  },
+
+  async updateContestPrizeConfig(contestId: string, prizeConfig: any): Promise<void> {
+    const contests = getLocalStorageData<Contest[]>('demo_contests', mockContests);
+    const c = contests.find(con => con.id === contestId);
+    if (c) {
+      c.prizeConfig = prizeConfig;
+      setLocalStorageData('demo_contests', contests);
+      notifyDemoListeners('activeContest');
+    }
+  },
+
+  async checkBetNameAvailability(betName: string, userId: string, contestId?: string): Promise<{ available: boolean, message?: string }> {
+    if (!betName) return { available: true };
+    const normalizedNick = betName.trim().toUpperCase();
+    if (!normalizedNick) return { available: true };
+    
+    const bets = getLocalStorageData<Bet[]>('demo_bets', mockBets);
+    const activeContest = await this.getActiveContest();
+    const targetContestId = contestId || activeContest?.id;
+    
+    const existing = bets.find(b => b.betName?.toUpperCase() === normalizedNick && b.contestId === targetContestId);
+    if (existing && existing.userId !== userId) {
+      return {
+        available: false,
+        message: `O nome "${betName}" já está sendo usado por outro participante neste concurso.`
+      };
+    }
+    return { available: true };
+  },
+
+  async reserveNick(betName: string, userId: string, contestId?: string): Promise<void> {
+    console.log(`[Demo Mode] Nick reserved: ${betName} for ${userId}`);
+  },
+
+  async getSellerWhatsApp(sellerId: string): Promise<string | null> {
+    const users = getLocalStorageData<User[]>('demo_users', mockUsers);
+    const u = users.find(usr => usr.id === sellerId);
+    return u?.whatsapp || null;
+  },
+
+  async trackPageView(pageId: string, role: string): Promise<void> {
+    // No-op in demo mode
+  }
+};
+
+export const firebaseService = new Proxy(baseFirebaseService, {
+  get(target, prop, receiver) {
+    if (isDemoMode() && prop in demoFirebaseService) {
+      return Reflect.get(demoFirebaseService, prop, receiver);
+    }
+    return Reflect.get(target, prop, receiver);
+  }
+}) as typeof baseFirebaseService;

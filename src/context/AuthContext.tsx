@@ -14,7 +14,9 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, Timestamp, onSnapshot, query, collection, where, getDocs, updateDoc, or, arrayUnion } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { User, UserRole } from '../types';
+import { User, UserRole, Seller } from '../types';
+import { isDemoMode } from '../services/firebaseService';
+import { mockMasterUser, getLocalStorageData, setLocalStorageData, mockSellers, mockUsers } from '../services/demoData';
 
 interface AuthContextType {
   user: User | null;
@@ -37,6 +39,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let unsubscribeAuth: (() => void) | undefined;
 
     const initAuth = async () => {
+      if (isDemoMode()) {
+        const demoUser = getLocalStorageData<User | null>('demo_user', mockMasterUser);
+        setUser(demoUser);
+        setLoading(false);
+        return;
+      }
       try {
         unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
           console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'No user');
@@ -93,6 +101,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
             }, (error) => {
               console.error('Error in user query snapshot:', error);
+              const errorMsg = error instanceof Error ? error.message : String(error);
+              if (errorMsg.toLowerCase().includes('quota') || errorMsg.toLowerCase().includes('limit exceeded') || errorMsg.toLowerCase().includes('resource_exhausted')) {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('firestore-quota-error', { 
+                    detail: { error: errorMsg, operationType: 'list', path: 'users' } 
+                  }));
+                }
+              }
               setLoading(false);
             });
           } else {
@@ -100,12 +116,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLoading(false);
           }
         }, (error) => {
-
           console.error('onAuthStateChanged error:', error);
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          if (errorMsg.toLowerCase().includes('quota') || errorMsg.toLowerCase().includes('limit exceeded') || errorMsg.toLowerCase().includes('resource_exhausted')) {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('firestore-quota-error', { 
+                detail: { error: errorMsg, operationType: 'get', path: 'auth' } 
+              }));
+            }
+          }
           setLoading(false);
         });
       } catch (error) {
         console.error('initAuth error:', error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        if (errorMsg.toLowerCase().includes('quota') || errorMsg.toLowerCase().includes('limit exceeded') || errorMsg.toLowerCase().includes('resource_exhausted')) {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('firestore-quota-error', { 
+              detail: { error: errorMsg, operationType: 'get', path: 'auth' } 
+            }));
+          }
+        }
         setLoading(false);
       }
     };
@@ -119,6 +150,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signInWithGoogle = async () => {
+    if (isDemoMode()) {
+      setLocalStorageData('demo_user', mockMasterUser);
+      setUser(mockMasterUser);
+      return;
+    }
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -129,6 +165,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithWhatsApp = async (phone: string, name?: string, sellerCode?: string) => {
+    if (isDemoMode()) {
+      const demoUser: User = {
+        id: `demo_wa_${phone}`,
+        uid: `demo_wa_${phone}`,
+        uids: [`demo_wa_${phone}`],
+        name: name || `User ${phone.slice(-4)}`,
+        email: '',
+        whatsapp: phone,
+        role: 'cliente',
+        totalPoints: 0,
+        linkedSellerCode: sellerCode?.toUpperCase() || '',
+        createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
+      };
+      setLocalStorageData('demo_user', demoUser);
+      setUser(demoUser);
+      return;
+    }
     try {
       // 1. Sign in anonymously to interact with Firestore
       const { user: firebaseUser } = await signInAnonymously(auth);
@@ -183,6 +236,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithSellerCode = async (code: string, password: string) => {
+    if (isDemoMode()) {
+      const sellers = getLocalStorageData<Seller[]>('demo_sellers', mockSellers);
+      const seller = sellers.find(s => s.code === code.toUpperCase());
+      if (!seller) {
+        throw new Error('Código de vendedor inválido.');
+      }
+      if (seller.password !== password) {
+        throw new Error('Senha de vendedor incorreta.');
+      }
+      if (seller.blocked) {
+        throw new Error('O seu acesso de colaborador está bloqueado. Entre em contato com o suporte.');
+      }
+      const users = getLocalStorageData<User[]>('demo_users', mockUsers);
+      const sellerUser = users.find(u => u.id === seller.userId);
+      if (!sellerUser) {
+        throw new Error('Usuário do vendedor não encontrado.');
+      }
+      setLocalStorageData('demo_user', sellerUser);
+      setUser(sellerUser);
+      return;
+    }
     try {
       const { user: firebaseUser } = await signInAnonymously(auth);
       
@@ -229,6 +303,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithClientCode = async (name: string, sellerCode: string) => {
+    if (isDemoMode()) {
+      const sellers = getLocalStorageData<Seller[]>('demo_sellers', mockSellers);
+      const seller = sellers.find(s => s.code === sellerCode.toUpperCase());
+      if (!seller) {
+        throw new Error('Código de vendedor inválido. Peça o código correto ao seu vendedor.');
+      }
+      const demoUser: User = {
+        id: `demo_client_${name.replace(/\s+/g, '_')}_${sellerCode.toUpperCase()}`,
+        uid: `demo_client_${name.replace(/\s+/g, '_')}_${sellerCode.toUpperCase()}`,
+        uids: [`demo_client_${name.replace(/\s+/g, '_')}_${sellerCode.toUpperCase()}`],
+        name: name,
+        email: '',
+        role: 'cliente',
+        totalPoints: 0,
+        linkedSellerCode: sellerCode.toUpperCase(),
+        createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
+      };
+      setLocalStorageData('demo_user', demoUser);
+      setUser(demoUser);
+      return;
+    }
     try {
       const { user: firebaseUser } = await signInAnonymously(auth);
       
@@ -280,6 +375,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    if (isDemoMode()) {
+      localStorage.removeItem('demo_user');
+      setUser(null);
+      return;
+    }
     try {
       await signOut(auth);
     } catch (error) {

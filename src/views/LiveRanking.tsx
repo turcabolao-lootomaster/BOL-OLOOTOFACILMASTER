@@ -510,7 +510,7 @@ const LiveRanking: React.FC = () => {
 
     // Header - Main Title
     doc.setFillColor(107, 33, 168); // lotofacil-purple
-    doc.rect(0, 0, pageWidth, 56, 'F');
+    doc.rect(0, 0, pageWidth, 64, 'F');
     doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
@@ -551,7 +551,7 @@ const LiveRanking: React.FC = () => {
     // Separator line in banner
     doc.setDrawColor(255, 255, 255);
     doc.setLineWidth(0.3);
-    doc.line(165, 5, 165, 51);
+    doc.line(165, 5, 165, 59);
 
     // Tabela de Premiações on Right Side of Header Banner
     doc.setFont("helvetica", "bold");
@@ -567,10 +567,12 @@ const LiveRanking: React.FC = () => {
       { label: "10 PONTOS (1º SORT.)", value: prizes.fixed10PtsDraw1, sub: "Dez dezenas no Sorteio #1" },
       { label: "10 PONTOS (2º SORT.)", value: prizes.fixed10PtsDraw2, sub: "Dez dezenas no Sorteio #2" },
       { label: "10 PONTOS (3º SORT.)", value: prizes.fixed10PtsDraw3, sub: "Dez dezenas no Sorteio #3" },
+      { label: "25 PONTOS", value: prizes.fixed25Plus, sub: "Acumulado nos 3 sorteios" },
+      { label: "28 PONTOS", value: prizes.fixed28Plus, sub: "Acumulado nos 3 sorteios" },
     ];
     
     prizeLines.forEach((p, idx) => {
-      const yPrize = 17 + (idx * 5.8);
+      const yPrize = 15.5 + (idx * 5.4);
       doc.setFontSize(7.5);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(255, 255, 255);
@@ -578,7 +580,7 @@ const LiveRanking: React.FC = () => {
       doc.setFontSize(6);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(203, 213, 225); // Slate 300
-      doc.text(`(${p.sub})`, 172, yPrize + 2.4);
+      doc.text(`(${p.sub})`, 172, yPrize + 2.2);
       
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
@@ -587,13 +589,13 @@ const LiveRanking: React.FC = () => {
       doc.text(valStr, pageWidth - 15, yPrize + 1, { align: 'right' });
     });
 
-    // GANHADORES DO CONCURSO Area starts at Y = 62
+    // GANHADORES DO CONCURSO Area starts at Y = 68
     doc.setFillColor(21, 128, 61); // Emerald Green for winners
-    doc.rect(11, 60, pageWidth - 22, 6, 'F');
+    doc.rect(11, 68, pageWidth - 22, 6, 'F');
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(255, 255, 255);
-    doc.text("GANHADORES DO CONCURSO", 15, 64.2);
+    doc.text("GANHADORES DO CONCURSO", 15, 72.2);
 
     // Calculate dynamically who won what prize
     const winnersData: any[] = [];
@@ -689,7 +691,7 @@ const LiveRanking: React.FC = () => {
     autoTable(doc, {
       head: [winnersHeaders],
       body: winnersBody,
-      startY: 67,
+      startY: 75,
       theme: 'grid',
       margin: { left: 11 },
       styles: { fontSize: 7, halign: 'center', cellPadding: 1, font: 'helvetica', lineColor: [0, 0, 0], lineWidth: 0.5 },

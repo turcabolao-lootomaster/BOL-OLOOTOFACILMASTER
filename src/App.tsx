@@ -18,9 +18,10 @@ import Instructions from './views/Instructions';
 import SellerPanel from './views/SellerPanel';
 import AdminPanel from './views/AdminPanel';
 import SystemStartModal from './components/SystemStartModal';
-import { Menu, LogOut, Lock } from 'lucide-react';
+import { Menu, LogOut, Lock, AlertTriangle, Database, ExternalLink, Play, Eye, RotateCcw } from 'lucide-react';
 import { cn } from './utils';
-import { firebaseService } from './services/firebaseService';
+import { firebaseService, isDemoMode } from './services/firebaseService';
+import { initializeDemoDatabase } from './services/demoData';
 import { Settings } from './types';
 
 const AppContent: React.FC = () => {
@@ -30,6 +31,40 @@ const AppContent: React.FC = () => {
   const [lastCompletedDraws, setLastCompletedDraws] = useState<number>(0);
   const [systemSettings, setSystemSettings] = useState<Settings | null>(null);
   const [isModalManuallyClosed, setIsModalManuallyClosed] = useState(false);
+  const [quotaError, setQuotaError] = useState<any | null>(null);
+
+  // Interceptar erros globais de quota
+  React.useEffect(() => {
+    const handleQuotaError = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      setQuotaError(customEvent.detail || { error: 'Quota limit exceeded' });
+    };
+
+    const handleGlobalError = (event: ErrorEvent) => {
+      const msg = event.message || '';
+      if (msg.includes('Quota limit exceeded') || msg.includes('Quota exceeded') || msg.includes('RESOURCE_EXHAUSTED')) {
+        setQuotaError({ error: msg, operationType: 'list', path: 'realtime' });
+      }
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+      const msg = reason instanceof Error ? reason.message : String(reason);
+      if (msg.includes('Quota limit exceeded') || msg.includes('Quota exceeded') || msg.includes('RESOURCE_EXHAUSTED')) {
+        setQuotaError({ error: msg, operationType: 'list', path: 'realtime' });
+      }
+    };
+
+    window.addEventListener('firestore-quota-error', handleQuotaError);
+    window.addEventListener('error', handleGlobalError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('firestore-quota-error', handleQuotaError);
+      window.removeEventListener('error', handleGlobalError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
 
   // Monitorar configurações globais
   React.useEffect(() => {
@@ -110,6 +145,76 @@ const AppContent: React.FC = () => {
       }
     }
   }, [loading, user]);
+
+  if (quotaError && !isDemoMode()) {
+    const databaseLink = "https://console.firebase.google.com/project/gen-lang-client-0512461180/firestore/databases/ai-studio-d3919a56-b3bb-4c71-b29e-4adcfa738936/data?openUpgradeDialog=true";
+    return (
+      <div className="min-h-screen bg-[#1c0428] flex flex-col items-center justify-center p-6 text-center animate-fade-in relative">
+        <div className="relative mb-8">
+          <div className="absolute inset-0 bg-red-600 blur-[80px] opacity-20 animate-pulse" />
+          <div className="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center border-4 border-red-500/20">
+            <Database size={40} className="text-red-500 animate-bounce" />
+          </div>
+        </div>
+
+        <h1 className="text-2xl sm:text-4xl font-display tracking-wider text-[#e2e5eb] mb-4 uppercase">
+          Limite de Quota <span className="text-red-500">Excedido</span>
+        </h1>
+        
+        <div className="max-w-xl bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2rem] shadow-2xl text-left">
+          <div className="flex items-start gap-4 mb-6">
+            <AlertTriangle className="text-yellow-500 shrink-0 mt-1" size={24} />
+            <div>
+              <p className="text-lg text-yellow-500 font-bold uppercase tracking-wide">
+                Atenção Administrador/Desenvolvedor
+              </p>
+              <p className="text-slate-300 text-sm mt-1 leading-relaxed">
+                Este projeto do Firebase atingiu o limite gratuito diário de leituras (Free daily read units per project).
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-black/40 rounded-xl p-4 mb-6 font-mono text-[11px] text-red-300/90 border border-red-900/30 overflow-x-auto">
+            <p className="font-bold mb-1">DETALHES DO ERRO:</p>
+            <p className="whitespace-pre-wrap">{quotaError.error || 'Quota limit exceeded'}</p>
+            <p className="mt-2 text-slate-500">Operação: {quotaError.operationType || 'get'} | Caminho: {quotaError.path || 'settings/global'}</p>
+          </div>
+
+            <div className="space-y-4">
+              <p className="text-slate-400 text-xs leading-relaxed">
+                <strong>Como resolver:</strong> O limite diário de leitura gratuito para bancos de dados Spark do Firebase (Free Tier) é de 50.000 leituras e se reinicia automaticamente todos os dias às 00:00 PST. Para liberar o acesso imediatamente e evitar quedas, ative o faturamento (Plano Blaze) no console do Firebase. Alternativamente, você pode testar todo o aplicativo offline usando nosso modo de demonstração.
+              </p>
+
+              <div className="flex flex-col gap-2.5">
+                <a
+                  href={databaseLink}
+                  target="_blank"
+                  rel="noreferrer referrer"
+                  className="flex items-center justify-center gap-2 w-full py-3 px-6 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg transition-all text-xs uppercase tracking-widest text-center"
+                >
+                  Liberar Limite no Firebase <ExternalLink size={14} />
+                </a>
+
+                <button
+                  onClick={() => {
+                    initializeDemoDatabase(true);
+                    localStorage.setItem('demo_mode', 'true');
+                    window.location.reload();
+                  }}
+                  className="flex items-center justify-center gap-2 w-full py-3 px-6 bg-[#7a9a09] hover:bg-[#8eb30a] text-white font-bold rounded-xl shadow-lg transition-all text-xs uppercase tracking-widest text-center cursor-pointer"
+                >
+                  Ativar Modo de Demonstração (Offline) <Eye size={14} />
+                </button>
+              </div>
+            </div>
+        </div>
+
+        <div className="mt-8 text-slate-500 text-[10px] tracking-widest uppercase">
+          Bolão Lotofácil • Resiliência de Sistema
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -194,6 +299,39 @@ const AppContent: React.FC = () => {
       />
       
       <main className="flex-1 lg:ml-72 min-h-screen flex flex-col">
+        {isDemoMode() && (
+          <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-800 px-4 py-2 sm:px-8 text-[11px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 font-medium backdrop-blur-md sticky top-0 z-40">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              <span><strong>Modo de Demonstração Ativo (Offline)</strong> • Os dados estão sendo simulados localmente no seu navegador.</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              <button
+                onClick={() => {
+                  initializeDemoDatabase(true);
+                  window.location.reload();
+                }}
+                className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 rounded flex items-center gap-1 transition-all text-[9px] uppercase font-bold cursor-pointer"
+                title="Reinicia o banco de dados simulado com os dados padrão"
+              >
+                <RotateCcw size={10} /> Reiniciar Dados
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.removeItem('demo_mode');
+                  localStorage.removeItem('demo_user');
+                  window.location.reload();
+                }}
+                className="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded flex items-center gap-1 transition-all text-[9px] uppercase font-bold cursor-pointer"
+              >
+                Sair do Modo Demo
+              </button>
+            </div>
+          </div>
+        )}
         
         {/* Modern Header */}
         <header className={cn(
