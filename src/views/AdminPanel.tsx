@@ -1874,7 +1874,10 @@ const ContestsTab: React.FC<{
     prizeConfig?: Contest['prizeConfig'],
     displayPrizes?: Contest['displayPrizes'],
     startDate?: string,
-    startTime?: string
+    startTime?: string,
+    number?: number,
+    betPrice?: number,
+    status?: ContestStatus
   } | null>(null);
   const [editingPublicLink, setEditingPublicLink] = useState<{ id: string, publicLink: string } | null>(null);
 
@@ -1975,6 +1978,11 @@ const ContestsTab: React.FC<{
           (editingPrizes as any).number, 
           (editingPrizes as any).betPrice
         );
+      }
+
+      // Update status if changed
+      if ((editingPrizes as any).status !== undefined) {
+        await firebaseService.updateContestStatus(editingPrizes.id, (editingPrizes as any).status);
       }
 
       await firebaseService.updateContestPrizes(editingPrizes.id, editingPrizes.prizes);
@@ -2439,10 +2447,10 @@ const ContestsTab: React.FC<{
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-lotofacil-purple/10 text-lotofacil-purple flex items-center justify-center">
-                  <Trophy size={20} />
+                  <Pencil size={20} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-display tracking-widest text-slate-900 uppercase">Configurar Premiações</h3>
+                  <h3 className="text-lg font-display tracking-widest text-slate-900 uppercase">Editar Concurso</h3>
                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Concurso #{editingPrizes.id.split('_')[0]}</p>
                 </div>
               </div>
@@ -2463,7 +2471,7 @@ const ContestsTab: React.FC<{
                     <div className="w-1 h-1 rounded-full bg-slate-900" />
                     Informações Básicas
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1.5">
                       <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Número do Concurso</label>
                       <input 
@@ -2483,6 +2491,19 @@ const ContestsTab: React.FC<{
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-900/50 transition-all font-bold"
                         required
                       />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Status do Concurso</label>
+                      <select 
+                        value={(editingPrizes as any).status || ''}
+                        onChange={(e) => setEditingPrizes({...editingPrizes, status: e.target.value as any})}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-900/50 transition-all font-bold"
+                        required
+                      >
+                        <option value="aberto">Aberto (Apostas Liberadas)</option>
+                        <option value="em_andamento">Em Andamento (Apostas Bloqueadas)</option>
+                        <option value="encerrado">Encerrado</option>
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -2837,12 +2858,13 @@ const ContestsTab: React.FC<{
                   startDate: c.startDate || '',
                   startTime: c.startTime || '',
                   number: c.number,
-                  betPrice: c.betPrice || 10
+                  betPrice: c.betPrice || 10,
+                  status: c.status
                 } as any)}
                 className="w-8 h-8 sm:w-10 sm:h-10 bg-white text-slate-600 hover:text-lotofacil-purple border border-slate-200 rounded-lg sm:rounded-xl flex items-center justify-center transition-all shadow-sm"
-                title="Editar Premiações"
+                title="Editar Concurso"
               >
-                <Trophy size={16} />
+                <Pencil size={16} />
               </button>
               <button 
                 onClick={() => handleDeleteContest(c.id)}
@@ -2880,6 +2902,16 @@ const ContestsTab: React.FC<{
                     FINALIZAR
                   </button>
                 </>
+              )}
+              {c.status === 'encerrado' && (
+                <button 
+                  onClick={() => handleUpdateStatus(c.id, 'aberto')}
+                  className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-all flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest"
+                  title="Reabrir Concurso (Liberar Apostas)"
+                >
+                  <Unlock size={12} />
+                  REABRIR
+                </button>
               )}
             </div>
           </div>
