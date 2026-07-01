@@ -19,7 +19,8 @@ const Ranking: React.FC = () => {
   const [ranking, setRanking] = useState<UserRanking[]>([]);
   const [activeBetKeys, setActiveBetKeys] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [sortBy, setSortBy] = useState<'points' | 'name'>('points');
@@ -124,32 +125,29 @@ const Ranking: React.FC = () => {
     setPassword('');
   };
 
-  useEffect(() => {
-    const unsubscribeRanking = firebaseService.subscribeToRanking((data) => {
-      setRanking(data);
-      setLoading(false);
-    });
-
-    // Subscribe to active contest bets to show blinking dot
-    let unsubscribeBets: (() => void) | undefined;
-    const unsubscribeContest = firebaseService.subscribeToActiveContest((contest) => {
+  const handleLoadRanking = async () => {
+    setLoading(true);
+    try {
+      const [rankingData, contest] = await Promise.all([
+        firebaseService.getRanking(300),
+        firebaseService.getActiveContest()
+      ]);
+      setRanking(rankingData);
+      
       if (contest) {
-        if (unsubscribeBets) unsubscribeBets();
-        unsubscribeBets = firebaseService.subscribeToContestBets(contest.id, (bets: Bet[]) => {
-          const keys = new Set(bets.map(b => 
-            `${(b.betName || b.userName || '').trim().toUpperCase()}_${(b.sellerCode || '').trim().toUpperCase()}`
-          ));
-          setActiveBetKeys(keys);
-        });
+        const bets = await firebaseService.getContestBets(contest.id);
+        const keys = new Set(bets.map(b => 
+          `${(b.betName || b.userName || '').trim().toUpperCase()}_${(b.sellerCode || '').trim().toUpperCase()}`
+        ));
+        setActiveBetKeys(keys);
       }
-    });
-
-    return () => {
-      unsubscribeRanking();
-      unsubscribeContest();
-      if (unsubscribeBets) unsubscribeBets();
-    };
-  }, []);
+      setDataLoaded(true);
+    } catch (error) {
+      console.error("Error loading ranking data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredRanking = React.useMemo(() => {
     let filtered = ranking.filter(p => 
@@ -310,8 +308,72 @@ const Ranking: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Top 3 Cards - Horizontal Scroll on Mobile */}
-      <div className="flex sm:grid sm:grid-cols-3 gap-3 sm:gap-6 overflow-x-auto pb-4 sm:pb-0 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+      {!dataLoaded ? (
+        <div className="glass-card p-6 sm:p-10 max-w-xl mx-auto text-center space-y-6 border border-lotofacil-purple/20 shadow-xl relative overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-lotofacil-purple/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
+          
+          <div className="w-16 h-16 bg-lotofacil-purple/10 text-lotofacil-purple rounded-3xl flex items-center justify-center mx-auto shadow-inner">
+            <Search size={32} />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-display tracking-widest text-slate-900 uppercase">Buscar na Corrida dos Campeões</h2>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-md mx-auto">
+              Digite o seu nome de participante para ver sua pontuação acumulada e classificação atualizada.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
+            <div className="relative w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input
+                type="text"
+                placeholder="Ex: SEU NOME..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchTerm.trim()) {
+                    handleLoadRanking();
+                  }
+                }}
+                className="w-full bg-slate-50 border-2 border-slate-200 focus:border-lotofacil-purple/50 focus:bg-white rounded-2xl py-3.5 pl-12 pr-4 text-sm font-bold uppercase transition-all outline-none"
+              />
+            </div>
+            <button
+              onClick={() => {
+                if (searchTerm.trim()) {
+                  handleLoadRanking();
+                } else {
+                  alert('Por favor, digite um nome para buscar.');
+                }
+              }}
+              disabled={loading}
+              className="w-full sm:w-auto px-6 py-4 bg-lotofacil-purple hover:bg-lotofacil-purple/90 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-purple-500/20 active:scale-95 transition-all shrink-0 flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                'BUSCAR'
+              )}
+            </button>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 flex flex-col items-center gap-2">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Ou visualize o quadro completo</p>
+            <button
+              onClick={() => handleLoadRanking()}
+              disabled={loading}
+              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[9px] sm:text-[10px] uppercase tracking-widest rounded-xl transition-all"
+            >
+              {loading ? 'CARREGANDO...' : 'VER RANKING COMPLETO'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Top 3 Cards - Horizontal Scroll on Mobile */}
+          <div className="flex sm:grid sm:grid-cols-3 gap-3 sm:gap-6 overflow-x-auto pb-4 sm:pb-0 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
         {loading ? (
           <div className="min-w-full text-center py-10 text-slate-600 text-xs sm:text-sm">Carregando ranking...</div>
         ) : filteredRanking.slice(0, 3).map((p, idx) => (
@@ -534,6 +596,7 @@ const Ranking: React.FC = () => {
           ))}
         </div>
       </div>
+      </>)}
 
       {/* Password Modal */}
       <AnimatePresence>

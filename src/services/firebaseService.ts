@@ -619,6 +619,38 @@ const baseFirebaseService = {
     });
   },
 
+  async getRanking(limitCount: number = 100): Promise<UserRanking[]> {
+    const path = 'rankings';
+    try {
+      const q = query(
+        collection(db, 'rankings'), 
+        orderBy('totalPoints', 'desc'), 
+        limit(limitCount)
+      );
+      const snapshot = await getDocs(q);
+      let currentRank = 0;
+      let lastScore = -1;
+      return snapshot.docs.map((doc) => {
+        const points = doc.data().totalPoints || 0;
+        if (points !== lastScore) {
+          currentRank++;
+          lastScore = points;
+        }
+        return {
+          userId: doc.id,
+          userName: doc.data().betName || 'Participante',
+          points: points,
+          position: currentRank,
+          sellerCode: doc.data().sellerCode,
+          numbers: doc.data().numbers
+        };
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, path);
+      return [];
+    }
+  },
+
   // Admin Actions
   async validateBet(betId: string, status: 'validado' | 'rejeitado'): Promise<void> {
     const path = `bets/${betId}`;

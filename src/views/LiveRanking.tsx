@@ -44,6 +44,8 @@ const LiveRanking: React.FC = () => {
   const [systemSettings, setSystemSettings] = useState<Settings | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [loadingBets, setLoadingBets] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState(true);
   const [sortBy, setSortBy] = useState<'points' | 'name'>('name');
@@ -150,9 +152,39 @@ const LiveRanking: React.FC = () => {
   const [showPrizesModal, setShowPrizesModal] = useState(false);
   const [showDownloadOptionsModal, setShowDownloadOptionsModal] = useState(false);
 
+  const handleLoadBets = async () => {
+    if (!activeContest) return;
+    setLoadingBets(true);
+    try {
+      const contestBets = await firebaseService.getContestBets(activeContest.id);
+      
+      // Assign stable numeric ticket/bet numbers alphabetically by name
+      const alphabeticallySorted = [...contestBets].sort((a, b) => {
+        const nameA = (a.betName || a.userName || '').trim().toLowerCase();
+        const nameB = (b.betName || b.userName || '').trim().toLowerCase();
+        if (nameA !== nameB) {
+          return nameA.localeCompare(nameB, 'pt', { sensitivity: 'base' });
+        }
+        return (a.id || '').localeCompare(b.id || '');
+      });
+      const mappedBets = contestBets.map(bet => {
+        const index = alphabeticallySorted.findIndex(b => b.id === bet.id);
+        return {
+          ...bet,
+          ticketNumber: index !== -1 ? (index + 1) : 1
+        };
+      });
+      setBets(mappedBets);
+      setDataLoaded(true);
+    } catch (error) {
+      console.error("Error loading bets on-demand:", error);
+    } finally {
+      setLoadingBets(false);
+    }
+  };
+
   useEffect(() => {
     let unsubscribeContest: (() => void) | undefined;
-    let unsubscribeBets: (() => void) | undefined;
     let unsubscribeSettings: (() => void) | undefined;
 
     const init = async () => {
@@ -165,31 +197,8 @@ const LiveRanking: React.FC = () => {
         if (contest) {
           if (contest.prizeConfig) setEditingPrizeConfig(contest.prizeConfig);
           if (contest.prizes) setEditingPrizes(contest.prizes);
-          
-          if (unsubscribeBets) unsubscribeBets();
-          unsubscribeBets = firebaseService.subscribeToContestBets(contest.id, (contestBets) => {
-            // Assign stable numeric ticket/bet numbers alphabetically by name
-            const alphabeticallySorted = [...contestBets].sort((a, b) => {
-              const nameA = (a.betName || a.userName || '').trim().toLowerCase();
-              const nameB = (b.betName || b.userName || '').trim().toLowerCase();
-              if (nameA !== nameB) {
-                return nameA.localeCompare(nameB, 'pt', { sensitivity: 'base' });
-              }
-              return (a.id || '').localeCompare(b.id || '');
-            });
-            const mappedBets = contestBets.map(bet => {
-              const index = alphabeticallySorted.findIndex(b => b.id === bet.id);
-              return {
-                ...bet,
-                ticketNumber: index !== -1 ? (index + 1) : 1
-              };
-            });
-            setBets(mappedBets);
-            setLoading(false);
-          });
-        } else {
-          setLoading(false);
         }
+        setLoading(false);
       });
     };
 
@@ -202,7 +211,6 @@ const LiveRanking: React.FC = () => {
 
     return () => {
       if (unsubscribeContest) unsubscribeContest();
-      if (unsubscribeBets) unsubscribeBets();
       if (unsubscribeSettings) unsubscribeSettings();
     };
   }, []);
@@ -1382,7 +1390,71 @@ const LiveRanking: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col gap-6">
+      {!dataLoaded ? (
+        <div className="glass-card p-6 sm:p-12 max-w-xl mx-auto text-center space-y-6 border border-lotofacil-purple/20 shadow-xl relative overflow-hidden mt-6">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-lotofacil-purple/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
+          
+          <div className="w-16 h-16 bg-lotofacil-purple/10 text-lotofacil-purple rounded-3xl flex items-center justify-center mx-auto shadow-inner">
+            <Search size={32} />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-display tracking-widest text-slate-900 uppercase">Classificação Ao Vivo</h2>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-md mx-auto">
+              Consulte sua pontuação e classificação em tempo real digitando o seu nome de participante.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
+            <div className="relative w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input
+                type="text"
+                placeholder="Ex: SEU NOME..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchTerm.trim()) {
+                    handleLoadBets();
+                  }
+                }}
+                className="w-full bg-slate-50 border-2 border-slate-200 focus:border-lotofacil-purple/50 focus:bg-white rounded-2xl py-3.5 pl-12 pr-4 text-sm font-bold uppercase transition-all outline-none"
+              />
+            </div>
+            <button
+              onClick={() => {
+                if (searchTerm.trim()) {
+                  handleLoadBets();
+                } else {
+                  alert('Por favor, digite um nome para buscar.');
+                }
+              }}
+              disabled={loadingBets}
+              className="w-full sm:w-auto px-6 py-4 bg-lotofacil-purple hover:bg-lotofacil-purple/90 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-purple-500/20 active:scale-95 transition-all shrink-0 flex items-center justify-center gap-2"
+            >
+              {loadingBets ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                'BUSCAR'
+              )}
+            </button>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 flex flex-col items-center gap-2">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Ou visualize o quadro completo</p>
+            <button
+              onClick={() => handleLoadBets()}
+              disabled={loadingBets}
+              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[9px] sm:text-[10px] uppercase tracking-widest rounded-xl transition-all"
+            >
+              {loadingBets ? 'CARREGANDO...' : 'VER CLASSIFICAÇÃO COMPLETA'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col gap-6">
         <AnimatePresence>
           {showDownloadOptionsModal && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
@@ -2108,6 +2180,7 @@ const LiveRanking: React.FC = () => {
           </p>
         </div>
       </div>
+      </>)}
 
       {/* Edit Modal */}
       <AnimatePresence>

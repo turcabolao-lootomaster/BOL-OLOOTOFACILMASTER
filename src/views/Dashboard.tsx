@@ -42,25 +42,21 @@ const Dashboard: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-
     const fetchData = async () => {
       const userId = user?.id || user?.uid;
       if (!userId) return;
       
       try {
-        const [contest, bets] = await Promise.all([
+        const [contest, bets, rankingData] = await Promise.all([
           firebaseService.getActiveContest(),
-          firebaseService.getUserBets(userId)
+          firebaseService.getUserBets(userId),
+          firebaseService.getRanking(50)
         ]);
         
         setActiveContest(contest);
         setUserBets(bets);
-        
-        unsubscribe = firebaseService.subscribeToRanking((data) => {
-          setRanking(data);
-          setLoading(false);
-        });
+        setRanking(rankingData);
+        setLoading(false);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         setLoading(false);
@@ -68,10 +64,6 @@ const Dashboard: React.FC = () => {
     };
 
     fetchData();
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
   }, [user]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
