@@ -51,6 +51,20 @@ const LiveRanking: React.FC = () => {
   const [sortBy, setSortBy] = useState<'points' | 'name'>('name');
   const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number; totalMs: number } | null>(null);
   const [showCountdownModal, setShowCountdownModal] = useState(false);
+  const [totalBetsCount, setTotalBetsCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!activeContest) return;
+    const fetchTotalBets = async () => {
+      try {
+        const count = await firebaseService.getContestTotalBets(activeContest.id, 'validado');
+        setTotalBetsCount(count);
+      } catch (e) {
+        console.error("Error fetching total bets count:", e);
+      }
+    };
+    fetchTotalBets();
+  }, [activeContest?.id]);
 
   useEffect(() => {
     if (!activeContest) return;
@@ -175,6 +189,7 @@ const LiveRanking: React.FC = () => {
         };
       });
       setBets(mappedBets);
+      setTotalBetsCount(mappedBets.length);
       setDataLoaded(true);
     } catch (error) {
       console.error("Error loading bets on-demand:", error);
@@ -1171,7 +1186,7 @@ const LiveRanking: React.FC = () => {
               <p className="text-[8px] sm:text-[10px] font-black text-black uppercase tracking-[0.2em]">Tempo Real</p>
             </div>
             <h1 className="text-lg sm:text-4xl font-display tracking-[0.1em] sm:tracking-[0.5em] text-slate-900 uppercase leading-tight truncate sm:whitespace-normal">Classificação <span className="text-emerald-500">Ao Vivo</span></h1>
-            <p className="text-[9px] sm:text-xs text-slate-400 font-medium truncate">Concurso #{activeContest.number} • {bets.length} Apostas</p>
+            <p className="text-[9px] sm:text-xs text-slate-400 font-medium truncate">Concurso #{activeContest.number} • {totalBetsCount !== null ? totalBetsCount : bets.length} Apostas</p>
             
             {isAdmin && (
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3">
@@ -1391,64 +1406,95 @@ const LiveRanking: React.FC = () => {
       </AnimatePresence>
 
       {!dataLoaded ? (
-        <div className="glass-card p-6 sm:p-12 max-w-xl mx-auto text-center space-y-6 border border-lotofacil-purple/20 shadow-xl relative overflow-hidden mt-6">
+        <div className="glass-card p-4 sm:p-6 max-w-md mx-auto text-center space-y-4 border border-lotofacil-purple/15 shadow-xl relative overflow-hidden mt-3">
           {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-lotofacil-purple/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
+          <div className="absolute top-0 right-0 w-24 h-24 bg-[#7a9a09]/5 rounded-full -mr-12 -mt-12 blur-2xl pointer-events-none" />
           
-          <div className="w-16 h-16 bg-lotofacil-purple/10 text-lotofacil-purple rounded-3xl flex items-center justify-center mx-auto shadow-inner">
-            <Search size={32} />
-          </div>
-
-          <div className="space-y-2">
-            <h2 className="text-xl font-display tracking-widest text-slate-900 uppercase">Classificação Ao Vivo</h2>
-            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-md mx-auto">
-              Consulte sua pontuação e classificação em tempo real digitando o seu nome de participante.
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="flex items-center justify-center gap-2">
+              <Trophy size={18} className="text-[#7a9a09] animate-pulse" />
+              <h2 className="text-base sm:text-lg font-display tracking-widest text-slate-900 uppercase">Classificação Ao Vivo</h2>
+            </div>
+            <p className="text-[11px] sm:text-xs text-slate-500 leading-normal max-w-xs mx-auto">
+              Consulte sua pontuação e classificação em tempo real do concurso atual.
             </p>
+            
+            {/* Total Bets Indicator in the header */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-[#7a9a09] rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest border border-emerald-500/10 mt-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#7a9a09] animate-ping" />
+              <span>
+                {totalBetsCount !== null ? `${totalBetsCount} Apostas Registradas` : 'Carregando total de apostas...'}
+              </span>
+            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
-            <div className="relative w-full">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input
-                type="text"
-                placeholder="Ex: SEU NOME..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && searchTerm.trim()) {
+          {/* Search Box - Placed Above */}
+          <div className="space-y-1.5 pt-1">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Busque pelo seu nome</p>
+            <div className="flex flex-col sm:flex-row gap-2 items-center justify-center">
+              <div className="relative w-full">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <input
+                  type="text"
+                  placeholder="EX: SEU NOME..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchTerm.trim()) {
+                      handleLoadBets();
+                    }
+                  }}
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-lotofacil-purple/40 focus:bg-white rounded-xl py-2.5 pl-10 pr-3 text-xs font-bold uppercase transition-all outline-none"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  if (searchTerm.trim()) {
                     handleLoadBets();
+                  } else {
+                    alert('Por favor, digite um nome para buscar.');
                   }
                 }}
-                className="w-full bg-slate-50 border-2 border-slate-200 focus:border-lotofacil-purple/50 focus:bg-white rounded-2xl py-3.5 pl-12 pr-4 text-sm font-bold uppercase transition-all outline-none"
-              />
+                disabled={loadingBets}
+                className="w-full sm:w-auto px-5 py-2.5 bg-lotofacil-purple hover:bg-lotofacil-purple/90 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-md shadow-purple-500/10 active:scale-95 transition-all shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {loadingBets ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Search size={14} />
+                    <span>BUSCAR</span>
+                  </>
+                )}
+              </button>
             </div>
-            <button
-              onClick={() => {
-                if (searchTerm.trim()) {
-                  handleLoadBets();
-                } else {
-                  alert('Por favor, digite um nome para buscar.');
-                }
-              }}
-              disabled={loadingBets}
-              className="w-full sm:w-auto px-6 py-4 bg-lotofacil-purple hover:bg-lotofacil-purple/90 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-purple-500/20 active:scale-95 transition-all shrink-0 flex items-center justify-center gap-2"
-            >
-              {loadingBets ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                'BUSCAR'
-              )}
-            </button>
           </div>
 
-          <div className="pt-4 border-t border-slate-100 flex flex-col items-center gap-2">
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Ou visualize o quadro completo</p>
+          {/* Divider */}
+          <div className="relative flex py-1 items-center">
+            <div className="flex-grow border-t border-slate-100"></div>
+            <span className="flex-shrink mx-2 text-[9px] text-slate-400 font-bold uppercase tracking-widest">OU</span>
+            <div className="flex-grow border-t border-slate-100"></div>
+          </div>
+
+          {/* Green primary button to view full list */}
+          <div className="pt-0.5">
             <button
               onClick={() => handleLoadBets()}
               disabled={loadingBets}
-              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[9px] sm:text-[10px] uppercase tracking-widest rounded-xl transition-all"
+              className="w-full px-6 py-3 bg-[#7a9a09] hover:bg-[#8eb30a] text-white font-black text-xs uppercase tracking-[0.12em] rounded-xl shadow-md shadow-[#7a9a09]/15 hover:shadow-[#7a9a09]/25 active:scale-95 hover:scale-[1.01] transition-all flex items-center justify-center gap-2 cursor-pointer border border-[#7a9a09]/10"
             >
-              {loadingBets ? 'CARREGANDO...' : 'VER CLASSIFICAÇÃO COMPLETA'}
+              {loadingBets ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>CARREGANDO...</span>
+                </>
+              ) : (
+                <>
+                  <Trophy size={14} />
+                  <span>VER LISTA COMPLETA</span>
+                </>
+              )}
             </button>
           </div>
         </div>

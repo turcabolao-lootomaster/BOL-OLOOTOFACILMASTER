@@ -256,6 +256,10 @@ export function getNormalizedParticipantKey(name: string): string {
   return normalized;
 }
 
+// Memory cache for contest bets to minimize Firestore reads
+const contestBetsCache: { [contestId: string]: { bets: Bet[], timestamp: number } } = {};
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds cache TTL
+
 const baseFirebaseService = {
   // Seller Requests
   async createSellerRequest(requestData: Omit<SellerRequest, 'id' | 'status' | 'createdAt'>): Promise<void> {
@@ -527,8 +531,13 @@ const baseFirebaseService = {
     }
   },
 
-  async getContestBets(contestId: string): Promise<Bet[]> {
+  async getContestBets(contestId: string, forceRefresh = false): Promise<Bet[]> {
     const path = 'bets';
+    const now = Date.now();
+    if (!forceRefresh && contestBetsCache[contestId] && (now - contestBetsCache[contestId].timestamp < CACHE_TTL_MS)) {
+      console.log(`[Cache] Returning cached bets for contest ${contestId} (Total: ${contestBetsCache[contestId].bets.length})`);
+      return contestBetsCache[contestId].bets;
+    }
     try {
       const q = query(
         collection(db, 'bets'), 
@@ -536,7 +545,15 @@ const baseFirebaseService = {
         where('status', '==', 'validado')
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bet));
+      const bets = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bet));
+      
+      // Update cache
+      contestBetsCache[contestId] = {
+        bets,
+        timestamp: now
+      };
+      
+      return bets;
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, path);
       return [];
@@ -559,6 +576,10 @@ const baseFirebaseService = {
 
   async getContestTotalBets(contestId: string, status?: 'validado' | 'pendente' | 'rejeitado'): Promise<number> {
     const path = 'bets';
+    // If we have the full bets cached in memory, return the count from cache directly to avoid any DB count read!
+    if (contestBetsCache[contestId] && (!status || status === 'validado')) {
+      return contestBetsCache[contestId].bets.length;
+    }
     try {
       let q;
       if (status) {
