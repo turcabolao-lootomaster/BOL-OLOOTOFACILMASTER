@@ -157,3 +157,21 @@ export interface PageViewStats {
   clients: number;
   lastUpdate: any;
 }
+
+export interface ChampionRecord {
+  betName: string;
+  sellerCode: string;
+  contestNumber: number;
+  draw: 'S1' | 'S2' | 'S3';
+  points: number;
+}
+
+export interface ChampionsSettings {
+  champions: ChampionRecord[];
+  prizePool: number;
+  pct1: number;
+  pct2: number;
+  pct3: number;
+  lastUpdated?: any;
+}
+

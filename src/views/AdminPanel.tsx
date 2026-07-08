@@ -3875,6 +3875,14 @@ const ConfigTab: React.FC<{
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  // Champions settings states
+  const [prizePool, setPrizePool] = useState<number>(800);
+  const [pct1, setPct1] = useState<number>(50);
+  const [pct2, setPct2] = useState<number>(30);
+  const [pct3, setPct3] = useState<number>(20);
+  const [championsList, setChampionsList] = useState<any[]>([]);
+  const [savingChamps, setSavingChamps] = useState<boolean>(false);
+
   useEffect(() => {
     const fetchSettings = async () => {
       const settings = await firebaseService.getSettings();
@@ -3888,6 +3896,20 @@ const ConfigTab: React.FC<{
       }
     };
     fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    const fetchChamps = async () => {
+      const champSettings = await firebaseService.getChampionsSettings();
+      if (champSettings) {
+        setPrizePool(champSettings.prizePool || 800);
+        setPct1(champSettings.pct1 || 50);
+        setPct2(champSettings.pct2 || 30);
+        setPct3(champSettings.pct3 || 20);
+        setChampionsList(champSettings.champions || []);
+      }
+    };
+    fetchChamps();
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -3912,167 +3934,300 @@ const ConfigTab: React.FC<{
     }
   };
 
+  const handleSaveChamps = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingChamps(true);
+    try {
+      await firebaseService.updateChampionsSettings({
+        prizePool,
+        pct1,
+        pct2,
+        pct3
+      });
+      showAlert('SUCESSO', 'Configurações de premiação da Corrida salvas com sucesso!');
+    } catch (error) {
+      console.error('Error saving champions settings:', error);
+      showAlert('ERRO', 'Ocorreu um erro ao salvar as configurações.');
+    } finally {
+      setSavingChamps(false);
+    }
+  };
+
   return (
-    <div className="space-y-6 max-w-2xl bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
-      <div className="flex items-center gap-4 mb-2">
-        <div className="w-12 h-12 rounded-2xl bg-lotofacil-purple/10 text-lotofacil-purple flex items-center justify-center">
-          <Settings size={24} />
+    <div className="space-y-8 max-w-5xl">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        {/* Card 1: Configurações Gerais */}
+        <div className="space-y-6 bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 rounded-2xl bg-lotofacil-purple/10 text-lotofacil-purple flex items-center justify-center">
+              <Settings size={24} />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">CONFIGURAÇÕES DO <span className="text-lotofacil-purple">SISTEMA</span></h2>
+              <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-widest">Ajuste parâmetros globais do aplicativo.</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSave} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Maintenance Mode Config */}
+              <div className="space-y-4 md:col-span-2 p-4 bg-lotofacil-purple/5 border border-lotofacil-purple/20 rounded-2xl">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-lotofacil-purple flex items-center gap-2">
+                  <div className="w-1 h-1 rounded-full bg-lotofacil-purple" />
+                  Modo Aguardando Sorteio
+                </h3>
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Ativar Tela de Espera?</p>
+                    <p className="text-[9px] text-slate-500 font-medium">Bloqueia o app para usuários com uma tela de "Aguardando Sorteio".</p>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => setMaintenanceMode(!maintenanceMode)}
+                    className={cn(
+                      "relative w-12 h-6 rounded-full transition-colors",
+                      maintenanceMode ? "bg-lotofacil-purple" : "bg-slate-300"
+                    )}
+                  >
+                    <div className={cn(
+                      "absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm",
+                      maintenanceMode ? "translate-x-6" : "translate-x-0"
+                    )} />
+                  </button>
+                </div>
+
+                {maintenanceMode && (
+                  <div className="space-y-2 animate-fade-in">
+                    <label className="block text-[10px] uppercase tracking-widest text-slate-900 font-bold ml-1">Mensagem na Tela</label>
+                    <input 
+                      type="text" 
+                      value={maintenanceMessage}
+                      onChange={(e) => setMaintenanceMessage(e.target.value)}
+                      placeholder="Ex: Prepare-se! O sorteio começará em instantes."
+                      className="w-full bg-white border border-slate-200 rounded-xl py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-sm text-slate-900 font-bold"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* WhatsApp Config */}
+              <div className="space-y-4 md:col-span-2">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                  <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                  Comunicação Geral
+                </h3>
+                <div className="space-y-2">
+                  <label className="block text-[10px] uppercase tracking-widest text-slate-900 font-bold ml-1">WhatsApp de Suporte (Admin)</label>
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      value={whatsappNumber}
+                      onChange={(e) => setWhatsappNumber(e.target.value)}
+                      placeholder="Ex: 5511999999999"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-sm text-slate-900 font-bold"
+                    />
+                  </div>
+                  <p className="text-[9px] text-slate-400 font-medium ml-1">Número com DDD. Usado como fallback para validação de apostas.</p>
+                </div>
+              </div>
+
+              {/* Start Date Config */}
+              <div className="space-y-4 md:col-span-2 pt-6 border-t border-slate-100">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                  <div className="w-1 h-1 rounded-full bg-lotofacil-yellow" />
+                  Lançamento do Bolão (Concurso #1)
+                </h3>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-900 font-bold ml-1">
+                      <Calendar size={12} className="text-lotofacil-purple" />
+                      Data de Início
+                    </label>
+                    <input 
+                      type="date" 
+                      value={poolStartDate}
+                      onChange={(e) => setPoolStartDate(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-sm text-slate-900 font-bold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-900 font-bold ml-1">
+                      <Clock size={12} className="text-lotofacil-purple" />
+                      Horário de Início
+                    </label>
+                    <input 
+                      type="time" 
+                      value={poolStartTime}
+                      onChange={(e) => setPoolStartTime(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-sm text-slate-900 font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Sistema Ativo?</p>
+                    <p className="text-[9px] text-slate-500 font-medium">Se desativado, um modal de "Início em Breve" será exibido.</p>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => setIsPoolActive(!isPoolActive)}
+                    className={cn(
+                      "relative w-12 h-6 rounded-full transition-colors",
+                      isPoolActive ? "bg-emerald-500" : "bg-slate-300"
+                    )}
+                  >
+                    <div className={cn(
+                      "absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm",
+                      isPoolActive ? "translate-x-6" : "translate-x-0"
+                    )} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 pt-4">
+              <button 
+                type="submit"
+                disabled={loading}
+                className="flex-1 bg-lotofacil-purple text-white px-8 h-14 rounded-2xl flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(107,33,168,0.3)] disabled:opacity-30 text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                {loading ? 'PROCESSANDO...' : (
+                  <>
+                    <Save size={18} />
+                    SALVAR ALTERAÇÕES
+                  </>
+                )}
+              </button>
+              
+              <AnimatePresence>
+                {success && (
+                  <motion.div 
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100 shadow-sm shadow-emerald-500/10"
+                  >
+                    <CheckCircle size={18} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Sucesso</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </form>
         </div>
-        <div>
-          <h2 className="text-lg sm:text-2xl font-display tracking-widest text-slate-900 uppercase">CONFIGURAÇÕES DO <span className="text-lotofacil-purple">SISTEMA</span></h2>
-          <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-widest">Ajuste parâmetros globais do aplicativo.</p>
+
+        {/* Card 2: Corrida dos Campeões (Podium/Prêmios) */}
+        <div className="space-y-6 bg-slate-900 text-white p-6 sm:p-8 rounded-3xl border border-lotofacil-purple/30 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-lotofacil-purple/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 rounded-2xl bg-lotofacil-purple/20 text-lotofacil-purple flex items-center justify-center border border-lotofacil-purple/40">
+              <Trophy size={24} className="text-lotofacil-yellow" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-display tracking-widest text-white uppercase">CORRIDA DOS <span className="text-lotofacil-purple">CAMPEÕES</span></h2>
+              <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-widest">Ajuste os prêmios da meta de 200 PTS</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSaveChamps} className="space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-[10px] uppercase tracking-widest text-slate-300 font-bold ml-1">Valor Total da Premiação (R$)</label>
+                <input 
+                  type="number" 
+                  value={prizePool}
+                  onChange={(e) => setPrizePool(parseFloat(e.target.value) || 0)}
+                  placeholder="Ex: 800"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-2xl py-3 px-4 focus:outline-none focus:border-lotofacil-purple text-sm text-white font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <label className="block text-[8px] uppercase tracking-widest text-slate-400 font-bold text-center">1º Lugar (%)</label>
+                  <input 
+                    type="number" 
+                    value={pct1}
+                    onChange={(e) => setPct1(parseInt(e.target.value) || 0)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3 focus:outline-none focus:border-lotofacil-purple text-xs text-white font-bold text-center"
+                  />
+                  <span className="block text-[9px] text-emerald-400 text-center font-bold">
+                    R$ {((prizePool * pct1) / 100).toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-[8px] uppercase tracking-widest text-slate-400 font-bold text-center">2º Lugar (%)</label>
+                  <input 
+                    type="number" 
+                    value={pct2}
+                    onChange={(e) => setPct2(parseInt(e.target.value) || 0)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3 focus:outline-none focus:border-lotofacil-purple text-xs text-white font-bold text-center"
+                  />
+                  <span className="block text-[9px] text-emerald-400 text-center font-bold">
+                    R$ {((prizePool * pct2) / 100).toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-[8px] uppercase tracking-widest text-slate-400 font-bold text-center">3º Lugar (%)</label>
+                  <input 
+                    type="number" 
+                    value={pct3}
+                    onChange={(e) => setPct3(parseInt(e.target.value) || 0)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3 focus:outline-none focus:border-lotofacil-purple text-xs text-white font-bold text-center"
+                  />
+                  <span className="block text-[9px] text-emerald-400 text-center font-bold">
+                    R$ {((prizePool * pct3) / 100).toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Soma das Porcentagens: </span>
+                <span className={cn("text-xs font-black", pct1 + pct2 + pct3 === 100 ? "text-emerald-400" : "text-rose-400")}>
+                  {pct1 + pct2 + pct3}% {pct1 + pct2 + pct3 === 100 ? '✓' : '(Deve somar exatamente 100%)'}
+                </span>
+              </div>
+            </div>
+
+            <button 
+              type="submit"
+              disabled={savingChamps || pct1 + pct2 + pct3 !== 100}
+              className="w-full bg-lotofacil-purple text-white py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg disabled:opacity-30 text-xs font-black uppercase tracking-widest hover:scale-[1.01] active:scale-[0.99] transition-all"
+            >
+              {savingChamps ? 'PROCESSANDO...' : (
+                <>
+                  <Save size={16} />
+                  SALVAR PREMIAÇÕES
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Current Champions list preview */}
+          {championsList && championsList.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-slate-800 space-y-3">
+              <h3 className="text-xs font-black uppercase tracking-widest text-lotofacil-yellow">Vencedores Atuais (Automáticos):</h3>
+              <div className="space-y-2">
+                {championsList.map((champ, index) => (
+                  <div key={index} className="bg-slate-800/60 border border-slate-700 p-3 rounded-xl flex items-center justify-between text-xs">
+                    <div>
+                      <p className="font-bold text-white uppercase">{index + 1}º - {champ.betName}</p>
+                      <p className="text-[10px] text-slate-400 font-medium">Concurso {champ.contestNumber} ({champ.draw}) • {champ.points} PTS</p>
+                    </div>
+                    <span className="text-emerald-400 font-black">R$ {((prizePool * (index === 0 ? pct1 : index === 1 ? pct2 : pct3)) / 100).toFixed(2).replace('.', ',')}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      <form onSubmit={handleSave} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Maintenance Mode Config */}
-          <div className="space-y-4 md:col-span-2 p-4 bg-lotofacil-purple/5 border border-lotofacil-purple/20 rounded-2xl">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-lotofacil-purple flex items-center gap-2">
-              <div className="w-1 h-1 rounded-full bg-lotofacil-purple" />
-              Modo Aguardando Sorteio
-            </h3>
-            
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Ativar Tela de Espera?</p>
-                <p className="text-[9px] text-slate-500 font-medium">Bloqueia o app para usuários com uma tela de "Aguardando Sorteio".</p>
-              </div>
-              <button 
-                type="button"
-                onClick={() => setMaintenanceMode(!maintenanceMode)}
-                className={cn(
-                  "relative w-12 h-6 rounded-full transition-colors",
-                  maintenanceMode ? "bg-lotofacil-purple" : "bg-slate-300"
-                )}
-              >
-                <div className={cn(
-                  "absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm",
-                  maintenanceMode ? "translate-x-6" : "translate-x-0"
-                )} />
-              </button>
-            </div>
-
-            {maintenanceMode && (
-              <div className="space-y-2 animate-fade-in">
-                <label className="block text-[10px] uppercase tracking-widest text-slate-900 font-bold ml-1">Mensagem na Tela</label>
-                <input 
-                  type="text" 
-                  value={maintenanceMessage}
-                  onChange={(e) => setMaintenanceMessage(e.target.value)}
-                  placeholder="Ex: Prepare-se! O sorteio começará em instantes."
-                  className="w-full bg-white border border-slate-200 rounded-xl py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-sm text-slate-900 font-bold"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* WhatsApp Config */}
-          <div className="space-y-4 md:col-span-2">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-              <div className="w-1 h-1 rounded-full bg-emerald-500" />
-              Comunicação Geral
-            </h3>
-            <div className="space-y-2">
-              <label className="block text-[10px] uppercase tracking-widest text-slate-900 font-bold ml-1">WhatsApp de Suporte (Admin)</label>
-              <div className="relative">
-                <input 
-                  type="text" 
-                  value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value)}
-                  placeholder="Ex: 5511999999999"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-sm text-slate-900 font-bold"
-                />
-              </div>
-              <p className="text-[9px] text-slate-400 font-medium ml-1">Número com DDD. Usado como fallback para validação de apostas.</p>
-            </div>
-          </div>
-
-          {/* Start Date Config */}
-          <div className="space-y-4 md:col-span-2 pt-6 border-t border-slate-100">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-              <div className="w-1 h-1 rounded-full bg-lotofacil-yellow" />
-              Lançamento do Bolão (Concurso #1)
-            </h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-900 font-bold ml-1">
-                  <Calendar size={12} className="text-lotofacil-purple" />
-                  Data de Início
-                </label>
-                <input 
-                  type="date" 
-                  value={poolStartDate}
-                  onChange={(e) => setPoolStartDate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-sm text-slate-900 font-bold"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-900 font-bold ml-1">
-                  <Clock size={12} className="text-lotofacil-purple" />
-                  Horário de Início
-                </label>
-                <input 
-                  type="time" 
-                  value={poolStartTime}
-                  onChange={(e) => setPoolStartTime(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 focus:outline-none focus:border-lotofacil-purple/50 transition-all text-sm text-slate-900 font-bold"
-                />
-              </div>
-            </div>
-
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
-              <div className="space-y-0.5">
-                <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Sistema Ativo?</p>
-                <p className="text-[9px] text-slate-500 font-medium">Se desativado, um modal de "Início em Breve" será exibido.</p>
-              </div>
-              <button 
-                type="button"
-                onClick={() => setIsPoolActive(!isPoolActive)}
-                className={cn(
-                  "relative w-12 h-6 rounded-full transition-colors",
-                  isPoolActive ? "bg-emerald-500" : "bg-slate-300"
-                )}
-              >
-                <div className={cn(
-                  "absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm",
-                  isPoolActive ? "translate-x-6" : "translate-x-0"
-                )} />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 pt-4">
-          <button 
-            type="submit"
-            disabled={loading}
-            className="flex-1 bg-lotofacil-purple text-white px-8 h-14 rounded-2xl flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(107,33,168,0.3)] disabled:opacity-30 text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all"
-          >
-            {loading ? 'PROCESSANDO...' : (
-              <>
-                <Save size={18} />
-                SALVAR ALTERAÇÕES
-              </>
-            )}
-          </button>
-          
-          <AnimatePresence>
-            {success && (
-              <motion.div 
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100 shadow-sm shadow-emerald-500/10"
-              >
-                <CheckCircle size={18} />
-                <span className="text-[10px] font-black uppercase tracking-widest">Sucesso</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </form>
 
       {/* Quota and Usage Explanations */}
       <div className="mt-8 pt-8 border-t border-slate-100">

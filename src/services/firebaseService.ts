@@ -1542,6 +1542,22 @@ const baseFirebaseService = {
         };
       });
 
+      // Track points chronologically starting with official C4 list to identify champions
+      const cumulativePoints: { [key: string]: number } = {};
+      officialC4List.forEach(p => {
+        cumulativePoints[getNormalizedParticipantKey(p.name)] = p.points;
+      });
+
+      const championsList: Array<{
+        betName: string;
+        sellerCode: string;
+        contestNumber: number;
+        draw: 'S1' | 'S2' | 'S3';
+        points: number;
+      }> = [];
+
+      const completed200Keys = new Set<string>();
+
       // Filter and only calculate contests starting from #5 dynamically
       const activeContests = closedContests.filter(c => c.number >= 5);
 
@@ -1559,7 +1575,7 @@ const baseFirebaseService = {
         console.log(`  Processing Contest #${contest.number}: Found ${betsSnap.size} validated bets`);
 
         // Group by participant (betName) and take the best score in this contest
-        const contestBestScores: { [key: string]: { betName: string, sellerCode: string, score: number, userId: string, numbers: number[] } } = {};
+        const contestBestScores: { [key: string]: { betName: string, sellerCode: string, score: number, userId: string, numbers: number[], hits: number[] } } = {};
         
         for (const betDoc of betsSnap.docs) {
           const betData = betDoc.data() as Bet;
@@ -1574,7 +1590,7 @@ const baseFirebaseService = {
           if (!key) continue;
 
           if (!contestBestScores[key] || totalHits > contestBestScores[key].score) {
-            contestBestScores[key] = { betName: rawName, sellerCode, score: totalHits, userId: betData.userId, numbers: betData.numbers };
+            contestBestScores[key] = { betName: rawName, sellerCode, score: totalHits, userId: betData.userId, numbers: betData.numbers, hits };
           }
         }
         
@@ -1599,7 +1615,77 @@ const baseFirebaseService = {
           if (data.userId) {
             participantTotals[key].ownerId = data.userId;
           }
+
+          // Chronological addition to check for 200 PTS completion
+          if (cumulativePoints[key] === undefined) {
+            cumulativePoints[key] = 0;
+          }
+          const hits = data.hits || [0, 0, 0];
+          
+          // S1 (Draw 1)
+          cumulativePoints[key] += (hits[0] || 0);
+          if (cumulativePoints[key] >= 200 && !completed200Keys.has(key)) {
+            completed200Keys.add(key);
+            if (championsList.length < 3) {
+              championsList.push({
+                betName: data.betName,
+                sellerCode: data.sellerCode,
+                contestNumber: contest.number,
+                draw: 'S1',
+                points: cumulativePoints[key]
+              });
+            }
+          }
+
+          // S2 (Draw 2)
+          cumulativePoints[key] += (hits[1] || 0);
+          if (cumulativePoints[key] >= 200 && !completed200Keys.has(key)) {
+            completed200Keys.add(key);
+            if (championsList.length < 3) {
+              championsList.push({
+                betName: data.betName,
+                sellerCode: data.sellerCode,
+                contestNumber: contest.number,
+                draw: 'S2',
+                points: cumulativePoints[key]
+              });
+            }
+          }
+
+          // S3 (Draw 3)
+          cumulativePoints[key] += (hits[2] || 0);
+          if (cumulativePoints[key] >= 200 && !completed200Keys.has(key)) {
+            completed200Keys.add(key);
+            if (championsList.length < 3) {
+              championsList.push({
+                betName: data.betName,
+                sellerCode: data.sellerCode,
+                contestNumber: contest.number,
+                draw: 'S3',
+                points: cumulativePoints[key]
+              });
+            }
+          }
         }
+      }
+
+      // Save champions settings in settings/champions
+      const championsRef = doc(db, 'settings', 'champions');
+      const championsSnap = await getDoc(championsRef);
+      if (championsSnap.exists()) {
+        await updateDoc(championsRef, {
+          champions: championsList,
+          lastUpdated: serverTimestamp()
+        });
+      } else {
+        await setDoc(championsRef, {
+          champions: championsList,
+          prizePool: 800,
+          pct1: 50,
+          pct2: 30,
+          pct3: 20,
+          lastUpdated: serverTimestamp()
+        });
       }
 
       console.log(`Step 2: Calculated totals for ${Object.keys(participantTotals).length} unique participants`);
@@ -1694,6 +1780,59 @@ const baseFirebaseService = {
         await setDoc(docRef, {
           ...settings,
           updatedAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  },
+
+  async getChampionsSettings(): Promise<any> {
+    const path = 'settings/champions';
+    try {
+      const docRef = doc(db, 'settings', 'champions');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return docSnap.data();
+      }
+      return {
+        champions: [],
+        prizePool: 800,
+        pct1: 50,
+        pct2: 30,
+        pct3: 20
+      };
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, path);
+      return {
+        champions: [],
+        prizePool: 800,
+        pct1: 50,
+        pct2: 30,
+        pct3: 20
+      };
+    }
+  },
+
+  async updateChampionsSettings(data: any): Promise<void> {
+    const path = 'settings/champions';
+    try {
+      const docRef = doc(db, 'settings', 'champions');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        await updateDoc(docRef, {
+          ...data,
+          lastUpdated: serverTimestamp()
+        });
+      } else {
+        await setDoc(docRef, {
+          champions: [],
+          prizePool: 800,
+          pct1: 50,
+          pct2: 30,
+          pct3: 20,
+          ...data,
+          lastUpdated: serverTimestamp()
         });
       }
     } catch (error) {
@@ -2322,6 +2461,28 @@ const demoFirebaseService: any = {
     const updated = { ...current, ...settings, updatedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 } };
     setLocalStorageData('demo_settings', updated);
     notifyDemoListeners('settings');
+  },
+
+  async getChampionsSettings(): Promise<any> {
+    const defaultDemo = {
+      champions: [
+        { betName: "RODO MIRTO", sellerCode: "MAXX", contestNumber: 15, draw: "S2", points: 204 },
+        { betName: "RUSSO", sellerCode: "ACME", contestNumber: 16, draw: "S1", points: 202 },
+        { betName: "PAULA MARQUEZIM - CCT", sellerCode: "RENTAL", contestNumber: 16, draw: "S3", points: 201 }
+      ],
+      prizePool: 800,
+      pct1: 50,
+      pct2: 30,
+      pct3: 20
+    };
+    return getLocalStorageData<any>('demo_settings_champions', defaultDemo);
+  },
+
+  async updateChampionsSettings(data: any): Promise<void> {
+    const current = await this.getChampionsSettings();
+    const updated = { ...current, ...data };
+    setLocalStorageData('demo_settings_champions', updated);
+    notifyDemoListeners('championsSettings');
   },
 
   async getSellerByCode(code: string): Promise<Seller | null> {

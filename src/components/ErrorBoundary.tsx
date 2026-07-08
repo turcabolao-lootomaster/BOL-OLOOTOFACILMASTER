@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { LogOut, RefreshCw, Trash2, AlertTriangle, Database, ExternalLink } from 'lucide-react';
+import { LogOut, RefreshCw, Trash2, AlertTriangle, Database, ExternalLink, Eye } from 'lucide-react';
+import { initializeDemoDatabase } from '../services/demoData';
 
 interface Props {
   children: ReactNode;
@@ -97,9 +98,23 @@ class ErrorBoundary extends Component<Props, State> {
                   </a>
                   <button
                     onClick={() => window.location.reload()}
-                    className="flex items-center justify-center gap-2 py-3 px-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border border-white/15 transition-all text-xs uppercase tracking-widest text-center"
+                    className="flex items-center justify-center gap-2 py-3 px-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border border-white/15 transition-all text-xs uppercase tracking-widest text-center cursor-pointer"
                   >
                     Recarregar Página <RefreshCw size={14} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      try {
+                        initializeDemoDatabase(true);
+                        localStorage.setItem('demo_mode', 'true');
+                        window.location.reload();
+                      } catch (e) {
+                        console.error('Failed to initialize demo database:', e);
+                      }
+                    }}
+                    className="flex items-center justify-center gap-2 py-3 px-4 bg-[#7a9a09] hover:bg-[#8eb30a] text-white font-bold rounded-xl shadow-lg transition-all text-xs uppercase tracking-widest text-center col-span-1 sm:col-span-2 cursor-pointer"
+                  >
+                    Ativar Modo de Demonstração (Offline) <Eye size={14} />
                   </button>
                 </div>
               </div>

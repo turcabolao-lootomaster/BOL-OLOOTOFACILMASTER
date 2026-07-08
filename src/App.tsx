@@ -225,13 +225,22 @@ const AppContent: React.FC = () => {
   }
 
   const isAdminOrMaster = user?.role === 'admin' || user?.role === 'master' || user?.email === 'turcabolao@gmail.com';
-  if (systemSettings?.maintenanceMode && !isAdminOrMaster) {
+  if (systemSettings?.maintenanceMode && !isAdminOrMaster && currentView !== 'login') {
     return (
       <div className="min-h-screen bg-[#1c0428] flex flex-col items-center justify-center p-6 text-center animate-fade-in relative">
         {/* Botão de Login para Admin */}
         <button 
-          onClick={() => setView('login')}
-          className="absolute top-6 right-6 p-3 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 text-white/40 hover:text-[#7a9a09] transition-all group shadow-xl"
+          onClick={async () => {
+            if (user) {
+              try {
+                await logout();
+              } catch (e) {
+                console.error("Error logging out:", e);
+              }
+            }
+            setView('login');
+          }}
+          className="absolute top-6 right-6 p-3 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 text-white/40 hover:text-[#7a9a09] transition-all group shadow-xl cursor-pointer"
           title="Acesso Administrador"
         >
           <Lock size={20} className="group-hover:scale-110 transition-transform" />

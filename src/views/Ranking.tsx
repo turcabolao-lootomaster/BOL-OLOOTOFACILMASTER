@@ -26,6 +26,13 @@ const Ranking: React.FC = () => {
   const [sortBy, setSortBy] = useState<'points' | 'name'>('points');
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  const [championsSettings, setChampionsSettings] = useState<any>(null);
+
+  useEffect(() => {
+    firebaseService.getChampionsSettings().then(settings => {
+      setChampionsSettings(settings);
+    });
+  }, []);
 
   const handleDownloadPDF = () => {
     if (password !== 'Baixarok') {
@@ -60,18 +67,97 @@ const Ranking: React.FC = () => {
     doc.setFontSize(10);
     doc.text(`META: ${RANKING_GOAL} PONTOS | PRÊMIO: R$ ${RANKING_PRIZE.toFixed(2).replace('.', ',')}`, pageWidth / 2, 40.5, { align: 'center' });
 
-    // Footer Info
-    doc.setTextColor(71, 85, 105);
-    doc.setFontSize(9);
-    doc.text('Para acompanhar atualizações e mais detalhes, acesse: lotofacilpremiada.online', pageWidth / 2, 55, { align: 'center' });
-    doc.text('Ranking atualizado automaticamente a cada concurso', pageWidth / 2, 62, { align: 'center' });
-    doc.text('Sistema exclusivo de pontuação acumulada', pageWidth / 2, 67, { align: 'center' });
-    doc.text('Acompanhe sua evolução a cada rodada', pageWidth / 2, 72, { align: 'center' });
+    // Champions Block on First Page
+    doc.setFillColor(248, 250, 252); // Slate 50 background
+    doc.roundedRect(15, 48, pageWidth - 30, 32, 2, 2, 'F');
+    doc.setDrawColor(203, 213, 225); // Slate 300 border
+    doc.roundedRect(15, 48, pageWidth - 30, 32, 2, 2, 'S');
 
-    doc.setFontSize(10);
+    doc.setFontSize(8);
+    doc.setTextColor(30, 41, 59); // Slate 900
+    doc.setFont('helvetica', 'bold');
+    doc.text('PÓDIO E PREMIAÇÃO DA CORRIDA (PRIMEIROS A COMPLETAR 200 PTS):', 20, 53);
+
+    const champS = championsSettings || {
+      champions: [],
+      prizePool: 800,
+      pct1: 50,
+      pct2: 30,
+      pct3: 20
+    };
+
+    doc.setFontSize(7.5);
+    // Draw 1st place
+    const c1 = champS.champions && champS.champions[0];
+    if (c1) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(194, 120, 3); // Gold-ish dark
+      doc.text(`1º LUGAR (${champS.pct1 || 50}%): ${c1.betName.toUpperCase()}`, 20, 60);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(71, 85, 105);
+      doc.text(`Vendedor: ${c1.sellerCode || '-'} | Almejou no Concurso ${c1.contestNumber} (${c1.draw})`, 20, 64);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(5, 150, 105); // Emerald 600
+      doc.text(`Prêmio: R$ ${((champS.prizePool || 800) * ((champS.pct1 || 50) / 100)).toFixed(2).replace('.', ',')} (${c1.points} PTS)`, 20, 68);
+    } else {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(148, 163, 184); // Slate 400
+      doc.text(`1º LUGAR (${champS.pct1 || 50}%): EM ANDAMENTO...`, 20, 60);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Aguardando participante atingir 200 PTS`, 20, 64);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Prêmio Estimado: R$ ${((champS.prizePool || 800) * ((champS.pct1 || 50) / 100)).toFixed(2).replace('.', ',')}`, 20, 68);
+    }
+
+    // Draw 2nd place
+    const c2 = champS.champions && champS.champions[1];
+    if (c2) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(100, 116, 139); // Silver
+      doc.text(`2º LUGAR (${champS.pct2 || 30}%): ${c2.betName.toUpperCase()}`, pageWidth / 2 - 35, 60);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(71, 85, 105);
+      doc.text(`Vendedor: ${c2.sellerCode || '-'} | Almejou no Concurso ${c2.contestNumber} (${c2.draw})`, pageWidth / 2 - 35, 64);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(5, 150, 105); // Emerald 600
+      doc.text(`Prêmio: R$ ${((champS.prizePool || 800) * ((champS.pct2 || 30) / 100)).toFixed(2).replace('.', ',')} (${c2.points} PTS)`, pageWidth / 2 - 35, 68);
+    } else {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(148, 163, 184); // Slate 400
+      doc.text(`2º LUGAR (${champS.pct2 || 30}%): EM ANDAMENTO...`, pageWidth / 2 - 35, 60);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Aguardando participante atingir 200 PTS`, pageWidth / 2 - 35, 64);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Prêmio Estimado: R$ ${((champS.prizePool || 800) * ((champS.pct2 || 30) / 100)).toFixed(2).replace('.', ',')}`, pageWidth / 2 - 35, 68);
+    }
+
+    // Draw 3rd place
+    const c3 = champS.champions && champS.champions[2];
+    if (c3) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(180, 83, 9); // Bronze-ish amber
+      doc.text(`3º LUGAR (${champS.pct3 || 20}%): ${c3.betName.toUpperCase()}`, pageWidth - 100, 60);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(71, 85, 105);
+      doc.text(`Vendedor: ${c3.sellerCode || '-'} | Almejou no Concurso ${c3.contestNumber} (${c3.draw})`, pageWidth - 100, 64);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(5, 150, 105); // Emerald 600
+      doc.text(`Prêmio: R$ ${((champS.prizePool || 800) * ((champS.pct3 || 20) / 100)).toFixed(2).replace('.', ',')} (${c3.points} PTS)`, pageWidth - 100, 68);
+    } else {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(148, 163, 184); // Slate 400
+      doc.text(`3º LUGAR (${champS.pct3 || 20}%): EM ANDAMENTO...`, pageWidth - 100, 60);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Aguardando participante atingir 200 PTS`, pageWidth - 100, 64);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Prêmio Estimado: R$ ${((champS.prizePool || 800) * ((champS.pct3 || 20) / 100)).toFixed(2).replace('.', ',')}`, pageWidth - 100, 68);
+    }
+
+    doc.setFontSize(9);
+    doc.setTextColor(71, 85, 105);
+    doc.setFont('helvetica', 'normal');
     doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')} | Total de Participantes: ${ranking.length}`, pageWidth / 2, 85, { align: 'center' });
-    doc.text('Relatório automatizado — Bolão Lotofácil Premiada', pageWidth / 2, 92, { align: 'center' });
-    doc.text('Atualizações disponíveis na plataforma online', pageWidth / 2, 97, { align: 'center' });
+    doc.text('Relatório automatizado — Bolão Lotofácil Premiada | Confira atualizações em: lotofacilpremiada.online', pageWidth / 2, 92, { align: 'center' });
 
     // Table
     const headers = ['Nº', 'POS', 'PARTICIPANTE', 'VENDEDOR', 'NÚMEROS DA APOSTA', 'PONTOS ATUAIS', 'PROGRESSO (%)'];
@@ -128,11 +214,13 @@ const Ranking: React.FC = () => {
   const handleLoadRanking = async () => {
     setLoading(true);
     try {
-      const [rankingData, contest] = await Promise.all([
+      const [rankingData, contest, champSettings] = await Promise.all([
         firebaseService.getRanking(300),
-        firebaseService.getActiveContest()
+        firebaseService.getActiveContest(),
+        firebaseService.getChampionsSettings()
       ]);
       setRanking(rankingData);
+      setChampionsSettings(champSettings);
       
       if (contest) {
         const bets = await firebaseService.getContestBets(contest.id);
@@ -226,6 +314,135 @@ const Ranking: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Podium / Campeões da Corrida 200 PTS */}
+      {championsSettings && championsSettings.champions && championsSettings.champions.length > 0 ? (
+        <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 border border-lotofacil-purple/30 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-lotofacil-purple/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
+          
+          <div className="flex flex-col items-center mb-6 sm:mb-8 text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-lotofacil-purple/20 border border-lotofacil-purple/40 rounded-full text-lotofacil-purple text-xs font-bold uppercase tracking-widest mb-3">
+              <Crown size={14} className="text-lotofacil-yellow" />
+              FINALISTAS DA CORRIDA 200 PTS
+            </div>
+            <h2 className="text-xl sm:text-3xl font-display tracking-widest uppercase">PÓDIO DA CORRIDA</h2>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl">
+              Estes são os 3 primeiros participantes que atingiram a meta de {RANKING_GOAL} pontos e garantiram suas premiações!
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+            {/* 2º Lugar */}
+            {championsSettings.champions[1] ? (
+              <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5 text-center order-2 md:order-1 transition-all hover:border-slate-600">
+                <div className="flex justify-center mb-3">
+                  <div className="w-12 h-12 bg-slate-700/60 rounded-full flex items-center justify-center text-slate-300 font-black text-lg border border-slate-600">
+                    2º
+                  </div>
+                </div>
+                <h3 className="font-bold text-base tracking-wide text-white uppercase truncate">{championsSettings.champions[1].betName}</h3>
+                <p className="text-xs text-slate-400 mt-1 uppercase font-mono">Vendedor: {championsSettings.champions[1].sellerCode || '-'}</p>
+                <div className="mt-4 py-2 px-3 bg-slate-900/50 rounded-xl inline-block text-xs font-semibold text-slate-300 border border-slate-800">
+                  Concurso {championsSettings.champions[1].contestNumber} • Sorteio {championsSettings.champions[1].draw}
+                </div>
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  <span className="text-slate-300 font-bold text-sm">{championsSettings.champions[1].points} PTS</span>
+                  <span className="text-slate-500">•</span>
+                  <span className="text-emerald-400 font-black text-sm">
+                    R$ {((championsSettings.prizePool || 800) * ((championsSettings.pct2 || 30) / 100)).toFixed(2).replace('.', ',')} ({championsSettings.pct2 || 30}%)
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-slate-800/10 border border-dashed border-slate-800 rounded-2xl p-5 text-center order-2 md:order-1 flex flex-col items-center justify-center min-h-[180px]">
+                <p className="text-slate-500 text-xs uppercase font-bold">2º Lugar em aberto</p>
+              </div>
+            )}
+
+            {/* 1º Lugar */}
+            {championsSettings.champions[0] ? (
+              <div className="bg-gradient-to-b from-lotofacil-purple/20 to-slate-800/80 border-2 border-lotofacil-purple/50 rounded-3xl p-6 text-center order-1 md:order-2 shadow-xl relative transform md:-translate-y-2 transition-all hover:border-lotofacil-purple">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-lotofacil-yellow rounded-full p-2 border-4 border-slate-900 shadow-lg animate-bounce">
+                  <Crown size={20} className="text-slate-900" />
+                </div>
+                <div className="flex justify-center mb-4 mt-2">
+                  <div className="w-16 h-16 bg-lotofacil-yellow/20 rounded-full flex items-center justify-center text-lotofacil-yellow font-black text-2xl border-2 border-lotofacil-yellow/40 shadow-inner">
+                    1º
+                  </div>
+                </div>
+                <h3 className="font-black text-lg sm:text-xl tracking-wider text-white uppercase truncate">{championsSettings.champions[0].betName}</h3>
+                <p className="text-xs text-lotofacil-purple mt-1 uppercase font-mono font-bold">Vendedor: {championsSettings.champions[0].sellerCode || '-'}</p>
+                <div className="mt-4 py-2 px-4 bg-slate-900/80 rounded-xl inline-block text-xs font-bold text-lotofacil-purple border border-lotofacil-purple/30">
+                  Concurso {championsSettings.champions[0].contestNumber} • Sorteio {championsSettings.champions[0].draw}
+                </div>
+                <div className="mt-4 flex items-center justify-center gap-3">
+                  <span className="text-white font-extrabold text-base">{championsSettings.champions[0].points} PTS</span>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-emerald-400 font-extrabold text-base">
+                    R$ {((championsSettings.prizePool || 800) * ((championsSettings.pct1 || 50) / 100)).toFixed(2).replace('.', ',')} ({championsSettings.pct1 || 50}%)
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-slate-800/10 border border-dashed border-slate-800 rounded-3xl p-6 text-center order-1 md:order-2 flex flex-col items-center justify-center min-h-[220px]">
+                <p className="text-slate-500 text-sm uppercase font-bold">1º Lugar em aberto</p>
+              </div>
+            )}
+
+            {/* 3º Lugar */}
+            {championsSettings.champions[2] ? (
+              <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5 text-center order-3 md:order-3 transition-all hover:border-slate-600">
+                <div className="flex justify-center mb-3">
+                  <div className="w-12 h-12 bg-amber-900/40 rounded-full flex items-center justify-center text-amber-500 font-black text-lg border border-amber-800/40">
+                    3º
+                  </div>
+                </div>
+                <h3 className="font-bold text-base tracking-wide text-white uppercase truncate">{championsSettings.champions[2].betName}</h3>
+                <p className="text-xs text-slate-400 mt-1 uppercase font-mono">Vendedor: {championsSettings.champions[2].sellerCode || '-'}</p>
+                <div className="mt-4 py-2 px-3 bg-slate-900/50 rounded-xl inline-block text-xs font-semibold text-slate-300 border border-slate-800">
+                  Concurso {championsSettings.champions[2].contestNumber} • Sorteio {championsSettings.champions[2].draw}
+                </div>
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  <span className="text-slate-300 font-bold text-sm">{championsSettings.champions[2].points} PTS</span>
+                  <span className="text-slate-500">•</span>
+                  <span className="text-emerald-400 font-black text-sm">
+                    R$ {((championsSettings.prizePool || 800) * ((championsSettings.pct3 || 20) / 100)).toFixed(2).replace('.', ',')} ({championsSettings.pct3 || 20}%)
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-slate-800/10 border border-dashed border-slate-800 rounded-2xl p-5 text-center order-3 md:order-3 flex flex-col items-center justify-center min-h-[180px]">
+                <p className="text-slate-500 text-xs uppercase font-bold">3º Lugar em aberto</p>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : championsSettings ? (
+        <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 border border-lotofacil-purple/30 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-lotofacil-purple/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="flex flex-col items-center text-center">
+            <div className="p-3 bg-lotofacil-purple/20 border border-lotofacil-purple/40 rounded-2xl text-lotofacil-purple mb-4">
+              <Trophy size={32} className="animate-pulse text-lotofacil-yellow" />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-display tracking-widest uppercase">CORRIDA AOS {RANKING_GOAL} PONTOS EM ANDAMENTO!</h2>
+            <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-xl">
+              Nenhum participante alcançou a meta de {RANKING_GOAL} pontos ainda. Continue acumulando pontos nos sorteios S1, S2 e S3 para garantir seu lugar no pódio!
+            </p>
+            <div className="mt-6 flex flex-wrap gap-4 justify-center">
+              <div className="px-4 py-2 bg-slate-800 rounded-xl border border-slate-700 text-xs font-bold uppercase tracking-widest text-slate-300">
+                1º Lugar: {championsSettings.pct1 || 50}% do prêmio (R$ {((championsSettings.prizePool || 800) * ((championsSettings.pct1 || 50) / 100)).toFixed(2).replace('.', ',')})
+              </div>
+              <div className="px-4 py-2 bg-slate-800 rounded-xl border border-slate-700 text-xs font-bold uppercase tracking-widest text-slate-300">
+                2º Lugar: {championsSettings.pct2 || 30}% do prêmio (R$ {((championsSettings.prizePool || 800) * ((championsSettings.pct2 || 30) / 100)).toFixed(2).replace('.', ',')})
+              </div>
+              <div className="px-4 py-2 bg-slate-800 rounded-xl border border-slate-700 text-xs font-bold uppercase tracking-widest text-slate-300">
+                3º Lugar: {championsSettings.pct3 || 20}% do prêmio (R$ {((championsSettings.prizePool || 800) * ((championsSettings.pct3 || 20) / 100)).toFixed(2).replace('.', ',')})
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Info Modal */}
       <AnimatePresence>
