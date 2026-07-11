@@ -18,7 +18,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { RANKING_GOAL, cn } from '../utils';
+import { RANKING_GOAL, RANKING_PRIZE, cn } from '../utils';
 import { Bet, Contest, UserRanking } from '../types';
 
 const Dashboard: React.FC = () => {
@@ -306,7 +306,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-center">
               <p className="text-[7px] uppercase tracking-widest text-slate-500 mb-0.5">Prêmio</p>
-              <p className="text-[10px] font-bold text-lotofacil-purple">R$ 800</p>
+              <p className="text-[10px] font-bold text-lotofacil-purple">R$ {RANKING_PRIZE.toLocaleString('pt-BR')}</p>
             </div>
             <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-center">
               <p className="text-[7px] uppercase tracking-widest text-slate-500 mb-0.5">Posição</p>

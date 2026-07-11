@@ -3876,7 +3876,7 @@ const ConfigTab: React.FC<{
   const [success, setSuccess] = useState(false);
 
   // Champions settings states
-  const [prizePool, setPrizePool] = useState<number>(800);
+  const [prizePool, setPrizePool] = useState<number>(1000);
   const [pct1, setPct1] = useState<number>(50);
   const [pct2, setPct2] = useState<number>(30);
   const [pct3, setPct3] = useState<number>(20);
@@ -4141,7 +4141,7 @@ const ConfigTab: React.FC<{
                   type="number" 
                   value={prizePool}
                   onChange={(e) => setPrizePool(parseFloat(e.target.value) || 0)}
-                  placeholder="Ex: 800"
+                  placeholder="Ex: 1000"
                   className="w-full bg-slate-800 border border-slate-700 rounded-2xl py-3 px-4 focus:outline-none focus:border-lotofacil-purple text-sm text-white font-bold"
                 />
               </div>
@@ -4220,7 +4220,7 @@ const ConfigTab: React.FC<{
                       <p className="font-bold text-white uppercase">{index + 1}º - {champ.betName}</p>
                       <p className="text-[10px] text-slate-400 font-medium">Concurso {champ.contestNumber} ({champ.draw}) • {champ.points} PTS</p>
                     </div>
-                    <span className="text-emerald-400 font-black">R$ {((prizePool * (index === 0 ? pct1 : index === 1 ? pct2 : pct3)) / 100).toFixed(2).replace('.', ',')}</span>
+                    <span className="text-emerald-400 font-black">R$ {(prizePool / championsList.length).toFixed(2).replace('.', ',')}</span>
                   </div>
                 ))}
               </div>

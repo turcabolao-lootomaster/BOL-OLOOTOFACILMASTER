@@ -1647,45 +1647,39 @@ const baseFirebaseService = {
           cumulativePoints[key] += (hits[0] || 0);
           if (cumulativePoints[key] >= 200 && !completed200Keys.has(key)) {
             completed200Keys.add(key);
-            if (championsList.length < 3) {
-              championsList.push({
-                betName: data.betName,
-                sellerCode: data.sellerCode,
-                contestNumber: contest.number,
-                draw: 'S1',
-                points: cumulativePoints[key]
-              });
-            }
+            championsList.push({
+              betName: data.betName,
+              sellerCode: data.sellerCode,
+              contestNumber: contest.number,
+              draw: 'S1',
+              points: cumulativePoints[key]
+            });
           }
 
           // S2 (Draw 2)
           cumulativePoints[key] += (hits[1] || 0);
           if (cumulativePoints[key] >= 200 && !completed200Keys.has(key)) {
             completed200Keys.add(key);
-            if (championsList.length < 3) {
-              championsList.push({
-                betName: data.betName,
-                sellerCode: data.sellerCode,
-                contestNumber: contest.number,
-                draw: 'S2',
-                points: cumulativePoints[key]
-              });
-            }
+            championsList.push({
+              betName: data.betName,
+              sellerCode: data.sellerCode,
+              contestNumber: contest.number,
+              draw: 'S2',
+              points: cumulativePoints[key]
+            });
           }
 
           // S3 (Draw 3)
           cumulativePoints[key] += (hits[2] || 0);
           if (cumulativePoints[key] >= 200 && !completed200Keys.has(key)) {
             completed200Keys.add(key);
-            if (championsList.length < 3) {
-              championsList.push({
-                betName: data.betName,
-                sellerCode: data.sellerCode,
-                contestNumber: contest.number,
-                draw: 'S3',
-                points: cumulativePoints[key]
-              });
-            }
+            championsList.push({
+              betName: data.betName,
+              sellerCode: data.sellerCode,
+              contestNumber: contest.number,
+              draw: 'S3',
+              points: cumulativePoints[key]
+            });
           }
         }
       }
@@ -1701,7 +1695,7 @@ const baseFirebaseService = {
       } else {
         await setDoc(championsRef, {
           champions: championsList,
-          prizePool: 800,
+          prizePool: 1000,
           pct1: 50,
           pct2: 30,
           pct3: 20,
@@ -1814,11 +1808,15 @@ const baseFirebaseService = {
       const docRef = doc(db, 'settings', 'champions');
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        return docSnap.data();
+        const data = docSnap.data();
+        if (data && (data.prizePool === 800 || !data.prizePool)) {
+          data.prizePool = 1000;
+        }
+        return data;
       }
       return {
         champions: [],
-        prizePool: 800,
+        prizePool: 1000,
         pct1: 50,
         pct2: 30,
         pct3: 20
@@ -1827,7 +1825,7 @@ const baseFirebaseService = {
       handleFirestoreError(error, OperationType.GET, path);
       return {
         champions: [],
-        prizePool: 800,
+        prizePool: 1000,
         pct1: 50,
         pct2: 30,
         pct3: 20
@@ -1848,7 +1846,7 @@ const baseFirebaseService = {
       } else {
         await setDoc(docRef, {
           champions: [],
-          prizePool: 800,
+          prizePool: 1000,
           pct1: 50,
           pct2: 30,
           pct3: 20,
@@ -2491,12 +2489,16 @@ const demoFirebaseService: any = {
         { betName: "RUSSO", sellerCode: "ACME", contestNumber: 16, draw: "S1", points: 202 },
         { betName: "PAULA MARQUEZIM - CCT", sellerCode: "RENTAL", contestNumber: 16, draw: "S3", points: 201 }
       ],
-      prizePool: 800,
+      prizePool: 1000,
       pct1: 50,
       pct2: 30,
       pct3: 20
     };
-    return getLocalStorageData<any>('demo_settings_champions', defaultDemo);
+    const result = getLocalStorageData<any>('demo_settings_champions', defaultDemo);
+    if (result && (result.prizePool === 800 || !result.prizePool)) {
+      result.prizePool = 1000;
+    }
+    return result;
   },
 
   async updateChampionsSettings(data: any): Promise<void> {
